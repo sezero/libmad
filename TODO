@@ -1,5 +1,6 @@
 
 libmad:
+  - fix broken fixed-point semantics in synth.c
   - fix generic DCT matrix multiply (now broken after V[] resize/reorder)
   - fix free format fixed bitrate discovery
   - speed up mad_bit_read()
@@ -21,12 +22,12 @@ libmad Layer II:
   - check frame length sanity
 
 libmad Layer III:
+  - optimize imdct12 (short blocks)
   - fix sign-extending right shift assumption
   - perform requantization during Huffman decoding
   - ancillary bits
   - ms_stereo + intensity_stereo not right?
   - stereo->mono conversion optimization
-  - IMDCT optimization
   - verify last Huffman table
   - rewrite Huffman tables in ANSI C
 

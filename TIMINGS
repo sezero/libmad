@@ -7,6 +7,7 @@ StrongARM 1100 220MHz
 
 decoder		version		Layer I		Layer II	Layer III
 -------------------------------------------------------------------------------
+MAD		0.10.2b (SSO)	18%		17%		28%
 MAD		0.10.1b (SSO)	18%		17%		31%
 MAD		0.10.0b		23%		22%		37%
 Xaudio		1.3.1		21%		25%		24%
@@ -22,7 +23,7 @@ Celeron 500A
 
 decoder		version		Layer I		Layer II	Layer III
 -------------------------------------------------------------------------------
-MAD		0.10.1b		
+MAD		0.10.2b (SSO)	3%		3%		6%
 MAD		0.10.0b		4%		4%		7%
 Xaudio		1.3.1		3%		2%		3%
 mpg123		0.59r		[1]		2%		3%
@@ -40,6 +41,7 @@ Layer III: 4m9s test stream
 
 StrongARM 1100 220MHz:
 	xaudio			1m1s	24%
+	madplay-0.10.2b-sso	1m9s	28%
 	madplay-0.10.1b-sso	1m18s	31%
 	mpg123			1m20s	32%
 	madplay-0.10.0b		1m31s	37%
@@ -64,6 +66,7 @@ StrongARM 1100 220MHz:
 
 Celeron 500A:
 	xaudio			6s	2%
+	madplay-0.10.2b-sso	8s	3%
 	madplay-0.10.0b		11s	4%
 	mpg123			6s	2%
 	splay			15s	6%
@@ -81,6 +84,7 @@ StrongARM 1100 220MHz:
 
 Celeron 500A:
 	xaudio			7s	3%
+	madplay-0.10.2b-sso	9s	3%
 	madplay-0.10.0b		12s	4%
 	splay			16s	6%
 	mpg123					FAILED

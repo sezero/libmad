@@ -2,7 +2,7 @@
  mad - MPEG audio decoder
  Copyright (C) 2000 Robert Leslie
 
- $Id: README,v 1.16 2000/04/23 07:05:13 rob Exp $
+ $Id: README,v 1.18 2000/05/06 02:51:20 rob Exp $
 
 ===============================================================================
 
@@ -47,9 +47,8 @@ ABOUT THE CODE
     - a hex output module (for debugging and compliance testing)
     - a null module (for timing the decoder)
 
-  The code is partially optimized, but specific improvements can still be
-  made. Particularly, the IMDCT transformation routine of Layer III is not
-  considered final and is currently rather slow.
+  The code is optimized and performs very well, although specific
+  improvements can and will still be made.
 
   The API for libmad is likely to change soon, so it is not yet documented.
   However, the header file `libmad.h' may be informative, as may also be the
@@ -128,8 +127,8 @@ Compilation Issues
   assembly code notation, a GNU extension was used in `huffman.c' to specify
   union initialization of a member other than the first.
 
-  The code is known to be dependent on 32-bit long integers in at least two
-  places in Layer I and Layer II decoding.
+  The code is known to be dependent on sign-extended arithmetic right shifts
+  in several places.
 
 ===============================================================================
 

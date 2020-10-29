@@ -2,9 +2,16 @@
  mad - MPEG audio decoder
  Copyright (C) 2000 Robert Leslie
 
- $Id: CHANGES,v 1.9 2000/04/23 07:05:13 rob Exp $
+ $Id: CHANGES,v 1.10 2000/05/06 02:42:47 rob Exp $
 
 ===============================================================================
+
+Version 0.10.2 (beta)
+
+  * Rewrote Layer III long block 36-point IMDCT routine for better
+    performance.
+
+  * Improved subband synthesis fixed-point games somewhat.
 
 Version 0.10.1 (beta)
 

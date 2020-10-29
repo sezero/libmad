@@ -19,7 +19,7 @@
  * Id: version.h,v 1.13 2000/03/20 03:43:04 rob Exp 
  */
 
-# define MAD_VERSION		"0.10.1 (beta)"
+# define MAD_VERSION		"0.10.2 (beta)"
 # define MAD_PUBLISHYEAR	"2000"
 # define MAD_AUTHOR		"Robert Leslie"
 # define MAD_EMAIL		"rob@mars.org"

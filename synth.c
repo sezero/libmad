@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: synth.c,v 1.7 2000/04/23 05:45:03 rob Exp $
+ * $Id: synth.c,v 1.8 2000/05/06 02:33:08 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
@@ -483,13 +483,14 @@ void matrixing(mad_fixed_t lo[16], mad_fixed_t hi[16],
 }
 
 # ifdef SSO_FAST
-#  undef mad_f_mul
-#  define mad_f_mul(x, y)  ((x) * (y))
-# else
+#  define f_mul(x, y)  ((x) * (y))
+# elif defined(FPM_MACRO)
 #  undef mad_f_scale64
 #  define mad_f_scale64(hi, lo)	((mad_fixed_t)  \
                                  (((mad_fixed64hi_t) (hi) << 16) |  \
                                   ((mad_fixed64lo_t) (lo) >> 16)))
+# else
+#  define f_mul(x, y)  (mad_f_mul((x), (y)) << 12)
 # endif
 
 /*
@@ -556,23 +557,23 @@ void mad_synth_frame(struct mad_synth *synth, struct mad_frame const *frame)
 
       Dptr = D[0];
 
-      sum1  = mad_f_mul(evenp[0],    Dptr[even]);
-      sum1 += mad_f_mul(evenp[32],   Dptr[even14]);
-      sum1 += mad_f_mul(evenp[64],   Dptr[even12]);
-      sum1 += mad_f_mul(evenp[96],   Dptr[even10]);
-      sum1 += mad_f_mul(evenp[128],  Dptr[even8]);
-      sum1 += mad_f_mul(evenp[160],  Dptr[even6]);
-      sum1 += mad_f_mul(evenp[192],  Dptr[even4]);
-      sum1 += mad_f_mul(evenp[224],  Dptr[even2]);
+      sum1  = f_mul(evenp[0],    Dptr[even]);
+      sum1 += f_mul(evenp[32],   Dptr[even14]);
+      sum1 += f_mul(evenp[64],   Dptr[even12]);
+      sum1 += f_mul(evenp[96],   Dptr[even10]);
+      sum1 += f_mul(evenp[128],  Dptr[even8]);
+      sum1 += f_mul(evenp[160],  Dptr[even6]);
+      sum1 += f_mul(evenp[192],  Dptr[even4]);
+      sum1 += f_mul(evenp[224],  Dptr[even2]);
 
-      sum1 -= mad_f_mul(even2p[0],   Dptr[odd]);
-      sum1 -= mad_f_mul(even2p[32],  Dptr[odd14]);
-      sum1 -= mad_f_mul(even2p[64],  Dptr[odd12]);
-      sum1 -= mad_f_mul(even2p[96],  Dptr[odd10]);
-      sum1 -= mad_f_mul(even2p[128], Dptr[odd8]);
-      sum1 -= mad_f_mul(even2p[160], Dptr[odd6]);
-      sum1 -= mad_f_mul(even2p[192], Dptr[odd4]);
-      sum1 -= mad_f_mul(even2p[224], Dptr[odd2]);
+      sum1 -= f_mul(even2p[0],   Dptr[odd]);
+      sum1 -= f_mul(even2p[32],  Dptr[odd14]);
+      sum1 -= f_mul(even2p[64],  Dptr[odd12]);
+      sum1 -= f_mul(even2p[96],  Dptr[odd10]);
+      sum1 -= f_mul(even2p[128], Dptr[odd8]);
+      sum1 -= f_mul(even2p[160], Dptr[odd6]);
+      sum1 -= f_mul(even2p[192], Dptr[odd4]);
+      sum1 -= f_mul(even2p[224], Dptr[odd2]);
 
       pcmptr[0] = sum1;
       ++evenp;
@@ -582,39 +583,39 @@ void mad_synth_frame(struct mad_synth *synth, struct mad_frame const *frame)
 
 	/* D[32 - sb][i] == -D[sb][15 - i] */
 
-	sum1  = mad_f_mul(evenp[0],   Dptr[     even]);
-	sum2  = mad_f_mul(evenp[0],   Dptr[15 - even]);
-	sum1 += mad_f_mul(evenp[32],  Dptr[     even14]);
-	sum2 += mad_f_mul(evenp[32],  Dptr[15 - even14]);
-	sum1 += mad_f_mul(evenp[64],  Dptr[     even12]);
-	sum2 += mad_f_mul(evenp[64],  Dptr[15 - even12]);
-	sum1 += mad_f_mul(evenp[96],  Dptr[     even10]);
-	sum2 += mad_f_mul(evenp[96],  Dptr[15 - even10]);
-	sum1 += mad_f_mul(evenp[128], Dptr[     even8]);
-	sum2 += mad_f_mul(evenp[128], Dptr[15 - even8]);
-	sum1 += mad_f_mul(evenp[160], Dptr[     even6]);
-	sum2 += mad_f_mul(evenp[160], Dptr[15 - even6]);
-	sum1 += mad_f_mul(evenp[192], Dptr[     even4]);
-	sum2 += mad_f_mul(evenp[192], Dptr[15 - even4]);
-	sum1 += mad_f_mul(evenp[224], Dptr[     even2]);
-	sum2 += mad_f_mul(evenp[224], Dptr[15 - even2]);
+	sum1  = f_mul(evenp[0],   Dptr[     even]);
+	sum2  = f_mul(evenp[0],   Dptr[15 - even]);
+	sum1 += f_mul(evenp[32],  Dptr[     even14]);
+	sum2 += f_mul(evenp[32],  Dptr[15 - even14]);
+	sum1 += f_mul(evenp[64],  Dptr[     even12]);
+	sum2 += f_mul(evenp[64],  Dptr[15 - even12]);
+	sum1 += f_mul(evenp[96],  Dptr[     even10]);
+	sum2 += f_mul(evenp[96],  Dptr[15 - even10]);
+	sum1 += f_mul(evenp[128], Dptr[     even8]);
+	sum2 += f_mul(evenp[128], Dptr[15 - even8]);
+	sum1 += f_mul(evenp[160], Dptr[     even6]);
+	sum2 += f_mul(evenp[160], Dptr[15 - even6]);
+	sum1 += f_mul(evenp[192], Dptr[     even4]);
+	sum2 += f_mul(evenp[192], Dptr[15 - even4]);
+	sum1 += f_mul(evenp[224], Dptr[     even2]);
+	sum2 += f_mul(evenp[224], Dptr[15 - even2]);
 
-	sum1 -= mad_f_mul(oddp[0],    Dptr[     odd]);
-	sum2 += mad_f_mul(oddp[0],    Dptr[15 - odd]);
-	sum1 -= mad_f_mul(oddp[32],   Dptr[     odd14]);
-	sum2 += mad_f_mul(oddp[32],   Dptr[15 - odd14]);
-	sum1 -= mad_f_mul(oddp[64],   Dptr[     odd12]);
-	sum2 += mad_f_mul(oddp[64],   Dptr[15 - odd12]);
-	sum1 -= mad_f_mul(oddp[96],   Dptr[     odd10]);
-	sum2 += mad_f_mul(oddp[96],   Dptr[15 - odd10]);
-	sum1 -= mad_f_mul(oddp[128],  Dptr[     odd8]);
-	sum2 += mad_f_mul(oddp[128],  Dptr[15 - odd8]);
-	sum1 -= mad_f_mul(oddp[160],  Dptr[     odd6]);
-	sum2 += mad_f_mul(oddp[160],  Dptr[15 - odd6]);
-	sum1 -= mad_f_mul(oddp[192],  Dptr[     odd4]);
-	sum2 += mad_f_mul(oddp[192],  Dptr[15 - odd4]);
-	sum1 -= mad_f_mul(oddp[224],  Dptr[     odd2]);
-	sum2 += mad_f_mul(oddp[224],  Dptr[15 - odd2]);
+	sum1 -= f_mul(oddp[0],    Dptr[     odd]);
+	sum2 += f_mul(oddp[0],    Dptr[15 - odd]);
+	sum1 -= f_mul(oddp[32],   Dptr[     odd14]);
+	sum2 += f_mul(oddp[32],   Dptr[15 - odd14]);
+	sum1 -= f_mul(oddp[64],   Dptr[     odd12]);
+	sum2 += f_mul(oddp[64],   Dptr[15 - odd12]);
+	sum1 -= f_mul(oddp[96],   Dptr[     odd10]);
+	sum2 += f_mul(oddp[96],   Dptr[15 - odd10]);
+	sum1 -= f_mul(oddp[128],  Dptr[     odd8]);
+	sum2 += f_mul(oddp[128],  Dptr[15 - odd8]);
+	sum1 -= f_mul(oddp[160],  Dptr[     odd6]);
+	sum2 += f_mul(oddp[160],  Dptr[15 - odd6]);
+	sum1 -= f_mul(oddp[192],  Dptr[     odd4]);
+	sum2 += f_mul(oddp[192],  Dptr[15 - odd4]);
+	sum1 -= f_mul(oddp[224],  Dptr[     odd2]);
+	sum2 += f_mul(oddp[224],  Dptr[15 - odd2]);
 
 	pcmptr[     sb] = sum1;
 	pcmptr[32 - sb] = sum2;
@@ -624,14 +625,14 @@ void mad_synth_frame(struct mad_synth *synth, struct mad_frame const *frame)
 
       Dptr = D[16];
 
-      sum1  = mad_f_mul(oddp[0],   Dptr[odd]);
-      sum1 += mad_f_mul(oddp[32],  Dptr[odd14]);
-      sum1 += mad_f_mul(oddp[64],  Dptr[odd12]);
-      sum1 += mad_f_mul(oddp[96],  Dptr[odd10]);
-      sum1 += mad_f_mul(oddp[128], Dptr[odd8]);
-      sum1 += mad_f_mul(oddp[160], Dptr[odd6]);
-      sum1 += mad_f_mul(oddp[192], Dptr[odd4]);
-      sum1 += mad_f_mul(oddp[224], Dptr[odd2]);
+      sum1  = f_mul(oddp[0],   Dptr[odd]);
+      sum1 += f_mul(oddp[32],  Dptr[odd14]);
+      sum1 += f_mul(oddp[64],  Dptr[odd12]);
+      sum1 += f_mul(oddp[96],  Dptr[odd10]);
+      sum1 += f_mul(oddp[128], Dptr[odd8]);
+      sum1 += f_mul(oddp[160], Dptr[odd6]);
+      sum1 += f_mul(oddp[192], Dptr[odd4]);
+      sum1 += f_mul(oddp[224], Dptr[odd2]);
 
       pcmptr[16] = -sum1;
     }

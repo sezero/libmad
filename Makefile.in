@@ -16,7 +16,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
-# $Id: Makefile.in,v 1.21 2000/04/23 07:05:13 rob Exp $
+# $Id: Makefile.in,v 1.22 2000/05/06 02:33:08 rob Exp $
 #
 
 ## OPTIONS ####################################################################
@@ -135,7 +135,7 @@ $(INCMAD): $(MADINCLUDES)
 .c.s:
 	$(CC) $(ARCH) $(OPTIMIZER) $(DEFINES) -S $<
 
-*.o: Makefile
+*.o *.s: Makefile
 
 again :: clean all
 
@@ -192,7 +192,7 @@ huffman.o: huffman.c config.h huffman.h
 layer12.o: layer12.c config.h fixed.h bit.h stream.h frame.h timer.h \
  layer12.h sf_table.dat qc_table.dat
 layer3.o: layer3.c config.h fixed.h bit.h stream.h frame.h timer.h \
- huffman.h layer3.h rq_table.dat imdct_l.dat imdct_s.dat
+ huffman.h layer3.h rq_table.dat imdct_s.dat
 minimad.o: minimad.c libmad.h
 stream.o: stream.c config.h bit.h stream.h
 synth.o: synth.c config.h fixed.h frame.h timer.h stream.h bit.h \
