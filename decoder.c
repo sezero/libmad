@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: decoder.c,v 1.3 2000/04/22 04:36:50 rob Exp $
+ * $Id: decoder.c,v 1.4 2000/05/09 17:36:27 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
@@ -38,6 +38,12 @@
 void mad_decoder_init(struct mad_decoder *decoder)
 {
   decoder->mode        = -1;
+
+  decoder->async.pid   = 0;
+  decoder->async.in    = -1;
+  decoder->async.out   = -1;
+
+  decoder->sync        = 0;
 
   decoder->input_func  = 0;
   decoder->filter_func = 0;

@@ -16,10 +16,10 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * Id: version.h,v 1.13 2000/03/20 03:43:04 rob Exp 
+ * Id: version.h,v 1.15 2000/05/06 22:31:23 rob Exp 
  */
 
-# define MAD_VERSION		"0.10.2 (beta)"
+# define MAD_VERSION		"0.10.3 (beta)"
 # define MAD_PUBLISHYEAR	"2000"
 # define MAD_AUTHOR		"Robert Leslie"
 # define MAD_EMAIL		"rob@mars.org"
@@ -554,7 +554,7 @@ void mad_synth_frame(struct mad_synth *, struct mad_frame const *);
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * Id: decoder.h,v 1.2 2000/03/19 06:43:38 rob Exp 
+ * Id: decoder.h,v 1.3 2000/05/09 17:36:27 rob Exp 
  */
 
 # ifndef DECODER_H
@@ -565,7 +565,6 @@ struct mad_decoder {
   int mode;
 
   struct {
-    int mode;
     int pid;
     int in;
     int out;

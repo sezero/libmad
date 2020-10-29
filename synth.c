@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: synth.c,v 1.8 2000/05/06 02:33:08 rob Exp $
+ * $Id: synth.c,v 1.10 2000/05/09 13:02:53 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
@@ -56,7 +56,7 @@ void mad_synth_init(struct mad_synth *synth)
 }
 
 # ifdef SSO_FAST
-#  define shift(x)  ((x) >> 16)
+#  define shift(x)  ((x) >> 14)
 # else
 #  define shift(x)  (x)
 # endif
@@ -482,15 +482,20 @@ void matrixing(mad_fixed_t lo[16], mad_fixed_t hi[16],
 # endif
 }
 
+# undef shift
 # ifdef SSO_FAST
-#  define f_mul(x, y)  ((x) * (y))
+#  define f_mul(x, y)	((x) * (y))
+#  define shift(x)	((x) >> 2)
 # elif defined(FPM_MACRO)
-#  undef mad_f_scale64
+#  undef  mad_f_scale64
 #  define mad_f_scale64(hi, lo)	((mad_fixed_t)  \
                                  (((mad_fixed64hi_t) (hi) << 16) |  \
                                   ((mad_fixed64lo_t) (lo) >> 16)))
+#  define f_mul(x, y)	mad_f_mul((x), (y))
+#  define shift(x)	(x)
 # else
-#  define f_mul(x, y)  (mad_f_mul((x), (y)) << 12)
+#  define f_mul(x, y)	(mad_f_mul((x), (y)) << 12)
+#  define shift(x)	(x)
 # endif
 
 /*
@@ -575,7 +580,7 @@ void mad_synth_frame(struct mad_synth *synth, struct mad_frame const *frame)
       sum1 -= f_mul(even2p[192], Dptr[odd4]);
       sum1 -= f_mul(even2p[224], Dptr[odd2]);
 
-      pcmptr[0] = sum1;
+      pcmptr[0] = shift(sum1);
       ++evenp;
 
       for (sb = 1; sb < 16; ++sb) {
@@ -617,8 +622,8 @@ void mad_synth_frame(struct mad_synth *synth, struct mad_frame const *frame)
 	sum1 -= f_mul(oddp[224],  Dptr[     odd2]);
 	sum2 += f_mul(oddp[224],  Dptr[15 - odd2]);
 
-	pcmptr[     sb] = sum1;
-	pcmptr[32 - sb] = sum2;
+	pcmptr[     sb] = shift(sum1);
+	pcmptr[32 - sb] = shift(sum2);
 
 	++evenp, ++oddp;
       }
@@ -634,7 +639,7 @@ void mad_synth_frame(struct mad_synth *synth, struct mad_frame const *frame)
       sum1 += f_mul(oddp[192], Dptr[odd4]);
       sum1 += f_mul(oddp[224], Dptr[odd2]);
 
-      pcmptr[16] = -sum1;
+      pcmptr[16] = shift(-sum1);
     }
   }
 

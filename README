@@ -2,7 +2,7 @@
  mad - MPEG audio decoder
  Copyright (C) 2000 Robert Leslie
 
- $Id: README,v 1.18 2000/05/06 02:51:20 rob Exp $
+ $Id: README,v 1.19 2000/05/13 02:38:51 rob Exp $
 
 ===============================================================================
 
@@ -42,6 +42,7 @@ ABOUT THE CODE
 
     - an Open Sound System interface module
     - a Sun audio interface module
+    - a Win32 audio interface module
     - a WAV file output module
     - a raw PCM output module
     - a hex output module (for debugging and compliance testing)

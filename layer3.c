@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: layer3.c,v 1.22 2000/05/06 02:33:08 rob Exp $
+ * $Id: layer3.c,v 1.23 2000/05/06 22:31:23 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
@@ -648,9 +648,6 @@ int III_huffdecode(struct mad_bitptr *ptr, signed short is[576],
 
       cachesz -= pair->value.hlen;
 
-      x = pair->value.x;
-      y = pair->value.y;
-
       /* x (0..14) */
 
       if (cachesz < 14) {
@@ -659,6 +656,7 @@ int III_huffdecode(struct mad_bitptr *ptr, signed short is[576],
 	bits_left -= 16;
       }
 
+      x = pair->value.x;
       if (linbits && x == 15) {
 	x += MASK(bitcache, cachesz, linbits);
 	cachesz -= linbits;
@@ -670,6 +668,8 @@ int III_huffdecode(struct mad_bitptr *ptr, signed short is[576],
       if (x && MASK1BIT(bitcache, cachesz--))
 	x = -x;
 
+      is[l++] = x;
+
       /* y (0..14) */
 
       if (cachesz < 14) {
@@ -678,6 +678,7 @@ int III_huffdecode(struct mad_bitptr *ptr, signed short is[576],
 	bits_left -= 16;
       }
 
+      y = pair->value.y;
       if (linbits && y == 15) {
 	y += MASK(bitcache, cachesz, linbits);
 	cachesz -= linbits;
@@ -689,7 +690,6 @@ int III_huffdecode(struct mad_bitptr *ptr, signed short is[576],
       if (y && MASK1BIT(bitcache, cachesz--))
 	y = -y;
 
-      is[l++] = x;
       is[l++] = y;
     }
   }
@@ -735,34 +735,36 @@ int III_huffdecode(struct mad_bitptr *ptr, signed short is[576],
 
       cachesz -= quad->value.hlen;
 
-      v = quad->value.v;
-      w = quad->value.w;
-      x = quad->value.x;
-      y = quad->value.y;
-
       /* v (0..1) */
 
+      v = quad->value.v;
       if (v && MASK1BIT(bitcache, cachesz--))
 	v = -v;
 
+      is[l++] = v;
+
       /* w (0..1) */
 
+      w = quad->value.w;
       if (w && MASK1BIT(bitcache, cachesz--))
 	w = -w;
 
+      is[l++] = w;
+
       /* x (0..1) */
 
+      x = quad->value.x;
       if (x && MASK1BIT(bitcache, cachesz--))
 	x = -x;
 
+      is[l++] = x;
+
       /* y (0..1) */
 
+      y = quad->value.y;
       if (y && MASK1BIT(bitcache, cachesz--))
 	y = -y;
 
-      is[l++] = v;
-      is[l++] = w;
-      is[l++] = x;
       is[l++] = y;
 
       ++count1;

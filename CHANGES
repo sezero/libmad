@@ -2,9 +2,19 @@
  mad - MPEG audio decoder
  Copyright (C) 2000 Robert Leslie
 
- $Id: CHANGES,v 1.10 2000/05/06 02:42:47 rob Exp $
+ $Id: CHANGES,v 1.12 2000/05/13 02:38:51 rob Exp $
 
 ===============================================================================
+
+Version 0.10.3 (beta)
+
+  * Improved SSO output quality.
+
+  * Made portable to cygwin.
+
+  * Wrote new Win32 audio interface module.
+
+  * Localized memory references in III_huffdecode() for better performance.
 
 Version 0.10.2 (beta)
 
