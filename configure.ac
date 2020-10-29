@@ -23,12 +23,12 @@ dnl Process this file with autoconf to produce a configure script.
 
 AC_INIT([MPEG Audio Decoder], [0.15.1b], [support@underbit.com], [libmad])
 AC_PREREQ(2.53)
-
+AC_CONFIG_AUX_DIR([autotools])
+AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_SRCDIR([decoder.h])
+AM_MAINTAINER_MODE
 
 AM_INIT_AUTOMAKE
-
-AM_CONFIG_HEADER([config.h])
 
 dnl System type.
 
@@ -38,6 +38,12 @@ dnl Checks for programs.
 
 AC_PROG_CC
 AM_PROG_AS
+AC_PROG_INSTALL
+AC_PROG_LN_S
+AC_PROG_MAKE_SET
+#LT_INIT([win32-dll])
+AC_LIBTOOL_WIN32_DLL
+AC_PROG_LIBTOOL
 
 if test "$GCC" = yes
 then
@@ -48,23 +54,26 @@ then
 		    CPPFLAGS="$CPPFLAGS -mno-cygwin"
 		    LDFLAGS="$LDFLAGS -mno-cygwin"
 		    ;;
+		*)
+		    LDFLAGS="$LDFLAGS -no-undefined"
+		    ;;
 	    esac
     esac
-
-dnl    case "$host" in
-dnl	*-*-cygwin* | *-*-mingw*)
-dnl	    LDFLAGS="$LDFLAGS -no-undefined -mdll"
-dnl	    ;;
-dnl    esac
 fi
 
-dnl Support for libtool.
+AC_C_CONST
+AC_C_INLINE
+AC_C_BIGENDIAN
 
-dnl AC_DISABLE_SHARED
-dnl AC_LIBTOOL_WIN32_DLL
-AC_PROG_LIBTOOL
+AC_TYPE_SIZE_T
+AC_TYPE_PID_T
 
-AC_SUBST(LIBTOOL_DEPS)
+AC_CHECK_SIZEOF(int, 2)
+AC_CHECK_SIZEOF(long, 4)
+AC_CHECK_SIZEOF(long long, 8)
+
+AC_HEADER_STDC
+AC_HEADER_SYS_WAIT
 
 dnl Compiler options.
 
@@ -140,7 +149,7 @@ then
     case "$optimize" in
 	-O|"-O "*)
 	    optimize="-O"
-	    optimize="$optimize -fforce-mem"
+	    : #x optimize="$optimize -fforce-mem"
 	    optimize="$optimize -fforce-addr"
 	    : #x optimize="$optimize -finline-functions"
 	    : #- optimize="$optimize -fstrength-reduce"
@@ -204,20 +213,7 @@ esac
 
 dnl Checks for header files.
 
-AC_HEADER_STDC
-AC_HEADER_SYS_WAIT
 AC_CHECK_HEADERS(assert.h limits.h unistd.h sys/types.h fcntl.h errno.h)
-
-dnl Checks for typedefs, structures, and compiler characteristics.
-
-AC_C_CONST
-AC_C_INLINE
-AC_C_BIGENDIAN
-AC_TYPE_PID_T
-
-AC_CHECK_SIZEOF(int, 2)
-AC_CHECK_SIZEOF(long, 4)
-AC_CHECK_SIZEOF(long long, 8)
 
 dnl Checks for library functions.
 
@@ -429,6 +425,7 @@ test -n "$profile"  && CFLAGS="$CFLAGS $profile" LDFLAGS="$LDFLAGS $profile"
 dnl LTLIBOBJS=`echo "$LIBOBJS" | sed -e 's/\.o/.lo/g'`
 dnl AC_SUBST(LTLIBOBJS)
 
+AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([Makefile msvc++/Makefile  \
 	libmad.list])
 AC_OUTPUT
