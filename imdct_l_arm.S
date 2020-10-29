@@ -22,7 +22,11 @@
 *
 *****************************************************************************
 *
-* $Id: imdct_l_arm.S,v 1.5 2000/09/17 18:52:18 rob Exp $
+* $Id: imdct_l_arm.S,v 1.6 2000/09/24 17:49:38 rob Exp $
+*
+* 2000/09/20:  Robert Leslie <rob@mars.org>
+*   - Added a global symbol with leading underscore per suggestion of
+*     Simon Burge to support linking with the a.out format.
 *
 * 2000/09/15:  Robert Leslie <rob@mars.org>
 *   - Fixed a small bug where flags were changed before a conditional branch.
@@ -198,8 +202,10 @@
     .align
 
     .global III_imdct_l
+    .global _III_imdct_l
 
 III_imdct_l:
+_III_imdct_l:
 
     stmdb   sp!, { r2, r4 - r11, lr }   @ all callee saved regs, plus arg3
 

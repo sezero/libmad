@@ -1,8 +1,5 @@
 
 libmad:
-  - fix sync discovery/recovery
-  - fix free format fixed bitrate discovery
-  - speed up mad_bit_read()
   - MPEG 2 MC, 2.5?
   - parse system streams
   - function documentation, general docs
@@ -32,6 +29,7 @@ madplay:
   - further ID3v2 support
   - move static vars from audio_* to audio control union
   - resampling with bandlimited interpolation
+  - rewrite filter/output system
 
 madtime:
   - collect directory names
@@ -40,4 +38,5 @@ madtime:
 ID3v2:
   - Unicode support
   - make into library
+  - support more frame types
 

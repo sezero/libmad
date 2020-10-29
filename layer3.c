@@ -16,15 +16,11 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: layer3.c,v 1.9 2000/09/17 03:21:12 rob Exp $
+ * $Id: layer3.c,v 1.10 2000/09/24 17:49:38 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
 #  include "config.h"
-# endif
-
-# ifdef DEBUG
-#  include <stdio.h>
 # endif
 
 # include <stdlib.h>

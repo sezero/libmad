@@ -2,7 +2,7 @@
  mad - MPEG audio decoder
  Copyright (C) 2000 Robert Leslie
 
- $Id: CREDITS,v 1.3 2000/09/16 04:28:20 rob Exp $
+ $Id: CREDITS,v 1.6 2000/09/24 21:22:36 rob Exp $
 
 ===============================================================================
 
@@ -15,6 +15,12 @@ AUTHOR
 CONTRIBUTORS
 
   Significant contributions have been incorporated with thanks to:
+
+      Simon Burge <simonb@wasabisystems.com>
+        2000/09/19: audio_sun.c
+          - Pointed out endian assumption problem.
+        2000/09/20: libmad/imdct_l_arm.S
+          - Suggested patch for a.out compatibility.
 
       Andre McCurdy <armccurdy@yahoo.co.uk>
         2000/08/10: libmad/imdct_l_arm.S
@@ -35,6 +41,9 @@ CONTRIBUTORS
             multiplication result, rounding and scaling with 3 instructions.
         2000/09/09: libmad/imdct_l_arm.S
           - Optimized rounding + scaling operations.
+        2000/09/17: libmad/synth.c
+          - Changed D[] run-time shifts to compile-time.
+          - Modified synthesis for better multiply/accumulate code output.
 
 ===============================================================================
 

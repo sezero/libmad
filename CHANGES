@@ -2,9 +2,30 @@
  mad - MPEG audio decoder
  Copyright (C) 2000 Robert Leslie
 
- $Id: CHANGES,v 1.29 2000/09/17 18:49:32 rob Exp $
+ $Id: CHANGES,v 1.31 2000/09/24 21:22:36 rob Exp $
 
 ===============================================================================
+
+Version 0.11.4 (beta)
+
+  * Fixed free format bitrate discovery.
+
+  * Added Sun/NeXT audio file output module (audio_au.c).
+
+  * Added 32-bit (really 24-bit) output support to OSS module.
+
+  * Changed the timer implementation and extended its interface.
+
+  * Relaxed output sample frequency match requirement.
+
+  * Fixed endian assumption problem in audio_sun.c.
+
+  * Integrated Nicolas Pitre's patch for pre-shifting at compile-time and
+    for better multiply/accumulate code output.
+
+  * Applied Simon Burge's patch to imdct_l_arm.S for a.out compatibility.
+
+  * Added -mtune=strongarm for all ARM targets.
 
 Version 0.11.3 (beta)
 
