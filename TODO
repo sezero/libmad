@@ -23,8 +23,9 @@ libmad Layer III:
   - MPEG 2.5 8000 Hz sf bands? mixed blocks?
   - Andre's patches
   - stereo->mono conversion optimization?
+  - enable frame-at-a-time decoding
 
-libid3:
+libid3tag:
   - finish file API
   - fix API headers
 

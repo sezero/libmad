@@ -17,12 +17,12 @@ dnl You should have received a copy of the GNU General Public License
 dnl along with this program; if not, write to the Free Software
 dnl Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 dnl
-AC_REVISION([$Id: configure.in,v 1.26 2001/10/18 08:11:43 rob Exp $])dnl
+AC_REVISION([$Id: configure.in,v 1.27 2001/10/19 23:20:56 rob Exp $])dnl
 
 dnl Process this file with autoconf to produce a configure script.
 
 AC_INIT(decoder.h)
-AM_INIT_AUTOMAKE(libmad, 0.14.0b)
+AM_INIT_AUTOMAKE(libmad, 0.14.1b)
 
 AM_CONFIG_HEADER(config.h)
 

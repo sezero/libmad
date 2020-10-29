@@ -19,7 +19,7 @@
 ## If you would like to negotiate alternate licensing terms, you may do
 ## so by contacting the author: Robert Leslie <rob@mars.org>
 ##
-## $Id: Makefile.am,v 1.10 2001/10/17 19:18:59 rob Exp $
+## $Id: Makefile.am,v 1.11 2001/10/20 22:16:22 rob Exp $
 ##
 
 ## Process this file with automake to produce Makefile.in
@@ -91,11 +91,14 @@ CLEANFILES =		mad.h
 ##   6. If any interfaces have been removed since the last public release,
 ##      then set AGE to 0.
 
-# The API for MAD is not yet stable enough to use versioning, so we use
-# release numbering instead.
+version_current =	0
+version_revision =	0
+version_age =		0
 
-libmad_la_LDFLAGS =		-release $(VERSION)
-##				-version-info 0:0:0
+version_info =		$(version_current):$(version_revision):$(version_age)
+
+libmad_la_LDFLAGS =		-version-info $(version_info)
+##				-release $(VERSION)
 
 mad.h: config.status config.h Makefile.am  \
 		$(srcdir)/COPYRIGHT $(srcdir)/mad.h.sed $(exported_headers)

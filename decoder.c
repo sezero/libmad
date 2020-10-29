@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: decoder.c,v 1.14 2001/10/17 19:14:32 rob Exp $
+ * $Id: decoder.c,v 1.15 2001/10/20 22:16:22 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
@@ -45,7 +45,8 @@
 # include "decoder.h"
 
 void mad_decoder_init(struct mad_decoder *decoder, void *data,
-		      enum mad_flow (*input_func)(void *, struct mad_stream *),
+		      enum mad_flow (*input_func)(void *,
+						  struct mad_stream *),
 		      enum mad_flow (*header_func)(void *,
 						   struct mad_header const *),
 		      enum mad_flow (*filter_func)(void *,
@@ -54,7 +55,8 @@ void mad_decoder_init(struct mad_decoder *decoder, void *data,
 		      enum mad_flow (*output_func)(void *,
 						   struct mad_header const *,
 						   struct mad_pcm *),
-		      enum mad_flow (*error_func)(void *, struct mad_stream *,
+		      enum mad_flow (*error_func)(void *,
+						  struct mad_stream *,
 						  struct mad_frame *),
 		      enum mad_flow (*message_func)(void *,
 						    void *, unsigned int *))

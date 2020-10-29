@@ -2,9 +2,32 @@
  mad - MPEG audio decoder
  Copyright (C) 2000-2001 Robert Leslie
 
- $Id: CHANGES,v 1.58 2001/10/17 22:07:13 rob Exp $
+ $Id: CHANGES,v 1.61 2001/10/23 03:26:12 rob Exp $
 
 ===============================================================================
+
+Version 0.14.1 (beta)
+
+  * Updated config.guess and config.sub to latest upstream versions.
+
+  * Enabled libtool versioning rather than release numbering.
+
+  * Renamed `libid3' to `libid3tag' and enabled installation as a separate
+    library.
+
+  * Enabled the plug-in for Winamp to use libid3tag.
+
+  * Fixed a NetBSD compatibility issue in audio_sun.
+
+  * Fixed a FreeBSD compatibility issue in audio_oss.
+
+  * Modified the audio_null output module to compute peak amplitude.
+
+  * Changed the peak amplitude computation to avoid evaluating log10(0).
+
+  * Improved the documentation in minimad.c.
+
+  * Several other small fixes.
 
 Version 0.14.0 (beta)
 
