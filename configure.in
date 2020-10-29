@@ -17,12 +17,12 @@ dnl You should have received a copy of the GNU General Public License
 dnl along with this program; if not, write to the Free Software
 dnl Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 dnl
-AC_REVISION([$Id: configure.in,v 1.10 2000/11/16 10:51:10 rob Exp $])dnl
+AC_REVISION([$Id: configure.in,v 1.12 2000/11/20 04:57:46 rob Exp $])dnl
 
 dnl Process this file with autoconf to produce a configure script.
 
 AC_INIT(decoder.h)
-AM_INIT_AUTOMAKE(libmad, 0.12.1b)
+AM_INIT_AUTOMAKE(libmad, 0.12.2b)
 
 AM_CONFIG_HEADER(config.h)
 
@@ -79,8 +79,29 @@ CFLAGS=`echo ".$CFLAGS" |  \
 
 if test -n "$OPTIMIZER" && test "$GCC" = yes
 then
-    OPTIMIZER="$OPTIMIZER"
-    # -funroll-loops -finline-functions
+    OPTIMIZER="$OPTIMIZER -fforce-mem"
+    OPTIMIZER="$OPTIMIZER -fforce-addr"
+    OPTIMIZER="$OPTIMIZER -finline-functions"
+    OPTIMIZER="$OPTIMIZER -fstrength-reduce"
+    OPTIMIZER="$OPTIMIZER -fthread-jumps"
+    OPTIMIZER="$OPTIMIZER -fcse-follow-jumps"
+    OPTIMIZER="$OPTIMIZER -fcse-skip-blocks"
+    : #x OPTIMIZER="$OPTIMIZER -frerun-cse-after-loop"
+    : #x OPTIMIZER="$OPTIMIZER -frerun-loop-opt"
+    : #x OPTIMIZER="$OPTIMIZER -fgcse"
+    OPTIMIZER="$OPTIMIZER -fexpensive-optimizations"
+    OPTIMIZER="$OPTIMIZER -fregmove"
+    : #* OPTIMIZER="$OPTIMIZER -fdelayed-branch"
+    : #x OPTIMIZER="$OPTIMIZER -fschedule-insns"
+    OPTIMIZER="$OPTIMIZER -fschedule-insns2"
+    : #? OPTIMIZER="$OPTIMIZER -ffunction-sections"
+    : #? OPTIMIZER="$OPTIMIZER -fcaller-saves"
+    : #> OPTIMIZER="$OPTIMIZER -funroll-loops"
+    : #> OPTIMIZER="$OPTIMIZER -funroll-all-loops"
+    : #x OPTIMIZER="$OPTIMIZER -fmove-all-movables"
+    : #x OPTIMIZER="$OPTIMIZER -freduce-all-givs"
+    : #? OPTIMIZER="$OPTIMIZER -fstrict-aliasing"
+    : #* OPTIMIZER="$OPTIMIZER -fstructure-noalias"
 fi
 
 dnl Checks for header files.

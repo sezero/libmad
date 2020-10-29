@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: layer3.c,v 1.14 2000/11/17 06:17:53 rob Exp $
+ * $Id: layer3.c,v 1.15 2000/11/20 04:57:46 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
@@ -89,8 +89,8 @@ struct sideinfo {
  */
 static
 struct {
-  unsigned short slen1;
-  unsigned short slen2;
+  unsigned char slen1;
+  unsigned char slen2;
 } const sflen[16] = {
   { 0, 0 }, { 0, 1 }, { 0, 2 }, { 0, 3 },
   { 3, 0 }, { 1, 1 }, { 1, 2 }, { 1, 3 },
@@ -103,7 +103,7 @@ struct {
  * derived from section 2.4.3.2 of ISO/IEC 13818-3
  */
 static
-unsigned short const nsfb_table[6][3][4] = {
+unsigned char const nsfb_table[6][3][4] = {
   { {  6,  5,  5, 5 },
     {  9,  9,  9, 9 },
     {  6,  9,  9, 9 } },
@@ -165,7 +165,7 @@ unsigned short const sfwidth_s[6][13] = {
  * derived from Table B.6 of ISO/IEC 11172-3
  */
 static
-unsigned short const pretab[22] = {
+unsigned char const pretab[22] = {
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 3, 3, 3, 2, 0
 };
 
@@ -412,7 +412,7 @@ unsigned int III_lsf_scalefactors(struct mad_bitptr *ptr, int mode_extension,
 {
   struct mad_bitptr start;
   unsigned int scalefac_compress, index, slen[4], part, n, sfb, w;
-  unsigned short const *nsfb;
+  unsigned char const *nsfb;
   unsigned short scalefac[36];
 
   start = *ptr;
@@ -735,7 +735,7 @@ enum mad_error III_huffdecode(struct mad_bitptr *ptr, signed short is[576],
 {
   struct mad_bitptr peek;
   signed int bits_left, cachesz;
-  unsigned int l;
+  signed short *isptr;
   unsigned long bitcache;
 
   bits_left = (signed) channel->part2_3_length - (signed) part2_length;
@@ -752,7 +752,7 @@ enum mad_error III_huffdecode(struct mad_bitptr *ptr, signed short is[576],
   bitcache   = mad_bit_read(&peek, cachesz);
   bits_left -= cachesz;
 
-  l = 0;
+  isptr = &is[0];
 
   /* big_values */
   {
@@ -856,7 +856,7 @@ enum mad_error III_huffdecode(struct mad_bitptr *ptr, signed short is[576],
       if (x && MASK1BIT(bitcache, cachesz--))
 	x = -x;
 
-      is[l++] = x;
+      *isptr++ = x;
 
       /* y (0..14) */
 
@@ -875,7 +875,7 @@ enum mad_error III_huffdecode(struct mad_bitptr *ptr, signed short is[576],
       if (y && MASK1BIT(bitcache, cachesz--))
 	y = -y;
 
-      is[l++] = y;
+      *isptr++ = y;
     }
   }
 
@@ -885,8 +885,8 @@ enum mad_error III_huffdecode(struct mad_bitptr *ptr, signed short is[576],
 	    -(cachesz + bits_left));
 # endif
 
-    is[l - 2] = 0;
-    is[l - 1] = 0;
+    isptr[-2] = 0;
+    isptr[-1] = 0;
 
     channel->count1 = 0;
   }
@@ -896,7 +896,7 @@ enum mad_error III_huffdecode(struct mad_bitptr *ptr, signed short is[576],
 
     table = mad_huff_quad_table[channel->flags & count1table_select];
 
-    while (cachesz + bits_left > 0 && l <= 572) {
+    while (cachesz + bits_left > 0 && isptr <= &is[572]) {
       union huffquad const *quad;
       signed int v, w, x, y;
 
@@ -926,7 +926,7 @@ enum mad_error III_huffdecode(struct mad_bitptr *ptr, signed short is[576],
       if (v && MASK1BIT(bitcache, cachesz--))
 	v = -v;
 
-      is[l++] = v;
+      *isptr++ = v;
 
       /* w (0..1) */
 
@@ -934,7 +934,7 @@ enum mad_error III_huffdecode(struct mad_bitptr *ptr, signed short is[576],
       if (w && MASK1BIT(bitcache, cachesz--))
 	w = -w;
 
-      is[l++] = w;
+      *isptr++ = w;
 
       /* x (0..1) */
 
@@ -942,7 +942,7 @@ enum mad_error III_huffdecode(struct mad_bitptr *ptr, signed short is[576],
       if (x && MASK1BIT(bitcache, cachesz--))
 	x = -x;
 
-      is[l++] = x;
+      *isptr++ = x;
 
       /* y (0..1) */
 
@@ -950,7 +950,7 @@ enum mad_error III_huffdecode(struct mad_bitptr *ptr, signed short is[576],
       if (y && MASK1BIT(bitcache, cachesz--))
 	y = -y;
 
-      is[l++] = y;
+      *isptr++ = y;
 
       ++count1;
     }
@@ -964,10 +964,10 @@ enum mad_error III_huffdecode(struct mad_bitptr *ptr, signed short is[576],
       /* technically the bitstream is misformatted, but apparently
 	 some encoders are just a bit sloppy with stuffing bits */
 
-      is[l - 4] = 0;
-      is[l - 3] = 0;
-      is[l - 2] = 0;
-      is[l - 1] = 0;
+      isptr[-4] = 0;
+      isptr[-3] = 0;
+      isptr[-2] = 0;
+      isptr[-1] = 0;
 
       --count1;
     }
@@ -983,11 +983,11 @@ enum mad_error III_huffdecode(struct mad_bitptr *ptr, signed short is[576],
 # endif
 
   /* rzero */
-  while (l < 576) {
-    is[l + 0] = 0;
-    is[l + 1] = 0;
+  while (isptr < &is[576]) {
+    isptr[0] = 0;
+    isptr[1] = 0;
 
-    l += 2;
+    isptr += 2;
   }
 
   return 0;
@@ -1510,6 +1510,7 @@ void III_imdct_l(mad_fixed_t const X[18], mad_fixed_t z[36],
 		 unsigned int block_type)
 {
   unsigned int i;
+  mad_fixed_t const *l, *s;
 
   /* IMDCT */
 
@@ -1517,23 +1518,28 @@ void III_imdct_l(mad_fixed_t const X[18], mad_fixed_t z[36],
 
   /* windowing */
 
+  l = window_l;
+
   switch (block_type) {
   case 0:  /* normal window */
-    for (i =  0; i < 36; ++i) z[i] = mad_f_mul(z[i], window_l[i]);
+    for (i =  0; i < 36; ++i) *z = mad_f_mul(*z, *l++), ++z;
     break;
 
   case 1:  /* start block */
-    for (i =  0; i < 18; ++i) z[i] = mad_f_mul(z[i], window_l[i]);
+    s = window_s + 6;
+    for (i =  0; i < 18; ++i) z[i] = mad_f_mul(z[i], *l++);
     /*  (i = 18; i < 24; ++i) z[i] unchanged */
-    for (i = 24; i < 30; ++i) z[i] = mad_f_mul(z[i], window_s[i - 18]);
+    for (i = 24; i < 30; ++i) z[i] = mad_f_mul(z[i], *s++);
     for (i = 30; i < 36; ++i) z[i] = 0;
     break;
 
   case 3:  /* stop block */
+    l += 18;
+    s  = window_s;
     for (i =  0; i <  6; ++i) z[i] = 0;
-    for (i =  6; i < 12; ++i) z[i] = mad_f_mul(z[i], window_s[i - 6]);
+    for (i =  6; i < 12; ++i) z[i] = mad_f_mul(z[i], *s++);
     /*  (i = 12; i < 18; ++i) z[i] unchanged */
-    for (i = 18; i < 36; ++i) z[i] = mad_f_mul(z[i], window_l[i]);
+    for (i = 18; i < 36; ++i) z[i] = mad_f_mul(z[i], *l++);
     break;
   }
 }
@@ -1566,12 +1572,12 @@ void III_imdct_s(mad_fixed_t const X[18], mad_fixed_t z[36])
 
   /* overlapping and concatenation */
 
-  for (i =  0; i <  6; ++i) z[i] = 0;
-  for (i =  6; i < 12; ++i) z[i] = y[0][i - 6];
-  for (i = 12; i < 18; ++i) z[i] = y[0][i - 6] + y[1][i - 12];
-  for (i = 18; i < 24; ++i) z[i] =               y[1][i - 12] + y[2][i - 18];
-  for (i = 24; i < 30; ++i) z[i] =                              y[2][i - 18];
-  for (i = 30; i < 36; ++i) z[i] = 0;
+  for (i =  0; i <  6; ++i) *z++ = 0;
+  for (i =  6; i < 12; ++i) *z++ = y[0][i - 6];
+  for (i = 12; i < 18; ++i) *z++ = y[0][i - 6] + y[1][i - 12];
+  for (i = 18; i < 24; ++i) *z++ =               y[1][i - 12] + y[2][i - 18];
+  for (i = 24; i < 30; ++i) *z++ =                              y[2][i - 18];
+  for (i = 30; i < 36; ++i) *z++ = 0;
 }
 
 /*

@@ -2,9 +2,22 @@
  mad - MPEG audio decoder
  Copyright (C) 2000 Robert Leslie
 
- $Id: CHANGES,v 1.36 2000/11/16 10:51:04 rob Exp $
+ $Id: CHANGES,v 1.38 2000/11/20 04:56:56 rob Exp $
 
 ===============================================================================
+
+Version 0.12.2 (beta)
+
+  * Rearranged the synthesis polyphase filterbank memory vector for better
+    locality of reference, and rewrote mad_synth_frame() to accommodate,
+    resulting in improved performance.
+
+  * Discovered a combination of compiler optimization flags that further
+    improve performance.
+
+  * Changed some array references in layer3.c to pointer derefs.
+
+  * Fixed another FreeBSD sound compatibility problem in audio_oss.c.
 
 Version 0.12.1 (beta)
 

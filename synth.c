@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: synth.c,v 1.10 2000/11/16 10:51:10 rob Exp $
+ * $Id: synth.c,v 1.11 2000/11/18 12:38:44 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
@@ -35,7 +35,7 @@
  */
 void mad_synth_init(struct mad_synth *synth)
 {
-  synth->slot = 0;
+  synth->phase = 0;
   mad_synth_mute(synth);
 }
 
@@ -82,7 +82,8 @@ void mad_synth_init(struct mad_synth *synth)
  * DESCRIPTION:	perform fast in[32]->out[32] DCT
  */
 static
-void dct32(mad_fixed_t const in[32], mad_fixed_t lo[16], mad_fixed_t hi[16])
+void dct32(mad_fixed_t const in[32], unsigned int slot,
+	   mad_fixed_t lo[16][8], mad_fixed_t hi[16][8])
 {
   mad_fixed_t t0,   t1,   t2,   t3,   t4,   t5,   t6,   t7;
   mad_fixed_t t8,   t9,   t10,  t11,  t12,  t13,  t14,  t15;
@@ -364,43 +365,44 @@ void dct32(mad_fixed_t const in[32], mad_fixed_t lo[16], mad_fixed_t hi[16])
 
   /* the output order is convoluted to simplify later processing */
 
-  /*  0 */ hi[15] = SHIFT(t113 + t114);
-  /*  1 */ hi[14] = SHIFT(t32);
-  /*  2 */ hi[13] = SHIFT(t58);
-  /*  3 */ hi[12] = SHIFT(t49);
-  /*  4 */ hi[11] = SHIFT(t93);
-  /*  5 */ hi[10] = SHIFT(t68);
-  /*  6 */ hi[9]  = SHIFT(t82);
-  /*  7 */ hi[8]  = SHIFT(t77);
-  /*  8 */ hi[7]  = SHIFT(t143);
-  /*  9 */ hi[6]  = SHIFT(t88);
-  /* 10 */ hi[5]  = SHIFT(t105);
-  /* 11 */ hi[4]  = SHIFT(t99);
-  /* 12 */ hi[3]  = SHIFT(t127);
-  /* 13 */ hi[2]  = SHIFT(t112);
-  /* 14 */ hi[1]  = SHIFT(t120);
-  /* 15 */ hi[0]  = SHIFT(t117);
+  /*  0 */ hi[15][slot] = SHIFT(t113 + t114);
+  /*  1 */ hi[14][slot] = SHIFT(t32);
+  /*  2 */ hi[13][slot] = SHIFT(t58);
+  /*  3 */ hi[12][slot] = SHIFT(t49);
+  /*  4 */ hi[11][slot] = SHIFT(t93);
+  /*  5 */ hi[10][slot] = SHIFT(t68);
+  /*  6 */ hi[ 9][slot] = SHIFT(t82);
+  /*  7 */ hi[ 8][slot] = SHIFT(t77);
+  /*  8 */ hi[ 7][slot] = SHIFT(t143);
+  /*  9 */ hi[ 6][slot] = SHIFT(t88);
+  /* 10 */ hi[ 5][slot] = SHIFT(t105);
+  /* 11 */ hi[ 4][slot] = SHIFT(t99);
+  /* 12 */ hi[ 3][slot] = SHIFT(t127);
+  /* 13 */ hi[ 2][slot] = SHIFT(t112);
+  /* 14 */ hi[ 1][slot] = SHIFT(t120);
+  /* 15 */ hi[ 0][slot] = SHIFT(t117);
 
-  /* 16 */ lo[0]  = SHIFT(mad_f_mul(t113 - t114, costab16));
-  /* 17 */ lo[1]  = SHIFT(t124);
-  /* 18 */ lo[2]  = SHIFT(t135);
-  /* 19 */ lo[3]  = SHIFT(t131);
-  /* 20 */ lo[4]  = SHIFT(t160);
-  /* 21 */ lo[5]  = SHIFT(t140);
-  /* 22 */ lo[6]  = SHIFT(t151);
-  /* 23 */ lo[7]  = SHIFT(t147);
-  /* 24 */ lo[8]  = SHIFT((mad_f_mul(t141 - t142, costab16) << 1) - t143);
-  /* 25 */ lo[9]  = SHIFT(t156);
-  /* 26 */ lo[10] = SHIFT(t170);
-  /* 27 */ lo[11] = SHIFT(t165);
-  /* 28 */ lo[12] = SHIFT((((mad_f_mul(t157 - t158, costab16) << 1) -
-			    t159) << 1) - t160);
-  /* 29 */ lo[13] = SHIFT(t176);
-  /* 30 */ lo[14] = SHIFT((((((mad_f_mul(t166 - t167, costab16) << 1) -
-			      t168) << 1) - t169) << 1) - t170);
-  /* 31 */ lo[15] = SHIFT((((((((mad_f_mul(t171 - t172, costab16) << 1) -
-				t173) << 1) - t174) << 1) -
-			    t175) << 1) - t176);
+  /* 16 */ lo[ 0][slot] = SHIFT(mad_f_mul(t113 - t114, costab16));
+  /* 17 */ lo[ 1][slot] = SHIFT(t124);
+  /* 18 */ lo[ 2][slot] = SHIFT(t135);
+  /* 19 */ lo[ 3][slot] = SHIFT(t131);
+  /* 20 */ lo[ 4][slot] = SHIFT(t160);
+  /* 21 */ lo[ 5][slot] = SHIFT(t140);
+  /* 22 */ lo[ 6][slot] = SHIFT(t151);
+  /* 23 */ lo[ 7][slot] = SHIFT(t147);
+  /* 24 */ lo[ 8][slot] = SHIFT((mad_f_mul(t141 - t142, costab16) << 1) -
+				t143);
+  /* 25 */ lo[ 9][slot] = SHIFT(t156);
+  /* 26 */ lo[10][slot] = SHIFT(t170);
+  /* 27 */ lo[11][slot] = SHIFT(t165);
+  /* 28 */ lo[12][slot] = SHIFT((((mad_f_mul(t157 - t158, costab16) << 1) -
+				  t159) << 1) - t160);
+  /* 29 */ lo[13][slot] = SHIFT(t176);
+  /* 30 */ lo[14][slot] = SHIFT((((((mad_f_mul(t166 - t167, costab16) << 1) -
+				    t168) << 1) - t169) << 1) - t170);
+  /* 31 */ lo[15][slot] = SHIFT((((((((mad_f_mul(t171 - t172, costab16) << 1) -
+				      t173) << 1) - t174) << 1) -
+				  t175) << 1) - t176);
 
   /*
    * Totals:
@@ -445,126 +447,122 @@ mad_fixed_t const D[17][16] = {
  */
 void mad_synth_frame(struct mad_synth *synth, struct mad_frame const *frame)
 {
-  unsigned int nch, ns, ch, s, sb;
-  mad_fixed_t *pcmptr;
+  unsigned int nch, ns, ch, s, phase = 0;
 
   nch = MAD_NCHANNELS(&frame->header);
   ns  = MAD_NSBSAMPLES(&frame->header);
 
-  for (s = 0; s < ns; ++s) {
-    unsigned int slot, even, odd;
-    unsigned int even14, even12, even10, even8, even6, even4, even2;
-    unsigned int odd14, odd12, odd10, odd8, odd6, odd4, odd2;
+  for (ch = 0; ch < nch; ++ch) {
+    mad_fixed_t *pcm1, *pcm2;
+    mad_fixed_t (*even)[2][16][8], (*odd)[2][16][8];
+    mad_fixed_t const (*sbsample)[36][32];
 
-    slot = synth->slot;
-    synth->slot = (slot + 1) & 0xf;
+    phase = synth->phase;
+    pcm1  = synth->pcm.samples[ch];
 
-    even = slot & 0xe;
-    odd  = ((slot - 1) & 0xf) | 0x1;
+    even = &synth->filter[ch][0];
+    odd  = &synth->filter[ch][1];
 
-    even14 = (even + 14) & 0xf;
-    even12 = (even + 12) & 0xf;
-    even10 = (even + 10) & 0xf;
-    even8  = (even + 8)  & 0xf;
-    even6  = (even + 6)  & 0xf;
-    even4  = (even + 4)  & 0xf;
-    even2  = (even + 2)  & 0xf;
+    sbsample = &frame->sbsample[ch];
 
-    odd14  = (odd  + 14) & 0xf;
-    odd12  = (odd  + 12) & 0xf;
-    odd10  = (odd  + 10) & 0xf;
-    odd8   = (odd  + 8)  & 0xf;
-    odd6   = (odd  + 6)  & 0xf;
-    odd4   = (odd  + 4)  & 0xf;
-    odd2   = (odd  + 2)  & 0xf;
-
-    for (ch = 0; ch < nch; ++ch) {
-      register mad_fixed_t *evenp, *oddp, *even2p;
-      register mad_fixed_t const *Dptr;
+    for (s = 0; s < ns; ++s) {
+      unsigned int pe14, pe12, pe10, pe08, pe06, pe04, pe02, pe00;
+      unsigned int po14, po12, po10, po08, po06, po04, po02, po00;
+      register mad_fixed_t (*fe)[8], (*fx)[8], (*fo)[8];
+      register mad_fixed_t const (*Dptr)[16];
       register mad_fixed_t sum1, sum2;
+      unsigned int sb;
 
-      evenp = synth->polyfilter[ch][0];
-      oddp  = synth->polyfilter[ch][1];
+      dct32((*sbsample)[s], phase >> 1,
+	    (*even)[~phase & 1], (*odd)[~phase & 1]);
 
-      dct32(frame->sbsample[ch][s], &evenp[16 * slot], &oddp[16 * slot]);
+      pe00 = phase & ~0x1;
+      pe02 = (pe00 + 2) % 16;
+      pe04 = (pe02 + 2) % 16;
+      pe06 = (pe04 + 2) % 16;
+      pe08 = (pe06 + 2) % 16;
+      pe10 = (pe08 + 2) % 16;
+      pe12 = (pe10 + 2) % 16;
+      pe14 = (pe12 + 2) % 16;
 
-      pcmptr = &synth->pcm.samples[ch][s * 32];
-
-      if (slot & 1) {
-	even2p = evenp;
-	evenp += 16;
-      }
-      else {
-	even2p = evenp + 16;
-	oddp  += 16;
-      }
+      po00 = ((phase - 1) & 0xf) | 0x1;
+      po02 = (po00 + 2) % 16;
+      po04 = (po02 + 2) % 16;
+      po06 = (po04 + 2) % 16;
+      po08 = (po06 + 2) % 16;
+      po10 = (po08 + 2) % 16;
+      po12 = (po10 + 2) % 16;
+      po14 = (po12 + 2) % 16;
 
       /* calculate 32 samples */
 
-      Dptr = D[0];
+      fe = &(*even)[~phase & 1][0];
+      fx = &(*even)[ phase & 1][0];
+      fo =  &(*odd)[ phase & 1][0];
+
+      Dptr = &D[0];
 
 # if defined(MAD_F_HAVEMLA)
       {
-	mad_fixed64hi_t hi;
-	mad_fixed64lo_t lo;
+	mad_fixed64hi_t hi1, hi2;
+	mad_fixed64lo_t lo1, lo2;
 
-	hi = lo = 0;
+	hi1 = lo1 = hi2 = lo2 = 0;
 
-	MLA(hi, lo, evenp[0],    Dptr[even]);
-	MLA(hi, lo, evenp[32],   Dptr[even14]);
-	MLA(hi, lo, evenp[64],   Dptr[even12]);
-	MLA(hi, lo, evenp[96],   Dptr[even10]);
-	MLA(hi, lo, evenp[128],  Dptr[even8]);
-	MLA(hi, lo, evenp[160],  Dptr[even6]);
-	MLA(hi, lo, evenp[192],  Dptr[even4]);
-	MLA(hi, lo, evenp[224],  Dptr[even2]);
+	MLA(hi1, lo1, (*fe)[0], (*Dptr)[pe00]);
+	MLA(hi1, lo1, (*fe)[1], (*Dptr)[pe14]);
+	MLA(hi1, lo1, (*fe)[2], (*Dptr)[pe12]);
+	MLA(hi1, lo1, (*fe)[3], (*Dptr)[pe10]);
+	MLA(hi1, lo1, (*fe)[4], (*Dptr)[pe08]);
+	MLA(hi1, lo1, (*fe)[5], (*Dptr)[pe06]);
+	MLA(hi1, lo1, (*fe)[6], (*Dptr)[pe04]);
+	MLA(hi1, lo1, (*fe)[7], (*Dptr)[pe02]);
 
-	sum1 = mad_f_scale64(hi, lo);
+	MLA(hi2, lo2, (*fx)[0], (*Dptr)[po00]);
+	MLA(hi2, lo2, (*fx)[1], (*Dptr)[po14]);
+	MLA(hi2, lo2, (*fx)[2], (*Dptr)[po12]);
+	MLA(hi2, lo2, (*fx)[3], (*Dptr)[po10]);
+	MLA(hi2, lo2, (*fx)[4], (*Dptr)[po08]);
+	MLA(hi2, lo2, (*fx)[5], (*Dptr)[po06]);
+	MLA(hi2, lo2, (*fx)[6], (*Dptr)[po04]);
+	MLA(hi2, lo2, (*fx)[7], (*Dptr)[po02]);
 
-	hi = lo = 0;
-
-	MLA(hi, lo, even2p[0],   Dptr[odd]);
-	MLA(hi, lo, even2p[32],  Dptr[odd14]);
-	MLA(hi, lo, even2p[64],  Dptr[odd12]);
-	MLA(hi, lo, even2p[96],  Dptr[odd10]);
-	MLA(hi, lo, even2p[128], Dptr[odd8]);
-	MLA(hi, lo, even2p[160], Dptr[odd6]);
-	MLA(hi, lo, even2p[192], Dptr[odd4]);
-	MLA(hi, lo, even2p[224], Dptr[odd2]);
-
-	sum1 -= mad_f_scale64(hi, lo);
+	sum1 = mad_f_scale64(hi1, lo1) -
+	       mad_f_scale64(hi2, lo2);
       }
 # else
       {
 	register mad_fixed_t sub1;
 
-	sum1  = MUL(evenp[0],    Dptr[even]);
-	sum1 += MUL(evenp[32],   Dptr[even14]);
-	sum1 += MUL(evenp[64],   Dptr[even12]);
-	sum1 += MUL(evenp[96],   Dptr[even10]);
-	sum1 += MUL(evenp[128],  Dptr[even8]);
-	sum1 += MUL(evenp[160],  Dptr[even6]);
-	sum1 += MUL(evenp[192],  Dptr[even4]);
-	sum1 += MUL(evenp[224],  Dptr[even2]);
+	sum1  = MUL((*fe)[0], (*Dptr)[pe00]);
+	sum1 += MUL((*fe)[1], (*Dptr)[pe14]);
+	sum1 += MUL((*fe)[2], (*Dptr)[pe12]);
+	sum1 += MUL((*fe)[3], (*Dptr)[pe10]);
+	sum1 += MUL((*fe)[4], (*Dptr)[pe08]);
+	sum1 += MUL((*fe)[5], (*Dptr)[pe06]);
+	sum1 += MUL((*fe)[6], (*Dptr)[pe04]);
+	sum1 += MUL((*fe)[7], (*Dptr)[pe02]);
 
-	sub1  = MUL(even2p[0],   Dptr[odd]);
-	sub1 += MUL(even2p[32],  Dptr[odd14]);
-	sub1 += MUL(even2p[64],  Dptr[odd12]);
-	sub1 += MUL(even2p[96],  Dptr[odd10]);
-	sub1 += MUL(even2p[128], Dptr[odd8]);
-	sub1 += MUL(even2p[160], Dptr[odd6]);
-	sub1 += MUL(even2p[192], Dptr[odd4]);
-	sub1 += MUL(even2p[224], Dptr[odd2]);
+	sub1  = MUL((*fx)[0], (*Dptr)[po00]);
+	sub1 += MUL((*fx)[1], (*Dptr)[po14]);
+	sub1 += MUL((*fx)[2], (*Dptr)[po12]);
+	sub1 += MUL((*fx)[3], (*Dptr)[po10]);
+	sub1 += MUL((*fx)[4], (*Dptr)[po08]);
+	sub1 += MUL((*fx)[5], (*Dptr)[po06]);
+	sub1 += MUL((*fx)[6], (*Dptr)[po04]);
+	sub1 += MUL((*fx)[7], (*Dptr)[po02]);
 
 	sum1 -= sub1;
       }
 # endif
 
-      pcmptr[0] = SHIFT(sum1);
-      ++evenp;
+      *pcm1++ = SHIFT(sum1);
+
+      pcm2 = pcm1 + 30;
 
       for (sb = 1; sb < 16; ++sb) {
-	Dptr = D[sb];
+	++fe;
+	++Dptr;
 
 	/* D[32 - sb][i] == -D[sb][15 - i] */
 
@@ -575,96 +573,100 @@ void mad_synth_frame(struct mad_synth *synth, struct mad_frame const *frame)
 
 	  hi1 = lo1 = hi2 = lo2 = 0;
 
-	  MLA(hi1, lo1, evenp[0],   Dptr[     even]);
-	  MLA(hi2, lo2, evenp[0],   Dptr[15 - even]);
-	  MLA(hi1, lo1, evenp[32],  Dptr[     even14]);
-	  MLA(hi2, lo2, evenp[32],  Dptr[15 - even14]);
-	  MLA(hi1, lo1, evenp[64],  Dptr[     even12]);
-	  MLA(hi2, lo2, evenp[64],  Dptr[15 - even12]);
-	  MLA(hi1, lo1, evenp[96],  Dptr[     even10]);
-	  MLA(hi2, lo2, evenp[96],  Dptr[15 - even10]);
-	  MLA(hi1, lo1, evenp[128], Dptr[     even8]);
-	  MLA(hi2, lo2, evenp[128], Dptr[15 - even8]);
-	  MLA(hi1, lo1, evenp[160], Dptr[     even6]);
-	  MLA(hi2, lo2, evenp[160], Dptr[15 - even6]);
-	  MLA(hi1, lo1, evenp[192], Dptr[     even4]);
-	  MLA(hi2, lo2, evenp[192], Dptr[15 - even4]);
-	  MLA(hi1, lo1, evenp[224], Dptr[     even2]);
-	  MLA(hi2, lo2, evenp[224], Dptr[15 - even2]);
+	  MLA(hi1, lo1, (*fe)[0], (*Dptr)[     pe00]);
+	  MLA(hi2, lo2, (*fe)[0], (*Dptr)[15 - pe00]);
+	  MLA(hi1, lo1, (*fe)[1], (*Dptr)[     pe14]);
+	  MLA(hi2, lo2, (*fe)[1], (*Dptr)[15 - pe14]);
+	  MLA(hi1, lo1, (*fe)[2], (*Dptr)[     pe12]);
+	  MLA(hi2, lo2, (*fe)[2], (*Dptr)[15 - pe12]);
+	  MLA(hi1, lo1, (*fe)[3], (*Dptr)[     pe10]);
+	  MLA(hi2, lo2, (*fe)[3], (*Dptr)[15 - pe10]);
+
+	  MLA(hi1, lo1, (*fe)[4], (*Dptr)[     pe08]);
+	  MLA(hi2, lo2, (*fe)[4], (*Dptr)[15 - pe08]);
+	  MLA(hi1, lo1, (*fe)[5], (*Dptr)[     pe06]);
+	  MLA(hi2, lo2, (*fe)[5], (*Dptr)[15 - pe06]);
+	  MLA(hi1, lo1, (*fe)[6], (*Dptr)[     pe04]);
+	  MLA(hi2, lo2, (*fe)[6], (*Dptr)[15 - pe04]);
+	  MLA(hi1, lo1, (*fe)[7], (*Dptr)[     pe02]);
+	  MLA(hi2, lo2, (*fe)[7], (*Dptr)[15 - pe02]);
 
 	  sum1 = mad_f_scale64(hi1, lo1);
 
 	  hi1 = lo1 = 0;
 
-	  MLA(hi1, lo1, oddp[0],    Dptr[     odd]);
-	  MLA(hi2, lo2, oddp[0],    Dptr[15 - odd]);
-	  MLA(hi1, lo1, oddp[32],   Dptr[     odd14]);
-	  MLA(hi2, lo2, oddp[32],   Dptr[15 - odd14]);
-	  MLA(hi1, lo1, oddp[64],   Dptr[     odd12]);
-	  MLA(hi2, lo2, oddp[64],   Dptr[15 - odd12]);
-	  MLA(hi1, lo1, oddp[96],   Dptr[     odd10]);
-	  MLA(hi2, lo2, oddp[96],   Dptr[15 - odd10]);
-	  MLA(hi1, lo1, oddp[128],  Dptr[     odd8]);
-	  MLA(hi2, lo2, oddp[128],  Dptr[15 - odd8]);
-	  MLA(hi1, lo1, oddp[160],  Dptr[     odd6]);
-	  MLA(hi2, lo2, oddp[160],  Dptr[15 - odd6]);
-	  MLA(hi1, lo1, oddp[192],  Dptr[     odd4]);
-	  MLA(hi2, lo2, oddp[192],  Dptr[15 - odd4]);
-	  MLA(hi1, lo1, oddp[224],  Dptr[     odd2]);
-	  MLA(hi2, lo2, oddp[224],  Dptr[15 - odd2]);
+	  MLA(hi1, lo1, (*fo)[0], (*Dptr)[     po00]);
+	  MLA(hi2, lo2, (*fo)[0], (*Dptr)[15 - po00]);
+	  MLA(hi1, lo1, (*fo)[1], (*Dptr)[     po14]);
+	  MLA(hi2, lo2, (*fo)[1], (*Dptr)[15 - po14]);
+	  MLA(hi1, lo1, (*fo)[2], (*Dptr)[     po12]);
+	  MLA(hi2, lo2, (*fo)[2], (*Dptr)[15 - po12]);
+	  MLA(hi1, lo1, (*fo)[3], (*Dptr)[     po10]);
+	  MLA(hi2, lo2, (*fo)[3], (*Dptr)[15 - po10]);
 
-	  sum1 -= mad_f_scale64(hi1, lo1);
+	  MLA(hi1, lo1, (*fo)[4], (*Dptr)[     po08]);
+	  MLA(hi2, lo2, (*fo)[4], (*Dptr)[15 - po08]);
+	  MLA(hi1, lo1, (*fo)[5], (*Dptr)[     po06]);
+	  MLA(hi2, lo2, (*fo)[5], (*Dptr)[15 - po06]);
+	  MLA(hi1, lo1, (*fo)[6], (*Dptr)[     po04]);
+	  MLA(hi2, lo2, (*fo)[6], (*Dptr)[15 - po04]);
+	  MLA(hi1, lo1, (*fo)[7], (*Dptr)[     po02]);
+	  MLA(hi2, lo2, (*fo)[7], (*Dptr)[15 - po02]);
+
 	  sum2  = mad_f_scale64(hi2, lo2);
+	  sum1 -= mad_f_scale64(hi1, lo1);
 	}
 # else
 	{
 	  register mad_fixed_t sub1;
 
-	  sum1  = MUL(evenp[0],   Dptr[     even]);
-	  sum2  = MUL(evenp[0],   Dptr[15 - even]);
-	  sum1 += MUL(evenp[32],  Dptr[     even14]);
-	  sum2 += MUL(evenp[32],  Dptr[15 - even14]);
-	  sum1 += MUL(evenp[64],  Dptr[     even12]);
-	  sum2 += MUL(evenp[64],  Dptr[15 - even12]);
-	  sum1 += MUL(evenp[96],  Dptr[     even10]);
-	  sum2 += MUL(evenp[96],  Dptr[15 - even10]);
-	  sum1 += MUL(evenp[128], Dptr[     even8]);
-	  sum2 += MUL(evenp[128], Dptr[15 - even8]);
-	  sum1 += MUL(evenp[160], Dptr[     even6]);
-	  sum2 += MUL(evenp[160], Dptr[15 - even6]);
-	  sum1 += MUL(evenp[192], Dptr[     even4]);
-	  sum2 += MUL(evenp[192], Dptr[15 - even4]);
-	  sum1 += MUL(evenp[224], Dptr[     even2]);
-	  sum2 += MUL(evenp[224], Dptr[15 - even2]);
+	  sum1  = MUL((*fe)[0], (*Dptr)[     pe00]);
+	  sum2  = MUL((*fe)[0], (*Dptr)[15 - pe00]);
+	  sum1 += MUL((*fe)[1], (*Dptr)[     pe14]);
+	  sum2 += MUL((*fe)[1], (*Dptr)[15 - pe14]);
+	  sum1 += MUL((*fe)[2], (*Dptr)[     pe12]);
+	  sum2 += MUL((*fe)[2], (*Dptr)[15 - pe12]);
+	  sum1 += MUL((*fe)[3], (*Dptr)[     pe10]);
+	  sum2 += MUL((*fe)[3], (*Dptr)[15 - pe10]);
 
-	  sub1  = MUL(oddp[0],    Dptr[     odd]);
-	  sum2 += MUL(oddp[0],    Dptr[15 - odd]);
-	  sub1 += MUL(oddp[32],   Dptr[     odd14]);
-	  sum2 += MUL(oddp[32],   Dptr[15 - odd14]);
-	  sub1 += MUL(oddp[64],   Dptr[     odd12]);
-	  sum2 += MUL(oddp[64],   Dptr[15 - odd12]);
-	  sub1 += MUL(oddp[96],   Dptr[     odd10]);
-	  sum2 += MUL(oddp[96],   Dptr[15 - odd10]);
-	  sub1 += MUL(oddp[128],  Dptr[     odd8]);
-	  sum2 += MUL(oddp[128],  Dptr[15 - odd8]);
-	  sub1 += MUL(oddp[160],  Dptr[     odd6]);
-	  sum2 += MUL(oddp[160],  Dptr[15 - odd6]);
-	  sub1 += MUL(oddp[192],  Dptr[     odd4]);
-	  sum2 += MUL(oddp[192],  Dptr[15 - odd4]);
-	  sub1 += MUL(oddp[224],  Dptr[     odd2]);
-	  sum2 += MUL(oddp[224],  Dptr[15 - odd2]);
+	  sum1 += MUL((*fe)[4], (*Dptr)[     pe08]);
+	  sum2 += MUL((*fe)[4], (*Dptr)[15 - pe08]);
+	  sum1 += MUL((*fe)[5], (*Dptr)[     pe06]);
+	  sum2 += MUL((*fe)[5], (*Dptr)[15 - pe06]);
+	  sum1 += MUL((*fe)[6], (*Dptr)[     pe04]);
+	  sum2 += MUL((*fe)[6], (*Dptr)[15 - pe04]);
+	  sum1 += MUL((*fe)[7], (*Dptr)[     pe02]);
+	  sum2 += MUL((*fe)[7], (*Dptr)[15 - pe02]);
+
+	  sub1  = MUL((*fo)[0], (*Dptr)[     po00]);
+	  sum2 += MUL((*fo)[0], (*Dptr)[15 - po00]);
+	  sub1 += MUL((*fo)[1], (*Dptr)[     po14]);
+	  sum2 += MUL((*fo)[1], (*Dptr)[15 - po14]);
+	  sub1 += MUL((*fo)[2], (*Dptr)[     po12]);
+	  sum2 += MUL((*fo)[2], (*Dptr)[15 - po12]);
+	  sub1 += MUL((*fo)[3], (*Dptr)[     po10]);
+	  sum2 += MUL((*fo)[3], (*Dptr)[15 - po10]);
+
+	  sub1 += MUL((*fo)[4], (*Dptr)[     po08]);
+	  sum2 += MUL((*fo)[4], (*Dptr)[15 - po08]);
+	  sub1 += MUL((*fo)[5], (*Dptr)[     po06]);
+	  sum2 += MUL((*fo)[5], (*Dptr)[15 - po06]);
+	  sub1 += MUL((*fo)[6], (*Dptr)[     po04]);
+	  sum2 += MUL((*fo)[6], (*Dptr)[15 - po04]);
+	  sub1 += MUL((*fo)[7], (*Dptr)[     po02]);
+	  sum2 += MUL((*fo)[7], (*Dptr)[15 - po02]);
 
 	  sum1 -= sub1;
 	}
 # endif
 
-	pcmptr[     sb] = SHIFT(sum1);
-	pcmptr[32 - sb] = SHIFT(sum2);
+	*pcm1++ = SHIFT(sum1);
+	*pcm2-- = SHIFT(sum2);
 
-	++evenp, ++oddp;
+	++fo;
       }
 
-      Dptr = D[16];
+      ++Dptr;
 
 # if defined(MAD_F_HAVEMLA)
       {
@@ -673,32 +675,36 @@ void mad_synth_frame(struct mad_synth *synth, struct mad_frame const *frame)
 
 	hi = lo = 0;
 
-	MLA(hi, lo, oddp[0],   Dptr[odd]);
-	MLA(hi, lo, oddp[32],  Dptr[odd14]);
-	MLA(hi, lo, oddp[64],  Dptr[odd12]);
-	MLA(hi, lo, oddp[96],  Dptr[odd10]);
-	MLA(hi, lo, oddp[128], Dptr[odd8]);
-	MLA(hi, lo, oddp[160], Dptr[odd6]);
-	MLA(hi, lo, oddp[192], Dptr[odd4]);
-	MLA(hi, lo, oddp[224], Dptr[odd2]);
+	MLA(hi, lo, (*fo)[0], (*Dptr)[po00]);
+	MLA(hi, lo, (*fo)[1], (*Dptr)[po14]);
+	MLA(hi, lo, (*fo)[2], (*Dptr)[po12]);
+	MLA(hi, lo, (*fo)[3], (*Dptr)[po10]);
+	MLA(hi, lo, (*fo)[4], (*Dptr)[po08]);
+	MLA(hi, lo, (*fo)[5], (*Dptr)[po06]);
+	MLA(hi, lo, (*fo)[6], (*Dptr)[po04]);
+	MLA(hi, lo, (*fo)[7], (*Dptr)[po02]);
 
 	sum1 = mad_f_scale64(hi, lo);
       }
 # else
-      sum1  = MUL(oddp[0],   Dptr[odd]);
-      sum1 += MUL(oddp[32],  Dptr[odd14]);
-      sum1 += MUL(oddp[64],  Dptr[odd12]);
-      sum1 += MUL(oddp[96],  Dptr[odd10]);
-      sum1 += MUL(oddp[128], Dptr[odd8]);
-      sum1 += MUL(oddp[160], Dptr[odd6]);
-      sum1 += MUL(oddp[192], Dptr[odd4]);
-      sum1 += MUL(oddp[224], Dptr[odd2]);
+      sum1  = MUL((*fo)[0], (*Dptr)[po00]);
+      sum1 += MUL((*fo)[1], (*Dptr)[po14]);
+      sum1 += MUL((*fo)[2], (*Dptr)[po12]);
+      sum1 += MUL((*fo)[3], (*Dptr)[po10]);
+      sum1 += MUL((*fo)[4], (*Dptr)[po08]);
+      sum1 += MUL((*fo)[5], (*Dptr)[po06]);
+      sum1 += MUL((*fo)[6], (*Dptr)[po04]);
+      sum1 += MUL((*fo)[7], (*Dptr)[po02]);
 # endif
 
-      pcmptr[16] = SHIFT(-sum1);
+      *pcm1 = SHIFT(-sum1);
+      pcm1 += 16;
+
+      phase = (phase + 1) % 16;
     }
   }
 
+  synth->phase      = phase;
   synth->pcm.length = 32 * ns;
 }
 
@@ -708,10 +714,14 @@ void mad_synth_frame(struct mad_synth *synth, struct mad_frame const *frame)
  */
 void mad_synth_mute(struct mad_synth *synth)
 {
-  unsigned int i;
+  unsigned int ch, s, v;
 
-  for (i = 0; i < 256; ++i) {
-    synth->polyfilter[0][0][i] = synth->polyfilter[0][1][i] =
-    synth->polyfilter[1][0][i] = synth->polyfilter[1][1][i] = 0;
+  for (ch = 0; ch < 2; ++ch) {
+    for (s = 0; s < 16; ++s) {
+      for (v = 0; v < 8; ++v) {
+	synth->filter[ch][0][0][s][v] = synth->filter[ch][0][1][s][v] =
+	synth->filter[ch][1][0][s][v] = synth->filter[ch][1][1][s][v] = 0;
+      }
+    }
   }
 }

@@ -19,7 +19,7 @@
 ## If you would like to negotiate alternate licensing terms, you may do
 ## so by contacting the author: Robert Leslie <rob@mars.org>
 ##
-## $Id: Makefile.am,v 1.2 2000/11/16 10:51:10 rob Exp $
+## $Id: Makefile.am,v 1.3 2000/11/20 04:57:46 rob Exp $
 ##
 
 ## Process this file with automake to produce Makefile.in
@@ -47,9 +47,9 @@ EXTRA_libmad_la_SOURCES =	imdct_l_arm.S
 libmad_la_DEPENDENCIES =	@IMDCT_L@
 libmad_la_LIBADD =		@IMDCT_L@
 
-CFLAGS =		-Wall @CFLAGS@ @ARCH@ @DEBUGGER@ @OPTIMIZER@ @PROFILER@
-LDFLAGS =		@LDFLAGS@ @PROFILER@
-INCLUDES =		$(FPM) $(ASO)
+CFLAGS =	-Wall @CFLAGS@ $(ARCH) $(DEBUGGER) $(OPTIMIZER) $(PROFILER)
+LDFLAGS =	@LDFLAGS@ $(PROFILER)
+INCLUDES =	$(FPM) $(ASO)
 
 BUILT_SOURCES =		mad.h
 CLEANFILES =		mad.h
@@ -95,9 +95,6 @@ CLEANFILES =		mad.h
 
 libmad_la_LDFLAGS =		-release $(VERSION)
 ##				-version-info 0:0:0
-
-FPM =	@FPM@
-ASO =	@ASO@
 
 mad.h: Makefile.am config.status config.h  \
 		$(srcdir)/../COPYRIGHT $(srcdir)/mad.h.sed $(exported_headers)
