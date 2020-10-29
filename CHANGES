@@ -2,9 +2,24 @@
  mad - MPEG audio decoder
  Copyright (C) 2000-2001 Robert Leslie
 
- $Id: CHANGES,v 1.42 2001/02/09 02:12:17 rob Exp $
+ $Id: CHANGES,v 1.43 2001/02/12 15:16:14 rob Exp $
 
 ===============================================================================
+
+Version 0.12.5 (beta)
+
+  * Modified Layer III requantization to occur during Huffman decoding for
+    significant performance gains.
+
+  * Optimized short block IMDCT by eliminating redundant calculations.
+
+  * Made several other Layer III performance improvements; added
+    ASO_INTERLEAVE1, ASO_INTERLEAVE2, and ASO_ZEROCHECK
+    architecture-specific options for best performance on various
+    architectures.
+
+  * Optimized synthesis DCT to store result values as soon as they are
+    calculated.
 
 Version 0.12.4 (beta)
 

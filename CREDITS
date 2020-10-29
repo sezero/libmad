@@ -2,7 +2,7 @@
  mad - MPEG audio decoder
  Copyright (C) 2000-2001 Robert Leslie
 
- $Id: CREDITS,v 1.12 2001/02/09 02:12:17 rob Exp $
+ $Id: CREDITS,v 1.14 2001/02/12 15:16:14 rob Exp $
 
 ===============================================================================
 
@@ -24,21 +24,23 @@ CONTRIBUTORS
 
       David Blythe <blythe@routefree.com>
         2001/01/30: libmad/fixed.h
-          - Contributed PowerPC fixed-point assembly
+          - PowerPC fixed-point assembly.
 
       Gabriel Bouvigne <bouvigne@mp3-tech.org>
         2000/10/15: po/fr.po
-          - French message translations
+          - French message translations.
 
       Damian Brizuela <damianweb@yahoo.com>
         2000/11/03: po/es.po
-          - Spanish message translations
+          - Spanish message translations.
 
       Simon Burge <simonb@wasabisystems.com>
         2000/09/19: audio_sun.c
           - Discovered endian assumption problem.
         2000/09/20: libmad/imdct_l_arm.S
           - Suggested patch for a.out compatibility.
+        2001/02/09: audio_sun.c
+          - Reported <string.h> dependency under NetBSD.
 
       Graham Guttocks <graham_guttocks@yahoo.co.nz>
         2000/11/08: audio_oss.c
@@ -46,7 +48,7 @@ CONTRIBUTORS
 
       Mario Horvat <marioh@ugrad.unimelb.edu.au>
         2000/10/26: po/hr.po
-          - Croatian message translations
+          - Croatian message translations.
 
       Thomas Klausner <wiz@danbala.ifoer.tuwien.ac.at>
         2000/11/25: player.c
@@ -59,12 +61,17 @@ CONTRIBUTORS
         2000/09/15: libmad/imdct_l_arm.S
           - Applied Nicolas Pitre's rounding optimisation in all remaining
             places.
+        2000/10/16: libmad/layer3.c
+          - Optimized short block IMDCT.
+        2001/02/10: libmad/layer3.c
+          - Inspiration for Huffman decoding and requantization rewrite, and
+            other miscellany.
 
       Christoffer Nicolaisen <chrn@start.no>
         2000/10/26: po/no.po
-          - Norwegian message translations
+          - Norwegian message translations.
 
-      H.O. <theta@m1.interq.or.jp>
+      Haruhiko OGASAWARA <theta@m1.interq.or.jp>
         2001/01/28: libmad/layer3.c
           - Reported discrepancy in alias reduction for mixed short blocks.
 

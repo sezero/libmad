@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: version.c,v 1.7 2001/02/09 02:12:25 rob Exp $
+ * $Id: version.c,v 1.8 2001/02/12 15:16:25 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
@@ -50,6 +50,15 @@ char const mad_build[] =
 
 # if defined(ASO_IMDCT)
   "ASO_IMDCT "
+# endif
+# if defined(ASO_INTERLEAVE1)
+  "ASO_INTERLEAVE1 "
+# endif
+# if defined(ASO_INTERLEAVE2)
+  "ASO_INTERLEAVE2 "
+# endif
+# if defined(ASO_ZEROCHECK)
+  "ASO_ZEROCHECK "
 # endif
 
 # if defined(OPT_SPEED)

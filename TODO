@@ -20,10 +20,9 @@ libmad Layer II:
 
 libmad Layer III:
   - optimize zero_part from Huffman decoding throughout
+  - optimize sfbwidth change
   - MPEG 2.5 8000 Hz sf bands? mixed blocks?
   - Andre's patches
-  - perform requantization during Huffman decoding
-  - optimize imdct12 (short blocks)
   - ancillary bits
   - stereo->mono conversion optimization?
 
@@ -46,7 +45,6 @@ madplay:
   - dynamically loaded filters
   - automatic volume adjustment filter
   - GUI
-  - Cygwin: -lintl missing? _impure_ptr?
 
 madtime:
   - recurse directories
@@ -69,4 +67,5 @@ Winamp plug-in:
   - DSP before dither?
   - better VBR seek
   - equalizer
+  - dithering options
 

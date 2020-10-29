@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: fixed.h,v 1.18 2001/02/09 02:12:24 rob Exp $
+ * $Id: fixed.h,v 1.20 2001/02/12 15:16:25 rob Exp $
  */
 
 # ifndef MAD_FIXED_H
@@ -120,7 +120,7 @@ typedef unsigned long mad_fixed64lo_t;
  * This Intel version is fast and accurate; the disposition of the least
  * significant bit depends on OPT_ACCURACY via mad_f_scale64().
  */
-#   define MAD_F_MLX(hi, lo, x, y)  \
+#  define MAD_F_MLX(hi, lo, x, y)  \
     asm ("imull %3"  \
 	 : "=a" (lo), "=d" (hi)  \
 	 : "%a" (x), "rm" (y)  \
@@ -134,8 +134,8 @@ typedef unsigned long mad_fixed64lo_t;
     ({ mad_fixed64hi_t __hi;  \
        mad_fixed64lo_t __lo;  \
        MAD_F_MLX(__hi, __lo, (x), (y));  \
-       asm ("addl %2, %0\n\t"  \
-	    "adcl %3, %1\n\t"  \
+       asm ("addl %2,%0\n\t"  \
+	    "adcl %3,%1"  \
 	    : "+rm" (lo), "+rm" (hi)  \
 	    : "r" (__lo), "r" (__hi)  \
 	    : "cc");  \
@@ -150,13 +150,13 @@ typedef unsigned long mad_fixed64lo_t;
     ({ mad_fixed64hi_t __hi_;  \
        mad_fixed64lo_t __lo_;  \
        mad_fixed_t __result;  \
-       asm ("addl %4, %2\n\t"  \
-	    "adcl %5, %3"  \
+       asm ("addl %4,%2\n\t"  \
+	    "adcl %5,%3"  \
 	    : "=rm" (__lo_), "=rm" (__hi_)  \
 	    : "0" (lo), "1" (hi),  \
 	      "ir" (1L << (MAD_F_SCALEBITS - 1)), "ir" (0)  \
 	    : "cc");  \
-       asm ("shrdl %3, %2, %1"  \
+       asm ("shrdl %3,%2,%1"  \
 	    : "=rm" (__result)  \
 	    : "0" (__lo_), "r" (__hi_), "I" (MAD_F_SCALEBITS)  \
 	    : "cc");  \
@@ -165,7 +165,7 @@ typedef unsigned long mad_fixed64lo_t;
 #  else
 #   define mad_f_scale64(hi, lo)  \
     ({ mad_fixed_t __result;  \
-       asm ("shrdl %3, %2, %1"  \
+       asm ("shrdl %3,%2,%1"  \
 	    : "=rm" (__result)  \
 	    : "0" (lo), "r" (hi), "I" (MAD_F_SCALEBITS)  \
 	    : "cc");  \
@@ -183,7 +183,15 @@ typedef unsigned long mad_fixed64lo_t;
  * This ARM V4 version is as accurate as FPM_64BIT but much faster. The
  * least significant bit is properly rounded at no CPU cycle cost!
  */
-# if 1  /* why doesn't the default implementation work? */
+# if 1
+/*
+ * There's a bug somewhere, possibly in the compiler, that sometimes makes
+ * this necessary instead of the default implementation via MAD_F_MLX and
+ * mad_f_scale64. It may be related to the use (or lack) of
+ * -finline-functions and/or -fstrength-reduce.
+ *
+ * This is also apparently faster than MAD_F_MLX/mad_f_scale64.
+ */
 #  define mad_f_mul(x, y)  \
     ({ mad_fixed64hi_t __hi;  \
        mad_fixed64lo_t __lo;  \
@@ -290,23 +298,17 @@ typedef unsigned long mad_fixed64lo_t;
     ({ mad_fixed64hi_t __hi;  \
        mad_fixed64lo_t __lo;  \
        MAD_F_MLX(__hi, __lo, (x), (y));  \
-       asm ("addc %0, %1, %2"  \
-	    : "=r" (lo)  \
-	    : "%r" (__lo), "0" (lo));  \
-       asm ("adde %0, %1, %2"  \
-	    : "=r" (hi)  \
-	    : "%r" (__hi), "0" (hi));  \
+       asm ("addc %0, %2, %3\n\t"  \
+	    "adde %1, %4, %5"  \
+	    : "=r" (lo), "=r" (hi)  \
+	    : "%r" (__lo), "0" (lo), "%r" (__hi), "1" (hi));  \
     })
 
 #  if defined(OPT_ACCURACY)
 /*
  * This is accurate and ~2 - 2.5 times slower than the unrounded version.
- * We let the compiler deal with putting the constant in a register since
- * the value of MAD_F_SCALEBITS is redefined in some parts of the code and
- * tracking the magnitude of (1 << (MAD_F_SCALEBITS - 1)) is too
- * complicated.
  *
- * The __volatile__ improve the generated code by another 5% (fewer spills
+ * The __volatile__ improves the generated code by another 5% (fewer spills
  * to memory); eventually they should be removed.
  */
 #   define mad_f_scale64(hi, lo)  \
