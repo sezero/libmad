@@ -1,0 +1,31 @@
+GCC-4.4 on MIPS removed the "h" asm constraint. See
+http://gcc.gnu.org/gcc-4.4/changes.html for more details,
+including a description of the new way to do it.
+
+diff -ur libmad-0.15.1b-orig/fixed.h libmad-0.15.1b/fixed.h
+--- libmad-0.15.1b-orig/fixed.h	2004-02-17 12:32:03.000000000 +1030
++++ libmad-0.15.1b/fixed.h	2009-08-05 10:46:30.000000000 +0930
+@@ -312,6 +312,15 @@
+ 
+ # elif defined(FPM_MIPS)
+ 
++#if defined (__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 4))
++  typedef unsigned int u64_di_t __attribute__ ((mode (DI)));
++# define MAD_F_MLX(hi, lo, x, y) \
++   do { \
++      u64_di_t __ll = (u64_di_t) (x) * (y); \
++      hi = __ll >> 32; \
++      lo = __ll; \
++   } while (0)
++#else
+ /*
+  * This MIPS version is fast and accurate; the disposition of the least
+  * significant bit depends on OPT_ACCURACY via mad_f_scale64().
+@@ -341,6 +350,7 @@
+ 	 : "%r" ((x) >> 12), "r" ((y) >> 16))
+ #  define MAD_F_MLZ(hi, lo)  ((mad_fixed_t) (lo))
+ # endif
++#endif /* MIPS / gcc-4.4. */
+ 
+ # if defined(OPT_SPEED)
+ #  define mad_f_scale64(hi, lo)  \
