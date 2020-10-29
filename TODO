@@ -1,28 +1,34 @@
 
 libmad:
   - fix generic DCT matrix multiply (now broken after V[] resize/reorder)
-  - improve free format fixed bitrate discovery
+  - fix free format fixed bitrate discovery
   - speed up mad_bit_read()
   - MPEG 2, (2.5?), 4 support
+  - parse system streams
   - function documentation, general docs
   - look into 16-bit fixed-point representation
   - finish async API
+  - fix frame muting within decoder
 
 libmad Layer I:
-  - fix 32-bit assumption on bit read
+  - fix sign-extending right shift assumption
+  - check frame length sanity
 
 libmad Layer II:
-  - fix 32-bit assumption on bit read
+  - fix sign-extending right shift assumption
   - check legal bitrate/mode combinations
   - reduce sizeof(bitalloc_table)
+  - check frame length sanity
 
 libmad Layer III:
+  - fix sign-extending right shift assumption
   - perform requantization during Huffman decoding
   - ancillary bits
   - ms_stereo + intensity_stereo not right?
   - stereo->mono conversion optimization
   - IMDCT optimization
   - verify last Huffman table
+  - rewrite Huffman tables in ANSI C
 
 madplay:
   - dual channel output selection?

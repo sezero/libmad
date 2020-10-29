@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: fixed.c,v 1.6 2000/03/03 02:24:33 rob Exp $
+ * $Id: fixed.c,v 1.8 2000/04/22 04:36:50 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
@@ -26,11 +26,11 @@
 # include "fixed.h"
 
 # if !defined(FPM_MACRO)
-fixed_t f_mul(fixed_t x, fixed_t y)
+mad_fixed_t mad_f_mul(mad_fixed_t x, mad_fixed_t y)
 {
   int neg;
   unsigned long A, B, C, D;
-  fixed_t prod;
+  mad_fixed_t prod;
 
   /* this is accurate but extremely slow */
 
@@ -53,15 +53,15 @@ fixed_t f_mul(fixed_t x, fixed_t y)
 }
 # endif
 
-fixed_t f_abs(fixed_t x)
+# ifdef DEBUG
+mad_fixed_t mad_f_abs(mad_fixed_t x)
 {
   return (x < 0) ? -x : x;
 }
 
-# ifdef DEBUG
-fixed_t f_tofixed(double d)
+mad_fixed_t mad_f_tofixed(double d)
 {
-  fixed_t f;
+  mad_fixed_t f;
   int neg, i;
   double part;
 
@@ -89,7 +89,7 @@ fixed_t f_tofixed(double d)
   return neg ? -f : f;
 }
 
-double f_todouble(fixed_t f)
+double mad_f_todouble(mad_fixed_t f)
 {
   double d, part;
   int neg, i;
@@ -98,7 +98,7 @@ double f_todouble(fixed_t f)
   if (neg)
     f = -f;
 
-  d = 0;
+  d = 0.0;
   part = 4.0;
 
   for (i = 0; i < 31; ++i) {

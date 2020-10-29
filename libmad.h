@@ -16,10 +16,10 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * Id: version.h,v 1.12 2000/03/19 06:43:39 rob Exp 
+ * Id: version.h,v 1.13 2000/03/20 03:43:04 rob Exp 
  */
 
-# define MAD_VERSION		"0.10.0 (beta)"
+# define MAD_VERSION		"0.10.1 (beta)"
 # define MAD_PUBLISHYEAR	"2000"
 # define MAD_AUTHOR		"Robert Leslie"
 # define MAD_EMAIL		"rob@mars.org"
@@ -47,16 +47,23 @@ extern char const mad_license[];
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * Id: fixed.h,v 1.8 2000/03/08 14:01:11 rob Exp 
+ * Id: fixed.h,v 1.9 2000/04/22 04:36:50 rob Exp 
  */
 
 # ifndef FIXED_H
 # define FIXED_H
 
-typedef   signed long fixed_t;
+# if SIZEOF_INT >= 4
+typedef   signed int mad_fixed_t;
 
-typedef   signed long fixed64hi_t;
-typedef unsigned long fixed64lo_t;
+typedef   signed int mad_fixed64hi_t;
+typedef unsigned int mad_fixed64lo_t;
+# else
+typedef   signed long mad_fixed_t;
+
+typedef   signed long mad_fixed64hi_t;
+typedef unsigned long mad_fixed64lo_t;
+# endif
 
 /*
  * Fixed-point format: 0xABBBBBBB
@@ -77,22 +84,26 @@ typedef unsigned long fixed64lo_t;
  * integers, but multiplication requires shifting the 64-bit result
  * from 56 fractional bits back to 28 (and rounding.)
  *
- * The CPU-specific versions of f_mul() perform rounding by truncation.
+ * The CPU-specific versions of mad_f_mul() perform rounding by truncation.
  */
 
-# define f_add(x, y)		((x) + (y))
-# define f_sub(x, y)		((x) - (y))
+# define MAD_F_MIN		0x80000000L
+# define MAD_F_MAX		0x7fffffffL
 
-# define f_scale64(hi, lo)	((fixed_t) (((fixed64hi_t) (hi) << 4) |  \
-                                            ((fixed64lo_t) (lo) >> 28)))
+# define mad_f_add(x, y)	((x) + (y))
+# define mad_f_sub(x, y)	((x) - (y))
+
+# define mad_f_scale64(hi, lo)	((mad_fixed_t)  \
+                                 (((mad_fixed64hi_t) (hi) << 4) |  \
+                                  ((mad_fixed64lo_t) (lo) >> 28)))
 
 # if defined(FPM_APPROX)
 
 /* This version is the most portable but loses 14 bits of accuracy. */
 
 #  define FPM_MACRO
-#  define f_mul(x, y)	((((x) + 0x00002000L) >> 14) *  \
-                         (((y) + 0x00002000L) >> 14))
+#  define mad_f_mul(x, y)	((((x) + 0x00002000L) >> 14) *  \
+                                 (((y) + 0x00002000L) >> 14))
 
 # elif defined(FPM_64BIT)
 
@@ -100,8 +111,8 @@ typedef unsigned long fixed64lo_t;
    are supported by the compiler. */
 
 #  define FPM_MACRO
-#  define f_mul(x, y)  \
-     ((fixed_t) (((((signed long long) (x) * (y)) + 0x08000000L) >> 28)))
+#  define mad_f_mul(x, y)  \
+     ((mad_fixed_t) (((((signed long long) (x) * (y)) + 0x08000000L) >> 28)))
 
 # elif defined(FPM_INTEL)
 
@@ -109,21 +120,21 @@ typedef unsigned long fixed64lo_t;
    significant bit. */
 
 #  define FPM_MACRO
-#  define f_mul(x, y)  \
-     ({ fixed64hi_t __hi;  \
-        fixed64lo_t __lo;  \
+#  define mad_f_mul(x, y)  \
+     ({ mad_fixed64hi_t __hi;  \
+        mad_fixed64lo_t __lo;  \
         asm ("imull %3"  \
              : "=a" (__lo), "=d" (__hi)  \
 	     : "%a" (x), "rm" (y));  \
-        f_scale64(__hi, __lo);  \
+        mad_f_scale64(__hi, __lo);  \
      })
 
 # if 0
 /* this is slower than the C multiply/add version */
 #  define FPM_MACC
-#  define f_macc(hi, lo, x, y)  \
-     ({ fixed64hi_t __hi;  \
-        fixed64lo_t __lo;  \
+#  define mad_f_macc(hi, lo, x, y)  \
+     ({ mad_fixed64hi_t __hi;  \
+        mad_fixed64lo_t __lo;  \
         asm ("imull %3"  \
 	     : "=a" (__lo), "=d" (__hi)  \
 	     : "%a" (x), "rm" (y));  \
@@ -142,13 +153,13 @@ typedef unsigned long fixed64lo_t;
    significant bit. */
 
 #  define FPM_MACRO
-#  define f_mul(x, y)  \
-     ({ fixed64hi_t __hi;  \
-        fixed64lo_t __lo;  \
+#  define mad_f_mul(x, y)  \
+     ({ mad_fixed64hi_t __hi;  \
+        mad_fixed64lo_t __lo;  \
         asm ("smull %0,%1,%2,%3"  \
 	     : "=&r" (__lo), "=&r" (__hi)  \
 	     : "%r" (x), "r" (y));  \
-        f_scale64(__hi, __lo);  \
+        mad_f_scale64(__hi, __lo);  \
      })
 
 # if 0
@@ -156,9 +167,9 @@ typedef unsigned long fixed64lo_t;
 #  define FPM_MACC
 # if 0
 /* this was for debugging only */
-#  define f_macc(hi, lo, x, y)  \
-     ({ fixed64hi_t __hi;  \
-        fixed64lo_t __lo;  \
+#  define mad_f_macc(hi, lo, x, y)  \
+     ({ mad_fixed64hi_t __hi;  \
+        mad_fixed64lo_t __lo;  \
         asm ("smull %0,%1,%2,%3"  \
              : "=&r" (__lo), "=&r" (__hi)  \
              : "%r" (x), "r" (y));  \
@@ -168,7 +179,7 @@ typedef unsigned long fixed64lo_t;
 	     : "cc");  \
      })
 # else
-#  define f_macc(hi, lo, x, y)  \
+#  define mad_f_macc(hi, lo, x, y)  \
      asm ("smlal %0,%1,%2,%3"  \
           : "+r" (lo), "+r" (hi)  \
           : "%r" (x), "r" (y))
@@ -181,19 +192,19 @@ typedef unsigned long fixed64lo_t;
    significant bit. */
 
 #  define FPM_MACRO
-#  define f_mul(x, y)  \
-     ({ fixed64hi_t __hi;  \
-        fixed64lo_t __lo;  \
+#  define mad_f_mul(x, y)  \
+     ({ mad_fixed64hi_t __hi;  \
+        mad_fixed64lo_t __lo;  \
         asm ("mult %2,%3"  \
              : "=l" (__lo), "=h" (__hi)  \
              : "%r" (x), "r" (y));  \
-        f_scale64(__hi, __lo);  \
+        mad_f_scale64(__hi, __lo);  \
      })
 
 # if 0
 /* assembler doesn't recognize this instruction? */
 #  define FPM_MACC
-#  define f_macc(hi, lo, x, y)  \
+#  define mad_f_macc(hi, lo, x, y)  \
      asm ("macc r0,%2,%3"  \
           : "+l" (lo), "+h" (hi)  \
           : "%r" (x), "r" (y));
@@ -205,24 +216,24 @@ typedef unsigned long fixed64lo_t;
    significant bit. */
 
 #  define FPM_MACRO
-#  define f_mul(x, y)  \
-     ({ fixed64hi_t __hi;  \
-        fixed64lo_t __lo;  \
+#  define mad_f_mul(x, y)  \
+     ({ mad_fixed64hi_t __hi;  \
+        mad_fixed64lo_t __lo;  \
         asm ("smul %2,%3,%0; rd %%y,%1"  \
              : "=r" (__lo), "=r" (__hi)  \
              : "%r" (x), "rI" (y));  \
-        f_scale64(__hi, __lo);  \
+        mad_f_scale64(__hi, __lo);  \
      })
 
 # else
-fixed_t f_mul(fixed_t, fixed_t);
+mad_fixed_t mad_f_mul(mad_fixed_t, mad_fixed_t);
 # endif
 
-fixed_t f_abs(fixed_t);
-
 # ifdef DEBUG
-fixed_t f_tofixed(double);
-double f_todouble(fixed_t);
+mad_fixed_t mad_f_abs(mad_fixed_t);
+
+mad_fixed_t mad_f_tofixed(double);
+double mad_f_todouble(mad_fixed_t);
 # endif
 
 # endif
@@ -245,7 +256,7 @@ double f_todouble(fixed_t);
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * Id: bit.h,v 1.6 2000/03/19 06:43:38 rob Exp 
+ * Id: bit.h,v 1.7 2000/03/22 23:52:59 rob Exp 
  */
 
 # ifndef BIT_H
@@ -264,7 +275,7 @@ void mad_bit_init(struct mad_bitptr *, unsigned char const *);
 unsigned int mad_bit_length(struct mad_bitptr const *,
 			    struct mad_bitptr const *);
 
-# define mad_bit_left(bitptr)  ((bitptr)->left)
+# define mad_bit_bitsleft(bitptr)  ((bitptr)->left)
 unsigned char const *mad_bit_nextbyte(struct mad_bitptr const *);
 
 void mad_bit_skip(struct mad_bitptr *, unsigned int);
@@ -341,7 +352,7 @@ void mad_timer_str(struct mad_timer const *, char *, char const *, int);
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * Id: stream.h,v 1.4 2000/03/19 06:43:38 rob Exp 
+ * Id: stream.h,v 1.6 2000/04/22 04:36:51 rob Exp 
  */
 
 # ifndef STREAM_H
@@ -363,7 +374,7 @@ struct mad_stream {
   struct mad_bitptr anc_ptr;		/* ancillary bits pointer */
   unsigned int anc_bitlen;		/* number of ancillary bits */
 
-  unsigned char (*main_data)[1935];	/* layer III main_data */
+  unsigned char (*main_data)[1935];	/* Layer III main_data */
   unsigned int md_len;			/* bytes in main_data */
 
   int error;				/* error code (see below) */
@@ -383,14 +394,15 @@ struct mad_stream {
 # define MAD_ERR_BADCRC		0x0201	/* CRC check failed */
 # define MAD_ERR_BADBITALLOC	0x0211	/* forbidden bit allocation value */
 # define MAD_ERR_BADSCALEFACTOR	0x0221	/* bad scalefactor index */
-# define MAD_ERR_BADBIGVALUES	0x0231	/* bad big_values count */
-# define MAD_ERR_BADBLOCKTYPE	0x0232	/* reserved block_type */
-# define MAD_ERR_BADDATAPTR	0x0233	/* bad main_data_begin pointer */
-# define MAD_ERR_BADDATALENGTH	0x0234	/* bad main data length */
-# define MAD_ERR_BADPART3LEN	0x0235	/* bad audio data length */
-# define MAD_ERR_BADHUFFTABLE	0x0236	/* bad Huffman table select */
-# define MAD_ERR_BADHUFFDATA	0x0237	/* Huffman data value out of range */
-# define MAD_ERR_BADSTEREO	0x0238	/* incompatible block_type for M/S */
+# define MAD_ERR_BADFRAMELEN	0x0231	/* bad frame length */
+# define MAD_ERR_BADBIGVALUES	0x0232	/* bad big_values count */
+# define MAD_ERR_BADBLOCKTYPE	0x0233	/* reserved block_type */
+# define MAD_ERR_BADDATAPTR	0x0234	/* bad main_data_begin pointer */
+# define MAD_ERR_BADDATALEN	0x0235	/* bad main data length */
+# define MAD_ERR_BADPART3LEN	0x0236	/* bad audio data length */
+# define MAD_ERR_BADHUFFTABLE	0x0237	/* bad Huffman table select */
+# define MAD_ERR_BADHUFFDATA	0x0238	/* Huffman data value out of range */
+# define MAD_ERR_BADSTEREO	0x0239	/* incompatible block_type for M/S */
 
 # define MAD_RECOVERABLE(error)	((error) & 0xff00)
 
@@ -424,7 +436,7 @@ unsigned char const *mad_stream_sync(unsigned char const *,
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * Id: frame.h,v 1.4 2000/03/19 06:43:38 rob Exp 
+ * Id: frame.h,v 1.5 2000/04/22 04:36:50 rob Exp 
  */
 
 # ifndef FRAME_H
@@ -444,8 +456,8 @@ struct mad_frame {
 
   int flags;				/* flags and private bits (below) */
 
-  fixed_t sbsample[2][36][32];		/* synthesis subband filter samples */
-  fixed_t (*overlap)[2][32][18];	/* layer III block overlap data */
+  mad_fixed_t sbsample[2][36][32];	/* synthesis subband filter samples */
+  mad_fixed_t (*overlap)[2][32][18];	/* Layer III block overlap data */
 };
 
 # define MAD_NUMCHANNELS(frame)		((frame)->mode ? 2 : 1)
@@ -461,13 +473,15 @@ struct mad_frame {
 # define MAD_EMPH_CCITT_J_17	3	/* CCITT J.17 */
 
 # define MAD_FLAG_PROTECTION	0x0100	/* frame has CRC protection */
-# define MAD_FLAG_CRCFAILED	0x0200	/* frame CRC failed */
-# define MAD_FLAG_COPYRIGHT	0x0400	/* frame is copyright */
-# define MAD_FLAG_ORIGINAL	0x0800	/* frame is original (else copy) */
-# define MAD_FLAG_PADDING	0x1000	/* frame has additional slot */
+# define MAD_FLAG_COPYRIGHT	0x0200	/* frame is copyright */
+# define MAD_FLAG_ORIGINAL	0x0400	/* frame is original (else copy) */
+# define MAD_FLAG_PADDING	0x0800	/* frame has additional slot */
+
+# define MAD_FLAG_I_STEREO	0x1000	/* uses intensity joint stereo */
+# define MAD_FLAG_MS_STEREO	0x2000	/* uses middle/side joint stereo */
 
 # define MAD_FLAG_PRIVATE	0x0040	/* header private bit */
-# define MAD_FLAG_III_PRIVATE	0x001f	/* layer III private bits */
+# define MAD_FLAG_III_PRIVATE	0x001f	/* Layer III private bits */
 # define MAD_FLAG_III_5BITPRIV	0x0020	/* 5 bits in III private (else 3) */
 
 void mad_frame_init(struct mad_frame *);
@@ -499,7 +513,7 @@ int mad_frame_decode(struct mad_frame *, struct mad_stream *);
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * Id: synth.h,v 1.5 2000/03/19 06:43:38 rob Exp 
+ * Id: synth.h,v 1.6 2000/04/22 04:36:51 rob Exp 
  */
 
 # ifndef SYNTH_H
@@ -507,11 +521,11 @@ int mad_frame_decode(struct mad_frame *, struct mad_stream *);
 
 
 struct mad_synth {
-  fixed_t filterout[2][2][256];		/* polyphase filterbank outputs */
+  mad_fixed_t filterout[2][2][256];	/* polyphase filterbank outputs */
   unsigned short slot;			/* current processing slot */
 
   unsigned short pcmlen;		/* number of PCM samples */
-  fixed_t pcmout[2][1152];		/* PCM sample outputs */
+  mad_fixed_t pcmout[2][1152];		/* PCM sample outputs */
 };
 
 void mad_synth_init(struct mad_synth *);

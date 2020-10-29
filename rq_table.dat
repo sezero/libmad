@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: rq_table.dat,v 1.1 2000/02/28 02:31:01 rob Exp $
+ * $Id: rq_table.dat,v 1.2 2000/03/28 00:33:18 rob Exp $
  */
 
 /*
@@ -24,7 +24,6 @@
  * requantization. To maintain the best possible accuracy, the value is
  * stored as a normalized mantissa with exponent. The requantization
  * algorithm recombines these parts with appropriate scaling.
- *
  */
 
  { 0x00000000L /* 0.000000000 */,  0 }, { 0x04000000L /* 0.250000000 */,  2 },

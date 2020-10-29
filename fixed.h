@@ -16,16 +16,23 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: fixed.h,v 1.8 2000/03/08 14:01:11 rob Exp $
+ * $Id: fixed.h,v 1.9 2000/04/22 04:36:50 rob Exp $
  */
 
 # ifndef FIXED_H
 # define FIXED_H
 
-typedef   signed long fixed_t;
+# if SIZEOF_INT >= 4
+typedef   signed int mad_fixed_t;
 
-typedef   signed long fixed64hi_t;
-typedef unsigned long fixed64lo_t;
+typedef   signed int mad_fixed64hi_t;
+typedef unsigned int mad_fixed64lo_t;
+# else
+typedef   signed long mad_fixed_t;
+
+typedef   signed long mad_fixed64hi_t;
+typedef unsigned long mad_fixed64lo_t;
+# endif
 
 /*
  * Fixed-point format: 0xABBBBBBB
@@ -46,22 +53,26 @@ typedef unsigned long fixed64lo_t;
  * integers, but multiplication requires shifting the 64-bit result
  * from 56 fractional bits back to 28 (and rounding.)
  *
- * The CPU-specific versions of f_mul() perform rounding by truncation.
+ * The CPU-specific versions of mad_f_mul() perform rounding by truncation.
  */
 
-# define f_add(x, y)		((x) + (y))
-# define f_sub(x, y)		((x) - (y))
+# define MAD_F_MIN		0x80000000L
+# define MAD_F_MAX		0x7fffffffL
 
-# define f_scale64(hi, lo)	((fixed_t) (((fixed64hi_t) (hi) << 4) |  \
-                                            ((fixed64lo_t) (lo) >> 28)))
+# define mad_f_add(x, y)	((x) + (y))
+# define mad_f_sub(x, y)	((x) - (y))
+
+# define mad_f_scale64(hi, lo)	((mad_fixed_t)  \
+                                 (((mad_fixed64hi_t) (hi) << 4) |  \
+                                  ((mad_fixed64lo_t) (lo) >> 28)))
 
 # if defined(FPM_APPROX)
 
 /* This version is the most portable but loses 14 bits of accuracy. */
 
 #  define FPM_MACRO
-#  define f_mul(x, y)	((((x) + 0x00002000L) >> 14) *  \
-                         (((y) + 0x00002000L) >> 14))
+#  define mad_f_mul(x, y)	((((x) + 0x00002000L) >> 14) *  \
+                                 (((y) + 0x00002000L) >> 14))
 
 # elif defined(FPM_64BIT)
 
@@ -69,8 +80,8 @@ typedef unsigned long fixed64lo_t;
    are supported by the compiler. */
 
 #  define FPM_MACRO
-#  define f_mul(x, y)  \
-     ((fixed_t) (((((signed long long) (x) * (y)) + 0x08000000L) >> 28)))
+#  define mad_f_mul(x, y)  \
+     ((mad_fixed_t) (((((signed long long) (x) * (y)) + 0x08000000L) >> 28)))
 
 # elif defined(FPM_INTEL)
 
@@ -78,21 +89,21 @@ typedef unsigned long fixed64lo_t;
    significant bit. */
 
 #  define FPM_MACRO
-#  define f_mul(x, y)  \
-     ({ fixed64hi_t __hi;  \
-        fixed64lo_t __lo;  \
+#  define mad_f_mul(x, y)  \
+     ({ mad_fixed64hi_t __hi;  \
+        mad_fixed64lo_t __lo;  \
         asm ("imull %3"  \
              : "=a" (__lo), "=d" (__hi)  \
 	     : "%a" (x), "rm" (y));  \
-        f_scale64(__hi, __lo);  \
+        mad_f_scale64(__hi, __lo);  \
      })
 
 # if 0
 /* this is slower than the C multiply/add version */
 #  define FPM_MACC
-#  define f_macc(hi, lo, x, y)  \
-     ({ fixed64hi_t __hi;  \
-        fixed64lo_t __lo;  \
+#  define mad_f_macc(hi, lo, x, y)  \
+     ({ mad_fixed64hi_t __hi;  \
+        mad_fixed64lo_t __lo;  \
         asm ("imull %3"  \
 	     : "=a" (__lo), "=d" (__hi)  \
 	     : "%a" (x), "rm" (y));  \
@@ -111,13 +122,13 @@ typedef unsigned long fixed64lo_t;
    significant bit. */
 
 #  define FPM_MACRO
-#  define f_mul(x, y)  \
-     ({ fixed64hi_t __hi;  \
-        fixed64lo_t __lo;  \
+#  define mad_f_mul(x, y)  \
+     ({ mad_fixed64hi_t __hi;  \
+        mad_fixed64lo_t __lo;  \
         asm ("smull %0,%1,%2,%3"  \
 	     : "=&r" (__lo), "=&r" (__hi)  \
 	     : "%r" (x), "r" (y));  \
-        f_scale64(__hi, __lo);  \
+        mad_f_scale64(__hi, __lo);  \
      })
 
 # if 0
@@ -125,9 +136,9 @@ typedef unsigned long fixed64lo_t;
 #  define FPM_MACC
 # if 0
 /* this was for debugging only */
-#  define f_macc(hi, lo, x, y)  \
-     ({ fixed64hi_t __hi;  \
-        fixed64lo_t __lo;  \
+#  define mad_f_macc(hi, lo, x, y)  \
+     ({ mad_fixed64hi_t __hi;  \
+        mad_fixed64lo_t __lo;  \
         asm ("smull %0,%1,%2,%3"  \
              : "=&r" (__lo), "=&r" (__hi)  \
              : "%r" (x), "r" (y));  \
@@ -137,7 +148,7 @@ typedef unsigned long fixed64lo_t;
 	     : "cc");  \
      })
 # else
-#  define f_macc(hi, lo, x, y)  \
+#  define mad_f_macc(hi, lo, x, y)  \
      asm ("smlal %0,%1,%2,%3"  \
           : "+r" (lo), "+r" (hi)  \
           : "%r" (x), "r" (y))
@@ -150,19 +161,19 @@ typedef unsigned long fixed64lo_t;
    significant bit. */
 
 #  define FPM_MACRO
-#  define f_mul(x, y)  \
-     ({ fixed64hi_t __hi;  \
-        fixed64lo_t __lo;  \
+#  define mad_f_mul(x, y)  \
+     ({ mad_fixed64hi_t __hi;  \
+        mad_fixed64lo_t __lo;  \
         asm ("mult %2,%3"  \
              : "=l" (__lo), "=h" (__hi)  \
              : "%r" (x), "r" (y));  \
-        f_scale64(__hi, __lo);  \
+        mad_f_scale64(__hi, __lo);  \
      })
 
 # if 0
 /* assembler doesn't recognize this instruction? */
 #  define FPM_MACC
-#  define f_macc(hi, lo, x, y)  \
+#  define mad_f_macc(hi, lo, x, y)  \
      asm ("macc r0,%2,%3"  \
           : "+l" (lo), "+h" (hi)  \
           : "%r" (x), "r" (y));
@@ -174,24 +185,24 @@ typedef unsigned long fixed64lo_t;
    significant bit. */
 
 #  define FPM_MACRO
-#  define f_mul(x, y)  \
-     ({ fixed64hi_t __hi;  \
-        fixed64lo_t __lo;  \
+#  define mad_f_mul(x, y)  \
+     ({ mad_fixed64hi_t __hi;  \
+        mad_fixed64lo_t __lo;  \
         asm ("smul %2,%3,%0; rd %%y,%1"  \
              : "=r" (__lo), "=r" (__hi)  \
              : "%r" (x), "rI" (y));  \
-        f_scale64(__hi, __lo);  \
+        mad_f_scale64(__hi, __lo);  \
      })
 
 # else
-fixed_t f_mul(fixed_t, fixed_t);
+mad_fixed_t mad_f_mul(mad_fixed_t, mad_fixed_t);
 # endif
 
-fixed_t f_abs(fixed_t);
-
 # ifdef DEBUG
-fixed_t f_tofixed(double);
-double f_todouble(fixed_t);
+mad_fixed_t mad_f_abs(mad_fixed_t);
+
+mad_fixed_t mad_f_tofixed(double);
+double mad_f_todouble(mad_fixed_t);
 # endif
 
 # endif

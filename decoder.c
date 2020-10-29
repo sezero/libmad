@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: decoder.c,v 1.2 2000/03/19 06:43:38 rob Exp $
+ * $Id: decoder.c,v 1.3 2000/04/22 04:36:50 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
@@ -252,8 +252,6 @@ int run_sync(struct mad_decoder *decoder)
 	  continue;
 	}
       }
-
-      bad_last_frame = (frame->flags & MAD_FLAG_CRCFAILED);
 
       if (decoder->filter_func) {
 	switch (decoder->filter_func(decoder->filter_data, frame)) {

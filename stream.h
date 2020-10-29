@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: stream.h,v 1.4 2000/03/19 06:43:38 rob Exp $
+ * $Id: stream.h,v 1.6 2000/04/22 04:36:51 rob Exp $
  */
 
 # ifndef STREAM_H
@@ -39,7 +39,7 @@ struct mad_stream {
   struct mad_bitptr anc_ptr;		/* ancillary bits pointer */
   unsigned int anc_bitlen;		/* number of ancillary bits */
 
-  unsigned char (*main_data)[1935];	/* layer III main_data */
+  unsigned char (*main_data)[1935];	/* Layer III main_data */
   unsigned int md_len;			/* bytes in main_data */
 
   int error;				/* error code (see below) */
@@ -59,14 +59,15 @@ struct mad_stream {
 # define MAD_ERR_BADCRC		0x0201	/* CRC check failed */
 # define MAD_ERR_BADBITALLOC	0x0211	/* forbidden bit allocation value */
 # define MAD_ERR_BADSCALEFACTOR	0x0221	/* bad scalefactor index */
-# define MAD_ERR_BADBIGVALUES	0x0231	/* bad big_values count */
-# define MAD_ERR_BADBLOCKTYPE	0x0232	/* reserved block_type */
-# define MAD_ERR_BADDATAPTR	0x0233	/* bad main_data_begin pointer */
-# define MAD_ERR_BADDATALENGTH	0x0234	/* bad main data length */
-# define MAD_ERR_BADPART3LEN	0x0235	/* bad audio data length */
-# define MAD_ERR_BADHUFFTABLE	0x0236	/* bad Huffman table select */
-# define MAD_ERR_BADHUFFDATA	0x0237	/* Huffman data value out of range */
-# define MAD_ERR_BADSTEREO	0x0238	/* incompatible block_type for M/S */
+# define MAD_ERR_BADFRAMELEN	0x0231	/* bad frame length */
+# define MAD_ERR_BADBIGVALUES	0x0232	/* bad big_values count */
+# define MAD_ERR_BADBLOCKTYPE	0x0233	/* reserved block_type */
+# define MAD_ERR_BADDATAPTR	0x0234	/* bad main_data_begin pointer */
+# define MAD_ERR_BADDATALEN	0x0235	/* bad main data length */
+# define MAD_ERR_BADPART3LEN	0x0236	/* bad audio data length */
+# define MAD_ERR_BADHUFFTABLE	0x0237	/* bad Huffman table select */
+# define MAD_ERR_BADHUFFDATA	0x0238	/* Huffman data value out of range */
+# define MAD_ERR_BADSTEREO	0x0239	/* incompatible block_type for M/S */
 
 # define MAD_RECOVERABLE(error)	((error) & 0xff00)
 

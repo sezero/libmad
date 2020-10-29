@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: frame.h,v 1.4 2000/03/19 06:43:38 rob Exp $
+ * $Id: frame.h,v 1.5 2000/04/22 04:36:50 rob Exp $
  */
 
 # ifndef FRAME_H
@@ -39,8 +39,8 @@ struct mad_frame {
 
   int flags;				/* flags and private bits (below) */
 
-  fixed_t sbsample[2][36][32];		/* synthesis subband filter samples */
-  fixed_t (*overlap)[2][32][18];	/* layer III block overlap data */
+  mad_fixed_t sbsample[2][36][32];	/* synthesis subband filter samples */
+  mad_fixed_t (*overlap)[2][32][18];	/* Layer III block overlap data */
 };
 
 # define MAD_NUMCHANNELS(frame)		((frame)->mode ? 2 : 1)
@@ -56,13 +56,15 @@ struct mad_frame {
 # define MAD_EMPH_CCITT_J_17	3	/* CCITT J.17 */
 
 # define MAD_FLAG_PROTECTION	0x0100	/* frame has CRC protection */
-# define MAD_FLAG_CRCFAILED	0x0200	/* frame CRC failed */
-# define MAD_FLAG_COPYRIGHT	0x0400	/* frame is copyright */
-# define MAD_FLAG_ORIGINAL	0x0800	/* frame is original (else copy) */
-# define MAD_FLAG_PADDING	0x1000	/* frame has additional slot */
+# define MAD_FLAG_COPYRIGHT	0x0200	/* frame is copyright */
+# define MAD_FLAG_ORIGINAL	0x0400	/* frame is original (else copy) */
+# define MAD_FLAG_PADDING	0x0800	/* frame has additional slot */
+
+# define MAD_FLAG_I_STEREO	0x1000	/* uses intensity joint stereo */
+# define MAD_FLAG_MS_STEREO	0x2000	/* uses middle/side joint stereo */
 
 # define MAD_FLAG_PRIVATE	0x0040	/* header private bit */
-# define MAD_FLAG_III_PRIVATE	0x001f	/* layer III private bits */
+# define MAD_FLAG_III_PRIVATE	0x001f	/* Layer III private bits */
 # define MAD_FLAG_III_5BITPRIV	0x0020	/* 5 bits in III private (else 3) */
 
 void mad_frame_init(struct mad_frame *);

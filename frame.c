@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: frame.c,v 1.3 2000/03/19 06:43:38 rob Exp $
+ * $Id: frame.c,v 1.5 2000/04/22 04:36:50 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
@@ -71,16 +71,16 @@ void mad_frame_init(struct mad_frame *frame)
   frame->mode_ext = 0;
   frame->emphasis = 0;
 
-  frame->bitrate  = 0;
-  frame->sfreq    = 0;
+  frame->bitrate = 0;
+  frame->sfreq   = 0;
 
   mad_timer_init(&frame->duration);
 
-  frame->flags    = 0;
+  frame->flags = 0;
 
   mad_frame_mute(frame);
 
-  frame->overlap  = 0;
+  frame->overlap = 0;
 }
 
 /*
@@ -285,6 +285,10 @@ int mad_frame_header(struct mad_frame *frame, struct mad_stream *stream,
 
     stream->next_frame = stream->this_frame + N;
     stream->sync = 1;
+  }
+  else {
+    /* bitrate isn't yet known; estimate based on minimum requirements */
+    /* FIXME */
   }
 
   /* calculate frame duration */

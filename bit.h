@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: bit.h,v 1.6 2000/03/19 06:43:38 rob Exp $
+ * $Id: bit.h,v 1.7 2000/03/22 23:52:59 rob Exp $
  */
 
 # ifndef BIT_H
@@ -35,7 +35,7 @@ void mad_bit_init(struct mad_bitptr *, unsigned char const *);
 unsigned int mad_bit_length(struct mad_bitptr const *,
 			    struct mad_bitptr const *);
 
-# define mad_bit_left(bitptr)  ((bitptr)->left)
+# define mad_bit_bitsleft(bitptr)  ((bitptr)->left)
 unsigned char const *mad_bit_nextbyte(struct mad_bitptr const *);
 
 void mad_bit_skip(struct mad_bitptr *, unsigned int);

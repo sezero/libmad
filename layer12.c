@@ -16,11 +16,17 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: layer12.c,v 1.10 2000/03/13 01:22:03 rob Exp $
+ * $Id: layer12.c,v 1.11 2000/04/22 04:36:50 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
 #  include "config.h"
+# endif
+
+# ifdef HAVE_LIMITS_H
+#  include <limits.h>
+# else
+#  define CHAR_BIT  8
 # endif
 
 # include "fixed.h"
@@ -34,7 +40,7 @@
  * used in both Layer I and Layer II decoding
  */
 static
-fixed_t const sf_table[63] = {
+mad_fixed_t const sf_table[63] = {
 # include "sf_table.dat"
 };
 
@@ -42,16 +48,15 @@ fixed_t const sf_table[63] = {
 
 /* linear scaling table */
 static
-fixed_t const linear_table[14] = {
-  0x15555555L,  /*  2^2 / (2^2  - 1) == 1.33333333333333 */
-  0x12492492L,  /*  2^3 / (2^3  - 1) == 1.14285714285714 */
-  0x11111111L,  /*  2^4 / (2^4  - 1) == 1.06666666666667 */
-  0x10842108L,  /*  2^5 / (2^5  - 1) == 1.03225806451613 */
-  0x10410410L,  /*  2^6 / (2^6  - 1) == 1.01587301587302 */
-  0x10204081L,  /*  2^7 / (2^7  - 1) == 1.00787401574803 */
-  0x10101010L,  /*  2^8 / (2^8  - 1) == 1.00392156862745 */
-  0x10080402L,  /*  2^9 / (2^9  - 1) == 1.00195694716243 */
-
+mad_fixed_t const linear_table[14] = {
+  0x15555555L,  /* 2^2  / (2^2  - 1) == 1.33333333333333 */
+  0x12492492L,  /* 2^3  / (2^3  - 1) == 1.14285714285714 */
+  0x11111111L,  /* 2^4  / (2^4  - 1) == 1.06666666666667 */
+  0x10842108L,  /* 2^5  / (2^5  - 1) == 1.03225806451613 */
+  0x10410410L,  /* 2^6  / (2^6  - 1) == 1.01587301587302 */
+  0x10204081L,  /* 2^7  / (2^7  - 1) == 1.00787401574803 */
+  0x10101010L,  /* 2^8  / (2^8  - 1) == 1.00392156862745 */
+  0x10080402L,  /* 2^9  / (2^9  - 1) == 1.00195694716243 */
   0x10040100L,  /* 2^10 / (2^10 - 1) == 1.00097751710655 */
   0x10020040L,  /* 2^11 / (2^11 - 1) == 1.00048851978505 */
   0x10010010L,  /* 2^12 / (2^12 - 1) == 1.00024420024420 */
@@ -65,24 +70,26 @@ fixed_t const linear_table[14] = {
  * DESCRIPTION:	decode one requantized Layer I sample from a bitstream
  */
 static
-fixed_t I_sample(struct mad_bitptr *ptr, unsigned int nb)
+mad_fixed_t I_sample(struct mad_bitptr *ptr, unsigned int nb)
 {
   unsigned int sample;
-  fixed_t requantized;
+  mad_fixed_t requantized;
 
   sample = mad_bit_read(ptr, nb);
 
   /* invert most significant bit, then scale sample to fixed format */
 
-  /* FIXME: depends on 32-bit long and sign-extended right shift */
-  requantized = ((fixed_t) (-0x80000000L ^ (sample << (32 - nb)))) >> 3;
+  /* FIXME: depends on sign-extending right shift */
+  requantized = ((mad_fixed_t)
+		 (((mad_fixed_t) 1 << (CHAR_BIT * sizeof(mad_fixed_t) - 1)) ^
+		  (sample << (CHAR_BIT * sizeof(mad_fixed_t) - nb)))) >> 3;
 
   /* requantize the sample */
 
   /* s'' = (2^nb / (2^nb - 1)) * (s''' + 2^(-nb + 1)) */
 
   requantized += 0x10000000L >> (nb - 1);
-  requantized  = f_mul(requantized, linear_table[nb - 2]);
+  requantized  = mad_f_mul(requantized, linear_table[nb - 2]);
 
   /* s' = factor * s'' */
   /* (to be performed by caller) */
@@ -102,8 +109,12 @@ int mad_layer_I(struct mad_stream *stream, struct mad_frame *frame,
 
   nch = MAD_NUMCHANNELS(frame);
 
-  bound = (frame->mode == MAD_MODE_JOINT_STEREO) ?
-    4 + frame->mode_ext * 4 : 32;
+  if (frame->mode == MAD_MODE_JOINT_STEREO) {
+    frame->flags |= MAD_FLAG_I_STEREO;
+    bound = 4 + frame->mode_ext * 4;
+  }
+  else
+    bound = 32;
 
   /* check CRC word */
 
@@ -162,7 +173,8 @@ int mad_layer_I(struct mad_stream *stream, struct mad_frame *frame,
       for (ch = 0; ch < nch; ++ch) {
 	if ((nb = allocation[ch][sb])) {
 	  frame->sbsample[ch][s][sb] =
-	    f_mul(I_sample(&stream->ptr, nb), sf_table[scalefactor[ch][sb]]);
+	    mad_f_mul(I_sample(&stream->ptr, nb),
+		      sf_table[scalefactor[ch][sb]]);
 	}
 	else
 	  frame->sbsample[ch][s][sb] = 0;
@@ -171,13 +183,13 @@ int mad_layer_I(struct mad_stream *stream, struct mad_frame *frame,
 
     for (sb = bound; sb < 32; ++sb) {
       if ((nb = allocation[0][sb])) {
-	fixed_t sample;
+	mad_fixed_t sample;
 
 	sample = I_sample(&stream->ptr, nb);
 
 	for (ch = 0; ch < nch; ++ch) {
 	  frame->sbsample[ch][s][sb] =
-	    f_mul(sample, sf_table[scalefactor[ch][sb]]);
+	    mad_f_mul(sample, sf_table[scalefactor[ch][sb]]);
 	}
       }
       else {
@@ -339,8 +351,8 @@ struct quantclass {
   unsigned short nlevels;
   unsigned char group;
   unsigned char bits;
-  fixed_t C;
-  fixed_t D;
+  mad_fixed_t C;
+  mad_fixed_t D;
 } const qc_table[17] = {
 # include "qc_table.dat"
 };
@@ -352,10 +364,10 @@ struct quantclass {
 static
 void II_samples(struct mad_bitptr *ptr,
 		struct quantclass const *quantclass,
-		fixed_t *output)
+		mad_fixed_t *output)
 {
   unsigned int nb, s, sample[3];
-  fixed_t requantized;
+  mad_fixed_t requantized;
 
   if ((nb = quantclass->group)) {
     unsigned int c, nlevels;
@@ -379,14 +391,17 @@ void II_samples(struct mad_bitptr *ptr,
   for (s = 0; s < 3; ++s) {
     /* invert most significant bit, then scale sample to fixed format */
 
-    /* FIXME: depends on 32-bit long and sign-extended right shift */
-    requantized = ((fixed_t) (-0x80000000L ^ (sample[s] << (32 - nb)))) >> 3;
+    /* FIXME: depends on sign-extending right shift */
+    requantized = ((mad_fixed_t)
+		   (((mad_fixed_t) 1 << (CHAR_BIT * sizeof(mad_fixed_t) - 1)) ^
+		    (sample[s] <<
+		     (CHAR_BIT * sizeof(mad_fixed_t) - nb)))) >> 3;
 
     /* requantize the sample */
 
     /* s'' = C * (s''' + D) */
 
-    requantized = f_mul(quantclass->C, requantized + quantclass->D);
+    requantized = mad_f_mul(quantclass->C, requantized + quantclass->D);
 
     /* s' = factor * s'' */
     /* (to be performed by caller) */
@@ -405,11 +420,11 @@ int mad_layer_II(struct mad_stream *stream, struct mad_frame *frame,
   struct mad_bitptr start;
   unsigned int table, sblimit, nbal, nch, bound, gr, ch, s, sb, index;
   unsigned char allocation[2][32], scfsi[2][32], scalefactor[2][32][3];
-  fixed_t samples[3];
+  mad_fixed_t samples[3];
 
   nch = MAD_NUMCHANNELS(frame);
 
-  switch (nch == 2 ? frame->bitrate >> 1 : frame->bitrate) {
+  switch (nch == 2 ? frame->bitrate / 2 : frame->bitrate) {
   case 32000:
   case 48000:
     if (frame->sfreq == 32000) {
@@ -440,8 +455,12 @@ int mad_layer_II(struct mad_stream *stream, struct mad_frame *frame,
     }
   }
 
-  bound = (frame->mode == MAD_MODE_JOINT_STEREO) ?
-    4 + frame->mode_ext * 4 : 32;
+  if (frame->mode == MAD_MODE_JOINT_STEREO) {
+    frame->flags |= MAD_FLAG_I_STEREO;
+    bound = 4 + frame->mode_ext * 4;
+  }
+  else
+    bound = 32;
 
   if (bound > sblimit)
     bound = sblimit;
@@ -529,7 +548,7 @@ int mad_layer_II(struct mad_stream *stream, struct mad_frame *frame,
 
 	  for (s = 0; s < 3; ++s) {
 	    frame->sbsample[ch][3 * gr + s][sb] =
-	      f_mul(samples[s], sf_table[scalefactor[ch][sb][gr / 4]]);
+	      mad_f_mul(samples[s], sf_table[scalefactor[ch][sb][gr / 4]]);
 	  }
 	}
 	else {
@@ -548,7 +567,7 @@ int mad_layer_II(struct mad_stream *stream, struct mad_frame *frame,
 	for (s = 0; s < 3; ++s) {
 	  for (ch = 0; ch < nch; ++ch) {
 	    frame->sbsample[ch][3 * gr + s][sb] =
-	      f_mul(samples[s], sf_table[scalefactor[ch][sb][gr / 4]]);
+	      mad_f_mul(samples[s], sf_table[scalefactor[ch][sb][gr / 4]]);
 	  }
 	}
       }

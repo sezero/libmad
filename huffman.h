@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: huffman.h,v 1.4 2000/03/19 06:43:38 rob Exp $
+ * $Id: huffman.h,v 1.5 2000/03/22 23:52:59 rob Exp $
  */
 
 # ifndef HUFFMAN_H
@@ -24,34 +24,34 @@
 
 union huffquad {
   struct {
-    unsigned short final  : 1;
-    unsigned short hlen   : 3;
-    unsigned short v      : 1;
-    unsigned short w      : 1;
-    unsigned short x      : 1;
-    unsigned short y      : 1;
+    unsigned short final  :  1;
+    unsigned short hlen   :  3;
+    unsigned short v      :  1;
+    unsigned short w      :  1;
+    unsigned short x      :  1;
+    unsigned short y      :  1;
   } value;
   struct {
-    unsigned short final  : 1;
-    unsigned short bits   : 3;
+    unsigned short final  :  1;
+    unsigned short bits   :  3;
     unsigned short offset : 12;
   } ptr;
-  unsigned short final    : 1;
+  unsigned short final    :  1;
 };
 
 union huffpair {
   struct {
-    unsigned short final  : 1;
-    unsigned short hlen   : 3;
-    unsigned short x      : 4;
-    unsigned short y      : 4;
+    unsigned short final  :  1;
+    unsigned short hlen   :  3;
+    unsigned short x      :  4;
+    unsigned short y      :  4;
   } value;
   struct {
-    unsigned short final  : 1;
-    unsigned short bits   : 3;
+    unsigned short final  :  1;
+    unsigned short bits   :  3;
     unsigned short offset : 12;
   } ptr;
-  unsigned short final    : 1;
+  unsigned short final    :  1;
 };
 
 struct hufftable {

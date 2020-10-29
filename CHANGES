@@ -2,9 +2,26 @@
  mad - MPEG audio decoder
  Copyright (C) 2000 Robert Leslie
 
- $Id: CHANGES,v 1.5 2000/03/19 06:43:38 rob Exp $
+ $Id: CHANGES,v 1.9 2000/04/23 07:05:13 rob Exp $
 
 ===============================================================================
+
+Version 0.10.1 (beta)
+
+  * Added a subband synthesis optimization (SSO) which involves modifying
+    the fixed-point multiplication method during windowing. This produces
+    subtle differences in the output but improves performance greatly.
+
+  * Added I_STEREO and MS_STEREO flags to frame struct.
+
+  * Eliminated privately-used CRCFAILED flag.
+
+  * Fixed a bug where Layer III decoding could crash on some badly-formatted
+    (e.g. non-MPEG) bitstreams.
+
+  * Miscellaneous code clean-up.
+
+  * Running madplay with no arguments now gives usage info.
 
 Version 0.10.0 (beta)
 

@@ -2,7 +2,7 @@
  mad - MPEG audio decoder
  Copyright (C) 2000 Robert Leslie
 
- $Id: README,v 1.12 2000/03/19 06:43:38 rob Exp $
+ $Id: README,v 1.16 2000/04/23 07:05:13 rob Exp $
 
 ===============================================================================
 
@@ -23,8 +23,8 @@ INTRODUCTION
   operations are performed with a 32-bit fixed-point integer representation.
 
   Because MAD is a new implementation of the ISO/IEC standard, it is
-  unencumbered by copyrights that could otherwise restrict its distribution.
-  MAD is NOT a derivation of the ISO reference source or any other code.
+  unencumbered by other copyrights. MAD is NOT a derivation of the ISO
+  reference source or any other code.
 
   Because MAD is distributed under the terms of the GPL, its redistribution
   is not generally restricted, so long as the terms of the GPL are followed.
@@ -47,8 +47,13 @@ ABOUT THE CODE
     - a hex output module (for debugging and compliance testing)
     - a null module (for timing the decoder)
 
+  The code is partially optimized, but specific improvements can still be
+  made. Particularly, the IMDCT transformation routine of Layer III is not
+  considered final and is currently rather slow.
+
   The API for libmad is likely to change soon, so it is not yet documented.
-  However, the header file `libmad.h' may be informative.
+  However, the header file `libmad.h' may be informative, as may also be the
+  sample code in `minimad.c'.
 
   There are two APIs available, one high-level, and the other low-level.
   With the low-level API, each step of the decoding process must be handled
@@ -64,9 +69,12 @@ ABOUT THE CODE
 
   The `madplay' front-end is written to use the high-level synchronous API.
 
-  The code is partially optimized, but specific improvements can still be
-  made. Particularly, the IMDCT transformation routine of Layer III is not
-  considered final and is currently rather slow.
+  The file `minimad.c' contains an example usage of the libmad API which is
+  less complex than `madplay.c' but shows only the bare minimum required to
+  implement a useful decoder. It expects a regular file to be redirected to
+  standard input, and it sends decoded 16-bit signed little-endian PCM
+  samples to standard output. It will abort at the first discovery of a
+  decoding error.
 
 Intensity Stereo Kluge
 
@@ -108,6 +116,12 @@ Integer Performance
 
   More information can be gathered from the `fixed.h' header file.
 
+  MAD's CPU-intensive subband synthesis routine has been optimized in such a
+  way that the output may contain subtle errors due to a modified method for
+  fixed-point multiplication with a small windowing constant. While this is
+  helpful for performance and is generally undetectable, an option exists
+  for purists to disable this optimization.
+
 Compilation Issues
 
   GCC is probably required to compile the code, but YMMV. Besides the
@@ -135,10 +149,13 @@ INSTALLATION
       --disable-is-kluge       don't use the intensity stereo kluge
                                described above
 
+      --disable-sso            don't use the subband synthesis optimization
+                               which can introduce minor errors
+
       --disable-debugging      do not compile with debugging support, and
                                use more optimizations
 
-      --enable-devlibs         install `libmad.a' developer library and
+      --enable-devlib          install `libmad.a' developer library and
                                `libmad.h' header file in addition to the
                                user program
 

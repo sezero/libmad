@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: bit.c,v 1.7 2000/03/19 06:43:38 rob Exp $
+ * $Id: bit.c,v 1.8 2000/03/26 20:16:59 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
@@ -145,21 +145,15 @@ unsigned long mad_bit_read(struct mad_bitptr *bitptr, unsigned int len)
     return value;
   }
 
-  if (len == bitptr->left) {
-    value = bitptr->cache & ((1 << len) - 1);
-
-    bitptr->byte++;
-    bitptr->left = CHAR_BIT;
-
-    return value;
-  }
-
   /* remaining bits in current byte */
+
   value = bitptr->cache & ((1 << bitptr->left) - 1);
   len  -= bitptr->left;
 
   bitptr->byte++;
   bitptr->left = CHAR_BIT;
+
+  /* more bytes */
 
   while (len >= CHAR_BIT) {
     value = (value << CHAR_BIT) | *bitptr->byte++;
