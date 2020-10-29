@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: synth.c,v 1.3 2000/03/05 18:11:34 rob Exp $
+ * $Id: synth.c,v 1.4 2000/03/13 01:22:03 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
@@ -39,6 +39,10 @@ fixed_t const D[32][16] = {
 # include "D.dat"
 };
 
+/*
+ * NAME:	synth->init()
+ * DESCRIPTION:	initialize synth struct
+ */
 void mad_synth_init(struct mad_synth *synth)
 {
   unsigned int i;
@@ -52,6 +56,10 @@ void mad_synth_init(struct mad_synth *synth)
 }
 
 # if defined(DCT_FAST)
+/*
+ * NAME:	dct32()
+ * DESCRIPTION:	perform fast in[32]->out[32] DCT
+ */
 static
 void dct32(fixed_t const in[32], fixed_t lo[16], fixed_t hi[16])
 {
@@ -381,6 +389,10 @@ void dct32(fixed_t const in[32], fixed_t lo[16], fixed_t hi[16])
 }
 # endif
 
+/*
+ * NAME:	matrixing()
+ * DESCRIPTION:	perform subband synthesis matrixing operation
+ */
 static
 void matrixing(fixed_t lo[16], fixed_t hi[16], fixed_t const filter[32])
 {
@@ -461,13 +473,17 @@ void matrixing(fixed_t lo[16], fixed_t hi[16], fixed_t const filter[32])
 # endif
 }
 
-void mad_synthesis(struct mad_frame *frame, struct mad_synth *synth)
+/*
+ * NAME:	synth->frame()
+ * DESCRIPTION:	perform synthesis of frame subband samples
+ */
+void mad_synth_frame(struct mad_synth *synth, struct mad_frame const *frame)
 {
   unsigned int nch, ns, ch, s, sb;
   fixed_t *pcmptr;
 
   nch = MAD_NUMCHANNELS(frame);
-  ns  = MAD_NUMSAMPLES(frame);
+  ns  = MAD_NUMSBSAMPLES(frame);
 
   for (s = 0; s < ns; ++s) {
     unsigned int slot, even, odd;

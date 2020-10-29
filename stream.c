@@ -16,20 +16,27 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: stream.c,v 1.1 2000/03/05 05:19:17 rob Exp $
+ * $Id: stream.c,v 1.3 2000/03/19 06:43:38 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
 #  include "config.h"
 # endif
 
-# include "stream.h"
-# include "bit.h"
+# include <stdlib.h>
 
+# include "bit.h"
+# include "stream.h"
+
+/*
+ * NAME:	stream->init()
+ * DESCRIPTION:	initialize stream struct
+ */
 void mad_stream_init(struct mad_stream *stream)
 {
   stream->buffer     = 0;
   stream->bufend     = 0;
+  stream->skiplen    = 0;
 
   stream->sync       = 0;
   stream->freerate   = 0;
@@ -41,21 +48,66 @@ void mad_stream_init(struct mad_stream *stream)
   mad_bit_init(&stream->anc_ptr, 0);
   stream->anc_bitlen = 0;
 
+  stream->main_data  = 0;
   stream->md_len     = 0;
 
   stream->error      = 0;
 }
 
-void mad_stream_buffer(struct mad_stream *stream,
-		       unsigned char const *buf, unsigned long len)
+/*
+ * NAME:	stream->finish()
+ * DESCRIPTION:	deallocate any dynamic memory associated with stream
+ */
+void mad_stream_finish(struct mad_stream *stream)
 {
-  stream->buffer = buf;
-  stream->bufend = buf + len;
+  if (stream->main_data) {
+    free(stream->main_data);
+    stream->main_data = 0;
+  }
 
-  stream->this_frame = 0;
-  stream->next_frame = buf;
+  mad_bit_finish(&stream->anc_ptr);
+  mad_bit_finish(&stream->ptr);
+}
 
-  stream->sync = 0;
+/*
+ * NAME:	stream->buffer()
+ * DESCRIPTION:	set stream buffer pointers
+ */
+void mad_stream_buffer(struct mad_stream *stream,
+		       unsigned char const *buffer, unsigned long length)
+{
+  stream->buffer = buffer;
+  stream->bufend = buffer + length;
 
-  mad_bit_init(&stream->ptr, 0);
+  stream->this_frame = buffer;
+  stream->next_frame = buffer;
+
+  stream->sync = 1;
+
+  mad_bit_init(&stream->ptr, buffer);
+}
+
+/*
+ * NAME:	stream->skip()
+ * DESCRIPTION:	arrange to skip bytes before the next frame
+ */
+void mad_stream_skip(struct mad_stream *stream, unsigned long length)
+{
+  stream->skiplen += length;
+}
+
+/*
+ * NAME:	stream->sync()
+ * DESCRIPTION:	locate the next stream sync word
+ */
+unsigned char const *mad_stream_sync(unsigned char const *start,
+				     unsigned char const *end)
+{
+  register unsigned char const *ptr = start;
+
+  while (ptr < end - 1 &&
+	 !(ptr[0] == 0xff && (ptr[1] & 0xf0) == 0xf0))
+    ++ptr;
+
+  return (end - ptr < 4) ? 0 : ptr;
 }

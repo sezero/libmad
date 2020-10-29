@@ -2,9 +2,31 @@
  mad - MPEG audio decoder
  Copyright (C) 2000 Robert Leslie
 
- $Id: CHANGES,v 1.2 2000/03/07 07:59:25 rob Exp $
+ $Id: CHANGES,v 1.5 2000/03/19 06:43:38 rob Exp $
 
 ===============================================================================
+
+Version 0.10.0 (beta)
+
+  * Added SPARC fixed-point math support.
+
+  * Revamped libmad API for better high- and low-level support.
+
+  * Documented more of the code.
+
+  * Changed sync semantics such that new stream buffers are assumed to be
+    sync-aligned.
+
+  * Added framework for ID3v2 support.
+
+  * Changed Layer III to dynamically allocate static memory so as not to
+    waste it (about 6.4K) when only decoding Layer I or Layer II.
+
+  * Added prefix parsing for output module selection.
+
+  * Added audio_raw output module.
+
+  * Rewrote madplay.c to use high-level interface.
 
 Version 0.9.7 (beta)
 

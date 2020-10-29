@@ -16,14 +16,15 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: frame.h,v 1.2 2000/03/05 07:31:55 rob Exp $
+ * $Id: frame.h,v 1.4 2000/03/19 06:43:38 rob Exp $
  */
 
 # ifndef FRAME_H
 # define FRAME_H
 
-# include "timer.h"
 # include "fixed.h"
+# include "timer.h"
+# include "stream.h"
 
 struct mad_frame {
   int layer;				/* audio layer (1, 2, or 3) */
@@ -32,18 +33,18 @@ struct mad_frame {
   int emphasis;				/* de-emphasis to use (see below) */
 
   unsigned int bitrate;			/* stream bitrate (bps) */
-  unsigned int samplefreq;		/* sampling frequency (Hz) */
+  unsigned int sfreq;			/* sampling frequency (Hz) */
 
   struct mad_timer duration;		/* audio playing time of frame */
 
   int flags;				/* flags and private bits (below) */
 
   fixed_t sbsample[2][36][32];		/* synthesis subband filter samples */
-  fixed_t overlap[2][32][18];		/* layer III block overlap data */
+  fixed_t (*overlap)[2][32][18];	/* layer III block overlap data */
 };
 
 # define MAD_NUMCHANNELS(frame)		((frame)->mode ? 2 : 1)
-# define MAD_NUMSAMPLES(frame)		((frame)->layer == 1 ? 12 : 36)
+# define MAD_NUMSBSAMPLES(frame)	((frame)->layer == 1 ? 12 : 36)
 
 # define MAD_MODE_SINGLE_CHANNEL	0
 # define MAD_MODE_DUAL_CHANNEL		1
@@ -65,7 +66,13 @@ struct mad_frame {
 # define MAD_FLAG_III_5BITPRIV	0x0020	/* 5 bits in III private (else 3) */
 
 void mad_frame_init(struct mad_frame *);
+void mad_frame_finish(struct mad_frame *);
+
 void mad_frame_mute(struct mad_frame *);
+
+int mad_frame_header(struct mad_frame *, struct mad_stream *,
+		     unsigned short *);
+int mad_frame_decode(struct mad_frame *, struct mad_stream *);
 
 # endif
 

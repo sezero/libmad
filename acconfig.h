@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: acconfig.h,v 1.4 2000/03/05 05:19:16 rob Exp $
+ * $Id: acconfig.h,v 1.5 2000/03/19 06:43:38 rob Exp $
  */
 
 /*****************************************************************************
@@ -41,3 +41,4 @@
 /*****************************************************************************
  * End of automatically configured definitions                               *
  *****************************************************************************/
+

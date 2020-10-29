@@ -2,7 +2,7 @@
  mad - MPEG audio decoder
  Copyright (C) 2000 Robert Leslie
 
- $Id: README,v 1.10 2000/03/06 15:20:43 rob Exp $
+ $Id: README,v 1.12 2000/03/19 06:43:38 rob Exp $
 
 ===============================================================================
 
@@ -43,10 +43,26 @@ ABOUT THE CODE
     - an Open Sound System interface module
     - a Sun audio interface module
     - a WAV file output module
+    - a raw PCM output module
+    - a hex output module (for debugging and compliance testing)
     - a null module (for timing the decoder)
 
   The API for libmad is likely to change soon, so it is not yet documented.
   However, the header file `libmad.h' may be informative.
+
+  There are two APIs available, one high-level, and the other low-level.
+  With the low-level API, each step of the decoding process must be handled
+  explicitly. With the high-level API, after callbacks are configured, a
+  single routine will decode an entire bitstream.
+
+  The high-level API may either be used synchronously or asynchronously. If
+  used asynchronously, decoding will occur in a separate process.
+  Communication is possible with the decoding process by passing control
+  messages.
+
+  [The asynchronous API is not yet completed.]
+
+  The `madplay' front-end is written to use the high-level synchronous API.
 
   The code is partially optimized, but specific improvements can still be
   made. Particularly, the IMDCT transformation routine of Layer III is not
@@ -113,8 +129,8 @@ INSTALLATION
 
       --enable-fpm=<arch>      use the <arch>-specific version of the
                                fixed-point math assembly routines
-                               (current options are: intel, arm, mips;
-                               also allowed are: 64bit, approx)
+                               (current options are: intel, arm, mips,
+                               sparc; also allowed are: 64bit, approx)
 
       --disable-is-kluge       don't use the intensity stereo kluge
                                described above
@@ -131,9 +147,9 @@ INSTALLATION
   cross-compiling for another architecture, you should be sure either to
   give `configure' a host type or to use an explicit --enable-fpm option.
 
-  If an appropriate assembly routine cannot be determined, either the fast
-  approximation version or the slow default version will be used. In these
-  cases use of an alternate --enable-fpm is highly recommended.
+  If an appropriate assembly routine cannot be determined, the fast
+  approximation version will be used. In this case, use of an alternate
+  --enable-fpm is highly recommended.
 
 ===============================================================================
 

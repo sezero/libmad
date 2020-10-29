@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: fixed.h,v 1.7 2000/03/05 07:31:55 rob Exp $
+ * $Id: fixed.h,v 1.8 2000/03/08 14:01:11 rob Exp $
  */
 
 # ifndef FIXED_H
@@ -167,6 +167,21 @@ typedef unsigned long fixed64lo_t;
           : "+l" (lo), "+h" (hi)  \
           : "%r" (x), "r" (y));
 # endif
+
+# elif defined(FPM_SPARC)
+
+/* This SPARC V8 version is accurate but always rounds down the least
+   significant bit. */
+
+#  define FPM_MACRO
+#  define f_mul(x, y)  \
+     ({ fixed64hi_t __hi;  \
+        fixed64lo_t __lo;  \
+        asm ("smul %2,%3,%0; rd %%y,%1"  \
+             : "=r" (__lo), "=r" (__hi)  \
+             : "%r" (x), "rI" (y));  \
+        f_scale64(__hi, __lo);  \
+     })
 
 # else
 fixed_t f_mul(fixed_t, fixed_t);

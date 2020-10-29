@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: timer.c,v 1.5 2000/03/07 07:59:25 rob Exp $
+ * $Id: timer.c,v 1.7 2000/03/19 06:43:39 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
@@ -27,12 +27,20 @@
 
 # include "timer.h"
 
+/*
+ * NAME:	timer->init()
+ * DESCRIPTION:	initialize timer struct
+ */
 void mad_timer_init(struct mad_timer *timer)
 {
   timer->seconds    = 0;
   timer->parts36750 = 0;
 }
 
+/*
+ * NAME:	timer->add()
+ * DESCRIPTION:	add one timer to another
+ */
 void mad_timer_add(struct mad_timer *timer, struct mad_timer const *incr)
 {
   timer->seconds    += incr->seconds;
@@ -43,33 +51,58 @@ void mad_timer_add(struct mad_timer *timer, struct mad_timer const *incr)
   timer->parts36750 %= 36750;
 }
 
+/*
+ * NAME:	timer->str()
+ * DESCRIPTION:	write a string representation of a timer using a template
+ */
 void mad_timer_str(struct mad_timer const *timer,
 		   char *dest, char const *format, int resolution)
 {
   unsigned int hours, minutes, seconds, tenths;
 
-  tenths = mad_timer_tenths(timer);
+  seconds = mad_timer_seconds(timer);
+  tenths  = timer->parts36750 / 3675;
 
   switch (resolution) {
-  case timer_hours:
-    seconds = timer->seconds % 60;
-    minutes = (timer->seconds / 60) % 60;
-    hours   = (timer->seconds / 60) / 60;
+  case MAD_TIMER_HOURS:
+    minutes = seconds / 60;
+    hours   = minutes / 60;
 
-    sprintf(dest, format, hours, minutes, seconds, tenths);
+    sprintf(dest, format, hours, minutes % 60, seconds % 60, tenths);
     break;
 
-  case timer_minutes:
-    seconds = timer->seconds % 60;
-    minutes = timer->seconds / 60;
+  case MAD_TIMER_MINUTES:
+    minutes = seconds / 60;
 
-    sprintf(dest, format, minutes, seconds, tenths);
+    sprintf(dest, format, minutes, seconds % 60, tenths);
     break;
 
-  case timer_seconds:
-    seconds = timer->seconds;
-
+  case MAD_TIMER_SECONDS:
     sprintf(dest, format, seconds, tenths);
     break;
   }
+}
+
+/*
+ * NAME:	timer->count()
+ * DESCRIPTION:	return timer value in selected units
+ */
+unsigned long mad_timer_count(struct mad_timer const *timer, int units)
+{
+  switch (units) {
+  case MAD_TIMER_HOURS:
+    return timer->seconds / 60 / 60;
+  case MAD_TIMER_MINUTES:
+    return timer->seconds / 60;
+  case MAD_TIMER_SECONDS:
+    return timer->seconds;
+  case MAD_TIMER_DECISECONDS:
+    return timer->seconds *   10 + timer->parts36750 / 3675;
+  case MAD_TIMER_CENTISECONDS:
+    return timer->seconds *  100 + timer->parts36750 /  368;
+  case MAD_TIMER_MILLISECONDS:
+    return timer->seconds * 1000 + timer->parts36750 /   37;
+  }
+
+  return 0;
 }

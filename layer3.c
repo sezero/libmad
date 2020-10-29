@@ -16,12 +16,19 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: layer3.c,v 1.13 2000/03/05 07:31:55 rob Exp $
+ * $Id: layer3.c,v 1.16 2000/03/19 06:43:38 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
 #  include "config.h"
 # endif
+
+# ifdef DEBUG
+#  include <stdio.h>
+# endif
+
+# include <stdlib.h>
+# include <string.h>
 
 # ifdef HAVE_LIMITS_H
 #  include <limits.h>
@@ -29,17 +36,12 @@
 #  define CHAR_BIT  8
 # endif
 
-# include <string.h>
-
 # include "fixed.h"
 # include "bit.h"
-# include "mad.h"
+# include "stream.h"
+# include "frame.h"
 # include "huffman.h"
 # include "layer3.h"
-
-# ifdef DEBUG
-#  include <stdio.h>
-# endif
 
 /* --- Layer III ----------------------------------------------------------- */
 
@@ -239,7 +241,6 @@ fixed_t const window_s[12] = {
   0x0216a2a2L /* 0.130526192 */, 0x061f78aaL /* 0.382683432 */,
   0x09bd7ca0L /* 0.608761429 */, 0x0cb19346L /* 0.793353340 */,
   0x0ec835e8L /* 0.923879533 */, 0x0fdcf549L /* 0.991444861 */,
-
   0x0fdcf549L /* 0.991444861 */, 0x0ec835e8L /* 0.923879533 */,
   0x0cb19346L /* 0.793353340 */, 0x09bd7ca0L /* 0.608761429 */,
   0x061f78aaL /* 0.382683432 */, 0x0216a2a2L /* 0.130526192 */,
@@ -265,6 +266,10 @@ fixed_t const is_table[7] = {
   0x10000000L /* 1.000000000 */
 };
 
+/*
+ * NAME:	III_sideinfo()
+ * DESCRIPTION:	decode frame side information from a bitstream
+ */
 static
 int III_sideinfo(struct mad_bitptr *ptr, struct sideinfo *si,
 		 unsigned int *md_bitlen, unsigned int nch)
@@ -336,6 +341,10 @@ int III_sideinfo(struct mad_bitptr *ptr, struct sideinfo *si,
   return result;
 }
 
+/*
+ * NAME:	III_scalefactors()
+ * DESCRIPTION:	decode channel scalefactors of one granule from a bitstream
+ */
 static
 unsigned int III_scalefactors(struct mad_bitptr *ptr, struct channel *channel,
 			      struct channel const *gr0ch, unsigned int scfsi)
@@ -417,6 +426,10 @@ unsigned int III_scalefactors(struct mad_bitptr *ptr, struct channel *channel,
   return mad_bit_length(&start, ptr);
 }
 
+/*
+ * NAME:	III_requantize_l()
+ * DESCRIPTION:	requantize one sample from a long block
+ */
 static
 fixed_t III_requantize_l(signed int value, struct channel const *channel,
 			 unsigned int sfb)
@@ -480,6 +493,10 @@ fixed_t III_requantize_l(signed int value, struct channel const *channel,
   return frac ? f_mul(requantized, root_table[frac + 3]) : requantized;
 }
 
+/*
+ * NAME:	III_requantize_s()
+ * DESCRIPTION:	requantize one sample from a short block
+ */
 static
 fixed_t III_requantize_s(signed int value, struct channel const *channel,
 			 unsigned int sfb, unsigned int window)
@@ -548,6 +565,10 @@ fixed_t III_requantize_s(signed int value, struct channel const *channel,
 # define MASK1BIT(cache, sz)  \
     ((cache) & (1 << ((sz) - 1)))
 
+/*
+ * NAME:	III_huffdecode()
+ * DESCRIPTION:	decode Huffman code words of one channel from a bitstream
+ */
 static
 int III_huffdecode(struct mad_bitptr *ptr, signed short is[576],
 		   struct channel *channel, unsigned int sfreqi,
@@ -564,7 +585,7 @@ int III_huffdecode(struct mad_bitptr *ptr, signed short is[576],
     return MAD_ERR_BADPART3LEN;
 
   peek = *ptr;
-  mad_bit_seek(ptr, bits_left);
+  mad_bit_skip(ptr, bits_left);
 
   /* align bit reads to byte boundaries */
   cachesz    = mad_bit_left(&peek);
@@ -822,6 +843,10 @@ int III_huffdecode(struct mad_bitptr *ptr, signed short is[576],
 # undef MASK
 # undef MASK1BIT
 
+/*
+ * NAME:	III_reorder()
+ * DESCRIPTION:	reorder frequency lines of a short block into subband order
+ */
 static
 void III_reorder(fixed_t xr[576], struct channel const *channel,
 		 unsigned int sfreqi)
@@ -878,6 +903,10 @@ void III_reorder(fixed_t xr[576], struct channel const *channel,
   }
 }
 
+/*
+ * NAME:	III_stereo()
+ * DESCRIPTION:	perform joint stereo processing on a granule
+ */
 static
 int III_stereo(fixed_t xr[2][576], struct granule *granule, int mode_ext,
 	       unsigned int sfreqi)
@@ -973,7 +1002,7 @@ int III_stereo(fixed_t xr[2][576], struct granule *granule, int mode_ext,
 
 	/*
 	 * There seems to be some discrepancy with respect to simultaneous
-	 * MS and intensity stereo encoding. The ISO/IEC standard clearly
+	 * M/S and intensity stereo encoding. The ISO/IEC standard clearly
 	 * states that "...the scalefactor band in which the last non-zero
 	 * (right channel) frequency line occurs is the last scalefactor
 	 * band to which the MS_stereo equations apply" when intensity
@@ -985,7 +1014,7 @@ int III_stereo(fixed_t xr[2][576], struct granule *granule, int mode_ext,
 	 * this as well, but it happens to go unnoticed with said decoders.
 	 *
 	 * It's not clear what the right answer is. For now, the intensity
-	 * stereo bands can also optionally be processed with MS for is_pos
+	 * stereo bands can also optionally be processed with M/S for is_pos
 	 * values outside the intensity stereo range, which seems to be
 	 * what at least one other decoder implementation is doing. This
 	 * does not produce optimal results, but it is better than no
@@ -1023,6 +1052,10 @@ int III_stereo(fixed_t xr[2][576], struct granule *granule, int mode_ext,
   return 0;
 }
 
+/*
+ * NAME:	III_aliasreduce()
+ * DESCRIPTION:	perform frequency line alias reduction
+ */
 static
 void III_aliasreduce(fixed_t xr[576])
 {
@@ -1045,6 +1078,10 @@ void III_aliasreduce(fixed_t xr[576])
   }
 }
 
+/*
+ * NAME:	imdct36
+ * DESCRIPTION:	perform Y[18]->y[36] IMDCT
+ */
 static
 void imdct36(fixed_t const Y[18], fixed_t y[36])
 {
@@ -1087,6 +1124,10 @@ void imdct36(fixed_t const Y[18], fixed_t y[36])
     *yptr++ = *yrefl--;
 }
 
+/*
+ * NAME:	III_imdct_l()
+ * DESCRIPTION:	perform IMDCT and windowing for long blocks
+ */
 static
 void III_imdct_l(fixed_t const input[18], fixed_t z[36],
 		 unsigned int block_type)
@@ -1129,6 +1170,10 @@ void III_imdct_l(fixed_t const input[18], fixed_t z[36],
   }
 }
 
+/*
+ * NAME:	III_imdct_s()
+ * DESCRIPTION:	perform IMDCT and windowing for short blocks
+ */
 static
 void III_imdct_s(fixed_t const input[18], fixed_t z[36])
 {
@@ -1164,6 +1209,10 @@ void III_imdct_s(fixed_t const input[18], fixed_t z[36])
     z[i] = 0;
 }
 
+/*
+ * NAME:	III_overlap()
+ * DESCRIPTION:	perform overlap-add of windowed IMDCT outputs
+ */
 static
 void III_overlap(fixed_t const output[36], fixed_t overlap[18],
 		 fixed_t sample[18][32], unsigned int sb)
@@ -1176,6 +1225,10 @@ void III_overlap(fixed_t const output[36], fixed_t overlap[18],
   }
 }
 
+/*
+ * NAME:	III_freqinver()
+ * DESCRIPTION:	perform subband frequency inversion for odd sample lines
+ */
 static
 void III_freqinver(fixed_t sample[18][32], unsigned int sb)
 {
@@ -1185,6 +1238,10 @@ void III_freqinver(fixed_t sample[18][32], unsigned int sb)
     sample[i][sb] = -sample[i][sb];
 }
 
+/*
+ * NAME:	III_decode()
+ * DESCRIPTION:	decode frame main_data
+ */
 static
 int III_decode(struct mad_bitptr *ptr, struct mad_frame *frame,
 		struct sideinfo *si, unsigned int nch)
@@ -1192,7 +1249,9 @@ int III_decode(struct mad_bitptr *ptr, struct mad_frame *frame,
   unsigned int sfreqi, gr;
 
   /* 48000 => 0, 44100 => 1, 32000 => 2 */
-  sfreqi = ((frame->samplefreq & 0x0700) >> 8) - 3;
+  sfreqi = ((frame->sfreq & 0x0700) >> 8) - 3;
+
+  /* scalefactors, Huffman decoding, requantization */
 
   for (gr = 0; gr < 2; ++gr) {
     struct granule *granule = &si->gr[gr];
@@ -1214,15 +1273,17 @@ int III_decode(struct mad_bitptr *ptr, struct mad_frame *frame,
 
       i = 0;
 
+      /* subbands 0-1 */
+
       if (channel->block_type != 2 || (channel->flags & mixed_block_flag)) {
-	/* long blocks sfb 0-7 (sb 0-1) */
+	/* long blocks sfb 0-7 */
 	for (sfb = 0; sfb < 8; ++sfb) {
 	  for (f = sfwidth_l[sfreqi][sfb]; f--; ++i)
 	    xr[ch][i] = is[i] ? III_requantize_l(is[i], channel, sfb) : 0;
 	}
       }
       else {
-	/* short blocks sfb 0-2 (sb 0-1) */
+	/* short blocks sfb 0-2 */
 	for (sfb = 0; sfb < 3; ++sfb) {
 	  for (w = 0; w < 3; ++w) {
 	    for (f = sfwidth_s[sfreqi][sfb]; f--; ++i)
@@ -1231,8 +1292,10 @@ int III_decode(struct mad_bitptr *ptr, struct mad_frame *frame,
 	}
       }
 
+      /* subbands 2-31 */
+
       if (channel->block_type != 2) {
-	/* long blocks sfb 8-20 (sb 2-31) */
+	/* long blocks sfb 8-20 */
 	for (sfb = 8; sfb < 21; ++sfb) {
 	  for (f = sfwidth_l[sfreqi][sfb]; f--; ++i)
 	    xr[ch][i] = is[i] ? III_requantize_l(is[i], channel, sfb) : 0;
@@ -1244,7 +1307,7 @@ int III_decode(struct mad_bitptr *ptr, struct mad_frame *frame,
 	}
       }
       else {
-	/* short blocks sfb 3-11 (sb 2-31) */
+	/* short blocks sfb 3-11 */
 	unsigned int n;
 
 	for (sfb = 3; sfb < 12; ++sfb) {
@@ -1263,11 +1326,15 @@ int III_decode(struct mad_bitptr *ptr, struct mad_frame *frame,
       }
     }
 
+    /* joint stereo processing */
+
     if (frame->mode == MAD_MODE_JOINT_STEREO) {
       error = III_stereo(xr, granule, frame->mode_ext, sfreqi);
       if (error)
 	return error;
     }
+
+    /* reordering, alias reduction, IMDCT, overlap-add, frequency inversion */
 
     for (ch = 0; ch < nch; ++ch) {
       struct channel const *channel = &granule->ch[ch];
@@ -1282,38 +1349,42 @@ int III_decode(struct mad_bitptr *ptr, struct mad_frame *frame,
 
       l = 0;
 
+      /* subbands 0-1 */
+
       if (channel->block_type != 2 || (channel->flags & mixed_block_flag)) {
-	/* long blocks sb 0-1 */
+	/* long blocks */
 	for (sb = 0; sb < 2; ++sb, l += 18) {
 	  III_imdct_l(&xr[ch][l], output, channel->block_type);
-	  III_overlap(output, frame->overlap[ch][sb], sample, sb);
+	  III_overlap(output, (*frame->overlap)[ch][sb], sample, sb);
 	}
       }
       else {
-	/* short blocks sb 0-1 */
+	/* short blocks */
 	for (sb = 0; sb < 2; ++sb, l += 18) {
 	  III_imdct_s(&xr[ch][l], output);
-	  III_overlap(output, frame->overlap[ch][sb], sample, sb);
+	  III_overlap(output, (*frame->overlap)[ch][sb], sample, sb);
 	}
       }
 
       III_freqinver(sample, 1);
 
+      /* subbands 2-31 */
+
       if (channel->block_type != 2) {
-	/* long blocks sb 2-31 */
+	/* long blocks */
 	for (sb = 2; sb < 32; ++sb, l += 18) {
 	  III_imdct_l(&xr[ch][l], output, channel->block_type);
-	  III_overlap(output, frame->overlap[ch][sb], sample, sb);
+	  III_overlap(output, (*frame->overlap)[ch][sb], sample, sb);
 
 	  if (sb & 1)
 	    III_freqinver(sample, sb);
 	}
       }
       else {
-	/* short blocks sb 2-31 */
+	/* short blocks */
 	for (sb = 2; sb < 32; ++sb, l += 18) {
 	  III_imdct_s(&xr[ch][l], output);
-	  III_overlap(output, frame->overlap[ch][sb], sample, sb);
+	  III_overlap(output, (*frame->overlap)[ch][sb], sample, sb);
 
 	  if (sb & 1)
 	    III_freqinver(sample, sb);
@@ -1325,6 +1396,10 @@ int III_decode(struct mad_bitptr *ptr, struct mad_frame *frame,
   return 0;
 }
 
+/*
+ * NAME:	layer->III()
+ * DESCRIPTION:	decode a single Layer III frame
+ */
 int mad_layer_III(struct mad_stream *stream, struct mad_frame *frame,
 		  unsigned short const crc[2])
 {
@@ -1335,19 +1410,33 @@ int mad_layer_III(struct mad_stream *stream, struct mad_frame *frame,
   struct sideinfo si;
   int error, result = 0;
 
+  /* allocate Layer III dynamic structures */
+
+  if (stream->main_data == 0) {
+    stream->main_data = malloc(1935);
+    if (stream->main_data == 0) {
+      stream->error = MAD_ERR_NOMEM;
+      return -1;
+    }
+  }
+
+  if (frame->overlap == 0) {
+    frame->overlap = calloc(2 * 32 * 18, sizeof(fixed_t));
+    if (frame->overlap == 0) {
+      stream->error = MAD_ERR_NOMEM;
+      return -1;
+    }
+  }
+
   nch = MAD_NUMCHANNELS(frame);
 
   /* check CRC word */
 
   if ((frame->flags & MAD_FLAG_PROTECTION) &&
-      mad_crc(crc[0], stream->ptr, nch == 1 ? 136 : 256) != crc[1]) {
+      mad_bit_crc(stream->ptr, nch == 1 ? 136 : 256, crc[0]) != crc[1]) {
     stream->error = MAD_ERR_BADCRC;
     result = -1;
   }
-
-# if 0 && defined(DEBUG)
-  fprintf(stderr, "stream ptr == %p\n", stream->ptr.byte);
-# endif
 
   /* main_data_begin */
   main_data_begin = mad_bit_read(&stream->ptr, 9);
@@ -1366,10 +1455,9 @@ int mad_layer_III(struct mad_stream *stream, struct mad_frame *frame,
     result = -1;
   }
 
-  frame_space = stream->next_frame - mad_bit_byte(&stream->ptr);
-
   /* find main_data */
 
+  frame_space      = stream->next_frame - mad_bit_nextbyte(&stream->ptr);
   main_data_length = (main_data_bitlen + 7) / 8;
 
   if (main_data_begin == 0) {
@@ -1388,7 +1476,8 @@ int mad_layer_III(struct mad_stream *stream, struct mad_frame *frame,
       frame_used = 0;
     }
     else {
-      mad_bit_init(&ptr, &stream->main_data[stream->md_len] - main_data_begin);
+      mad_bit_init(&ptr,
+		   &(*stream->main_data)[stream->md_len] - main_data_begin);
 
       if (main_data_length > main_data_begin) {
 	if (main_data_length - main_data_begin > frame_space) {
@@ -1400,8 +1489,8 @@ int mad_layer_III(struct mad_stream *stream, struct mad_frame *frame,
 	  frame_used = 0;
 	}
 	else {
-	  memcpy(&stream->main_data[stream->md_len],
-		 mad_bit_byte(&stream->ptr),
+	  memcpy(&(*stream->main_data)[stream->md_len],
+		 mad_bit_nextbyte(&stream->ptr),
 		 main_data_length - main_data_begin);
 	  stream->md_len += main_data_length - main_data_begin;
 
@@ -1415,9 +1504,9 @@ int mad_layer_III(struct mad_stream *stream, struct mad_frame *frame,
 
   frame_free = frame_space - frame_used;
 
-  /* improve free format discovery */
+  /* improve free bitrate discovery */
   if (frame->bitrate == 0 && frame_used)
-    mad_bit_seek(&stream->ptr, frame_used);
+    mad_bit_skip(&stream->ptr, frame_used);
 
 # if 0 && defined(DEBUG)
   fprintf(stderr, "main_data_begin:%u, main_data_length:%u, "
@@ -1438,7 +1527,7 @@ int mad_layer_III(struct mad_stream *stream, struct mad_frame *frame,
   /* preload main_data buffer with up to 511 bytes for next frame(s) */
 
   if (frame_free >= 511) {
-    memcpy(stream->main_data, stream->next_frame - 511, 511);
+    memcpy(*stream->main_data, stream->next_frame - 511, 511);
     stream->md_len = 511;
   }
   else {
@@ -1449,8 +1538,8 @@ int mad_layer_III(struct mad_stream *stream, struct mad_frame *frame,
       if (extra + frame_free > 511)
 	extra = 511 - frame_free;
 
-      memmove(stream->main_data,
-	      stream->main_data + stream->md_len - extra,
+      memmove(*stream->main_data,
+	      *stream->main_data + stream->md_len - extra,
 	      extra);
 
       stream->md_len = extra;
@@ -1458,7 +1547,7 @@ int mad_layer_III(struct mad_stream *stream, struct mad_frame *frame,
     else
       stream->md_len = 0;
 
-    memcpy(stream->main_data + stream->md_len,
+    memcpy(*stream->main_data + stream->md_len,
 	   stream->next_frame - frame_free, frame_free);
     stream->md_len += frame_free;
   }

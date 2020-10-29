@@ -16,10 +16,10 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * Id: version.h,v 1.10 2000/03/06 15:20:43 rob Exp 
+ * Id: version.h,v 1.12 2000/03/19 06:43:39 rob Exp 
  */
 
-# define MAD_VERSION		"0.9.7 (beta)"
+# define MAD_VERSION		"0.10.0 (beta)"
 # define MAD_PUBLISHYEAR	"2000"
 # define MAD_AUTHOR		"Robert Leslie"
 # define MAD_EMAIL		"rob@mars.org"
@@ -47,7 +47,7 @@ extern char const mad_license[];
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * Id: fixed.h,v 1.7 2000/03/05 07:31:55 rob Exp 
+ * Id: fixed.h,v 1.8 2000/03/08 14:01:11 rob Exp 
  */
 
 # ifndef FIXED_H
@@ -199,6 +199,21 @@ typedef unsigned long fixed64lo_t;
           : "%r" (x), "r" (y));
 # endif
 
+# elif defined(FPM_SPARC)
+
+/* This SPARC V8 version is accurate but always rounds down the least
+   significant bit. */
+
+#  define FPM_MACRO
+#  define f_mul(x, y)  \
+     ({ fixed64hi_t __hi;  \
+        fixed64lo_t __lo;  \
+        asm ("smul %2,%3,%0; rd %%y,%1"  \
+             : "=r" (__lo), "=r" (__hi)  \
+             : "%r" (x), "rI" (y));  \
+        f_scale64(__hi, __lo);  \
+     })
+
 # else
 fixed_t f_mul(fixed_t, fixed_t);
 # endif
@@ -230,7 +245,7 @@ double f_todouble(fixed_t);
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * Id: bit.h,v 1.4 2000/03/05 07:31:54 rob Exp 
+ * Id: bit.h,v 1.6 2000/03/19 06:43:38 rob Exp 
  */
 
 # ifndef BIT_H
@@ -243,13 +258,20 @@ struct mad_bitptr {
 };
 
 void mad_bit_init(struct mad_bitptr *, unsigned char const *);
+
+# define mad_bit_finish(bitptr)  /* nothing */
+
 unsigned int mad_bit_length(struct mad_bitptr const *,
 			    struct mad_bitptr const *);
-unsigned char const *mad_bit_byte(struct mad_bitptr const *);
-void mad_bit_seek(struct mad_bitptr *, unsigned int);
-unsigned long mad_bit_read(struct mad_bitptr *, unsigned int);
 
-# define mad_bit_left(bits)  ((bits)->left)
+# define mad_bit_left(bitptr)  ((bitptr)->left)
+unsigned char const *mad_bit_nextbyte(struct mad_bitptr const *);
+
+void mad_bit_skip(struct mad_bitptr *, unsigned int);
+unsigned long mad_bit_read(struct mad_bitptr *, unsigned int);
+void mad_bit_write(struct mad_bitptr *, unsigned int, unsigned long);
+
+unsigned short mad_bit_crc(struct mad_bitptr, unsigned int, unsigned short);
 
 # endif
 
@@ -271,17 +293,11 @@ unsigned long mad_bit_read(struct mad_bitptr *, unsigned int);
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * Id: timer.h,v 1.5 2000/03/07 07:59:25 rob Exp 
+ * Id: timer.h,v 1.6 2000/03/19 06:43:39 rob Exp 
  */
 
 # ifndef TIMER_H
 # define TIMER_H
-
-enum {
-  timer_hours,
-  timer_minutes,
-  timer_seconds
-};
 
 struct mad_timer {
   unsigned long seconds;		/* whole seconds */
@@ -289,11 +305,21 @@ struct mad_timer {
 };
 
 void mad_timer_init(struct mad_timer *);
+
+# define mad_timer_finish(timer)  /* nothing */
+
 void mad_timer_add(struct mad_timer *, struct mad_timer const *);
 void mad_timer_str(struct mad_timer const *, char *, char const *, int);
 
 # define mad_timer_seconds(timer)	((timer)->seconds)
-# define mad_timer_tenths(timer)	((timer)->parts36750 / 3675)
+
+# define MAD_TIMER_HOURS	0x0002
+# define MAD_TIMER_MINUTES	0x0001
+# define MAD_TIMER_SECONDS	0x0000
+
+# define MAD_TIMER_DECISECONDS	0x0003
+# define MAD_TIMER_CENTISECONDS	0x0004
+# define MAD_TIMER_MILLISECONDS	0x0005
 
 # endif
 
@@ -315,7 +341,7 @@ void mad_timer_str(struct mad_timer const *, char *, char const *, int);
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * Id: stream.h,v 1.2 2000/03/05 07:31:55 rob Exp 
+ * Id: stream.h,v 1.4 2000/03/19 06:43:38 rob Exp 
  */
 
 # ifndef STREAM_H
@@ -325,6 +351,7 @@ void mad_timer_str(struct mad_timer const *, char *, char const *, int);
 struct mad_stream {
   unsigned char const *buffer;		/* input bitstream buffer */
   unsigned char const *bufend;		/* end of buffer */
+  unsigned long skiplen;		/* bytes to skip before next frame */
 
   int sync;				/* stream sync found */
   unsigned int freerate;		/* free bitrate (fixed) */
@@ -336,7 +363,7 @@ struct mad_stream {
   struct mad_bitptr anc_ptr;		/* ancillary bits pointer */
   unsigned int anc_bitlen;		/* number of ancillary bits */
 
-  unsigned char main_data[1935];	/* layer III main_data */
+  unsigned char (*main_data)[1935];	/* layer III main_data */
   unsigned int md_len;			/* bytes in main_data */
 
   int error;				/* error code (see below) */
@@ -344,6 +371,7 @@ struct mad_stream {
 
 # define MAD_ERR_BUFLEN		0x0001	/* input buffer too small (or EOF) */
 # define MAD_ERR_BUFPTR		0x0002	/* invalid (null) buffer pointer */
+# define MAD_ERR_NOMEM		0x0031	/* not enough memory */
 
 # define MAD_ERR_LOSTSYNC	0x0101	/* lost synchronization */
 # define MAD_ERR_BADID		0x0102	/* bad header ID field */
@@ -367,8 +395,14 @@ struct mad_stream {
 # define MAD_RECOVERABLE(error)	((error) & 0xff00)
 
 void mad_stream_init(struct mad_stream *);
+void mad_stream_finish(struct mad_stream *);
+
 void mad_stream_buffer(struct mad_stream *,
 		       unsigned char const *, unsigned long);
+void mad_stream_skip(struct mad_stream *, unsigned long);
+
+unsigned char const *mad_stream_sync(unsigned char const *,
+				     unsigned char const *);
 
 # endif
 
@@ -390,7 +424,7 @@ void mad_stream_buffer(struct mad_stream *,
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * Id: frame.h,v 1.2 2000/03/05 07:31:55 rob Exp 
+ * Id: frame.h,v 1.4 2000/03/19 06:43:38 rob Exp 
  */
 
 # ifndef FRAME_H
@@ -404,18 +438,18 @@ struct mad_frame {
   int emphasis;				/* de-emphasis to use (see below) */
 
   unsigned int bitrate;			/* stream bitrate (bps) */
-  unsigned int samplefreq;		/* sampling frequency (Hz) */
+  unsigned int sfreq;			/* sampling frequency (Hz) */
 
   struct mad_timer duration;		/* audio playing time of frame */
 
   int flags;				/* flags and private bits (below) */
 
   fixed_t sbsample[2][36][32];		/* synthesis subband filter samples */
-  fixed_t overlap[2][32][18];		/* layer III block overlap data */
+  fixed_t (*overlap)[2][32][18];	/* layer III block overlap data */
 };
 
 # define MAD_NUMCHANNELS(frame)		((frame)->mode ? 2 : 1)
-# define MAD_NUMSAMPLES(frame)		((frame)->layer == 1 ? 12 : 36)
+# define MAD_NUMSBSAMPLES(frame)	((frame)->layer == 1 ? 12 : 36)
 
 # define MAD_MODE_SINGLE_CHANNEL	0
 # define MAD_MODE_DUAL_CHANNEL		1
@@ -437,7 +471,13 @@ struct mad_frame {
 # define MAD_FLAG_III_5BITPRIV	0x0020	/* 5 bits in III private (else 3) */
 
 void mad_frame_init(struct mad_frame *);
+void mad_frame_finish(struct mad_frame *);
+
 void mad_frame_mute(struct mad_frame *);
+
+int mad_frame_header(struct mad_frame *, struct mad_stream *,
+		     unsigned short *);
+int mad_frame_decode(struct mad_frame *, struct mad_stream *);
 
 # endif
 
@@ -459,7 +499,7 @@ void mad_frame_mute(struct mad_frame *);
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * Id: synth.h,v 1.3 2000/03/05 18:11:34 rob Exp 
+ * Id: synth.h,v 1.5 2000/03/19 06:43:38 rob Exp 
  */
 
 # ifndef SYNTH_H
@@ -476,7 +516,9 @@ struct mad_synth {
 
 void mad_synth_init(struct mad_synth *);
 
-void mad_synthesis(struct mad_frame *, struct mad_synth *);
+# define mad_synth_finish(synth)  /* nothing */
+
+void mad_synth_frame(struct mad_synth *, struct mad_frame const *);
 
 # endif
 
@@ -498,15 +540,97 @@ void mad_synthesis(struct mad_frame *, struct mad_synth *);
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * Id: mad.h,v 1.4 2000/03/05 07:31:55 rob Exp 
+ * Id: decoder.h,v 1.2 2000/03/19 06:43:38 rob Exp 
  */
 
-# ifndef MAD_H
-# define MAD_H
+# ifndef DECODER_H
+# define DECODER_H
 
 
-unsigned short mad_crc(unsigned short, struct mad_bitptr, unsigned int);
-int mad_decode(struct mad_stream *, struct mad_frame *);
+struct mad_decoder {
+  int mode;
+
+  struct {
+    int mode;
+    int pid;
+    int in;
+    int out;
+  } async;
+
+  struct {
+    struct mad_stream stream;
+    struct mad_frame frame;
+    struct mad_synth synth;
+  } *sync;
+
+  int (*input_func)(void *, struct mad_stream *);
+  int (*filter_func)(void *, struct mad_frame *);
+  int (*output_func)(void *, struct mad_frame const *,
+		     struct mad_synth const *);
+  int (*error_func)(void *, struct mad_stream *, struct mad_frame *);
+
+  void *input_data;
+  void *filter_data;
+  void *output_data;
+  void *error_data;
+};
+
+enum {
+  mad_cmd_play,
+  mad_cmd_pause,
+  mad_cmd_rewind,
+  mad_cmd_skip,
+  mad_cmd_stop
+};
+
+union mad_control {
+  short command;
+
+  struct mad_cmd_play {
+    short command;
+  } play;
+
+  struct mad_cmd_pause {
+    short command;
+  } pause;
+
+  struct mad_cmd_rewind {
+    short command;
+  } rewind;
+
+  struct mad_cmd_skip {
+    short command;
+  } skip;
+
+  struct mad_cmd_stop {
+    short command;
+  } stop;
+};
+
+void mad_decoder_init(struct mad_decoder *);
+int mad_decoder_finish(struct mad_decoder *);
+
+void mad_decoder_input(struct mad_decoder *,
+		       int (*)(void *, struct mad_stream *), void *);
+void mad_decoder_filter(struct mad_decoder *,
+			int (*)(void *, struct mad_frame *), void *);
+void mad_decoder_output(struct mad_decoder *,
+			int (*)(void *, struct mad_frame const *,
+				struct mad_synth const *), void *);
+void mad_decoder_error(struct mad_decoder *,
+		       int (*)(void *, struct mad_stream *,
+			       struct mad_frame *), void *);
+
+int mad_decoder_run(struct mad_decoder *, int);
+int mad_decoder_command(struct mad_decoder *, union mad_control *);
+
+# define MAD_DECODER_SYNC	0x0000
+# define MAD_DECODER_ASYNC	0x0001
+
+# define MAD_DECODER_CONTINUE	0x0000
+# define MAD_DECODER_STOP	0x0010
+# define MAD_DECODER_BREAK	0x0011
+# define MAD_DECODER_IGNORE	0x0020
 
 # endif
 

@@ -1,24 +1,39 @@
 
-General:
+libmad:
   - fix generic DCT matrix multiply (now broken after V[] resize/reorder)
-  - fix 32-bit assumption on Layer I, II bit read
-  - check legal Layer II bitrate/mode combinations
   - improve free format fixed bitrate discovery
-  - reduce sizeof(bitalloc_table)
   - speed up mad_bit_read()
-  - refresh mmap() if file size has changed
   - MPEG 2, (2.5?), 4 support
   - function documentation, general docs
-  - dual channel output selection?
-  - better bitstream error recovery
-  - ensure last frame is played at end-of-stream
-  - skip ID3 tags; ID3v2 support
+  - look into 16-bit fixed-point representation
+  - finish async API
 
-Layer III:
+libmad Layer I:
+  - fix 32-bit assumption on bit read
+
+libmad Layer II:
+  - fix 32-bit assumption on bit read
+  - check legal bitrate/mode combinations
+  - reduce sizeof(bitalloc_table)
+
+libmad Layer III:
   - perform requantization during Huffman decoding
   - ancillary bits
   - ms_stereo + intensity_stereo not right?
   - stereo->mono conversion optimization
   - IMDCT optimization
   - verify last Huffman table
+
+madplay:
+  - dual channel output selection?
+  - better bitstream error recovery
+  - ensure last frame is played at end-of-stream
+  - further ID3v2 support
+  - let OSS module use native endianness
+  - move static vars from audio_* to audio control union
+  - change message() to key off '\r' rather than '\n'
+
+ID3v2:
+  - Unicode support
+  - make into library
 

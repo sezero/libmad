@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: stream.h,v 1.2 2000/03/05 07:31:55 rob Exp $
+ * $Id: stream.h,v 1.4 2000/03/19 06:43:38 rob Exp $
  */
 
 # ifndef STREAM_H
@@ -27,6 +27,7 @@
 struct mad_stream {
   unsigned char const *buffer;		/* input bitstream buffer */
   unsigned char const *bufend;		/* end of buffer */
+  unsigned long skiplen;		/* bytes to skip before next frame */
 
   int sync;				/* stream sync found */
   unsigned int freerate;		/* free bitrate (fixed) */
@@ -38,7 +39,7 @@ struct mad_stream {
   struct mad_bitptr anc_ptr;		/* ancillary bits pointer */
   unsigned int anc_bitlen;		/* number of ancillary bits */
 
-  unsigned char main_data[1935];	/* layer III main_data */
+  unsigned char (*main_data)[1935];	/* layer III main_data */
   unsigned int md_len;			/* bytes in main_data */
 
   int error;				/* error code (see below) */
@@ -46,6 +47,7 @@ struct mad_stream {
 
 # define MAD_ERR_BUFLEN		0x0001	/* input buffer too small (or EOF) */
 # define MAD_ERR_BUFPTR		0x0002	/* invalid (null) buffer pointer */
+# define MAD_ERR_NOMEM		0x0031	/* not enough memory */
 
 # define MAD_ERR_LOSTSYNC	0x0101	/* lost synchronization */
 # define MAD_ERR_BADID		0x0102	/* bad header ID field */
@@ -69,8 +71,14 @@ struct mad_stream {
 # define MAD_RECOVERABLE(error)	((error) & 0xff00)
 
 void mad_stream_init(struct mad_stream *);
+void mad_stream_finish(struct mad_stream *);
+
 void mad_stream_buffer(struct mad_stream *,
 		       unsigned char const *, unsigned long);
+void mad_stream_skip(struct mad_stream *, unsigned long);
+
+unsigned char const *mad_stream_sync(unsigned char const *,
+				     unsigned char const *);
 
 # endif
 

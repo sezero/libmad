@@ -16,7 +16,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
-# $Id: Makefile.in,v 1.12 2000/03/06 15:20:43 rob Exp $
+# $Id: Makefile.in,v 1.16 2000/03/19 06:43:38 rob Exp $
 #
 
 ## OPTIONS ####################################################################
@@ -28,6 +28,7 @@
 # FPM_INTEL	use Intel assembly
 # FPM_ARM	use ARM V4 assembly
 # FPM_MIPS	use MIPS assembly
+# FPM_SPARC	use SPARC V8 assembly
 # (default)	use slow explicit computation
 
 # now set in config.h by configure
@@ -86,9 +87,10 @@ LDFLAGS =	$(LDOPTS)
 
 TARGET =	$(LIBMAD)
 
-MADINCLUDES =	version.h fixed.h bit.h timer.h stream.h frame.h synth.h mad.h
+MADINCLUDES =	version.h fixed.h bit.h timer.h stream.h frame.h synth.h  \
+		decoder.h
 MADOBJS =	version.o fixed.o bit.o timer.o stream.o frame.o synth.o  \
-		mad.o layer12.o layer3.o huffman.o
+		decoder.o layer12.o layer3.o huffman.o
 LIBMAD =	libmad.a
 INCMAD =	libmad.h
 
@@ -145,7 +147,7 @@ dist :: $(INCMAD)
 	$(MAKE) distclean
 
 depend ::
-	( sed -n '1,/^## DEPEND/p' Makefile.in;  \
+	( sed -n -e '1,/^## DEPEND/p' Makefile.in;  \
 	  echo;  \
 	  $(CC) -MM $(DEFINES) *.c;  \
 	) > Makefile.in.new
@@ -166,21 +168,26 @@ config.status: .stamp/configure .stamp/config.h.in Makefile.in
 	autoconf && touch .stamp/configure
 
 .stamp/config.h.in: configure.in acconfig.h
-	autoheader && touch .stamp/config.h.in
+	autoheader &&  \
+	sed -e '/\$$''Id: /s/\$$//g' config.h.in >config.h.in.new &&  \
+	mv -f config.h.in.new config.h.in &&  \
+	touch .stamp/config.h.in
 
 ## DEPENDENCIES ###############################################################
 
 bit.o: bit.c config.h bit.h
+decoder.o: decoder.c config.h stream.h bit.h frame.h fixed.h timer.h \
+ synth.h decoder.h
 fixed.o: fixed.c config.h fixed.h
-frame.o: frame.c config.h frame.h timer.h fixed.h
+frame.o: frame.c config.h bit.h stream.h frame.h fixed.h timer.h \
+ layer12.h layer3.h
 huffman.o: huffman.c config.h huffman.h
-layer12.o: layer12.c config.h fixed.h bit.h mad.h stream.h frame.h \
- timer.h layer12.h sf_table.dat qc_table.dat
-layer3.o: layer3.c config.h fixed.h bit.h mad.h stream.h frame.h \
- timer.h huffman.h layer3.h rq_table.dat imdct_l.dat imdct_s.dat
-mad.o: mad.c config.h bit.h timer.h stream.h frame.h fixed.h layer12.h \
- layer3.h mad.h
-stream.o: stream.c config.h stream.h bit.h
-synth.o: synth.c config.h fixed.h frame.h timer.h synth.h D.dat
+layer12.o: layer12.c config.h fixed.h bit.h stream.h frame.h timer.h \
+ layer12.h sf_table.dat qc_table.dat
+layer3.o: layer3.c config.h fixed.h bit.h stream.h frame.h timer.h \
+ huffman.h layer3.h rq_table.dat imdct_l.dat imdct_s.dat
+stream.o: stream.c config.h bit.h stream.h
+synth.o: synth.c config.h fixed.h frame.h timer.h stream.h bit.h \
+ synth.h D.dat
 timer.o: timer.c config.h timer.h
 version.o: version.c config.h version.h

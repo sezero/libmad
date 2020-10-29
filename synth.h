@@ -16,12 +16,13 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: synth.h,v 1.3 2000/03/05 18:11:34 rob Exp $
+ * $Id: synth.h,v 1.5 2000/03/19 06:43:38 rob Exp $
  */
 
 # ifndef SYNTH_H
 # define SYNTH_H
 
+# include "fixed.h"
 # include "frame.h"
 
 struct mad_synth {
@@ -34,7 +35,9 @@ struct mad_synth {
 
 void mad_synth_init(struct mad_synth *);
 
-void mad_synthesis(struct mad_frame *, struct mad_synth *);
+# define mad_synth_finish(synth)  /* nothing */
+
+void mad_synth_frame(struct mad_synth *, struct mad_frame const *);
 
 # endif
 

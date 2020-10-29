@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: layer12.c,v 1.9 2000/03/05 07:31:55 rob Exp $
+ * $Id: layer12.c,v 1.10 2000/03/13 01:22:03 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
@@ -25,9 +25,14 @@
 
 # include "fixed.h"
 # include "bit.h"
-# include "mad.h"
+# include "stream.h"
+# include "frame.h"
 # include "layer12.h"
 
+/*
+ * scalefactor table
+ * used in both Layer I and Layer II decoding
+ */
 static
 fixed_t const sf_table[63] = {
 # include "sf_table.dat"
@@ -35,6 +40,7 @@ fixed_t const sf_table[63] = {
 
 /* --- Layer I ------------------------------------------------------------- */
 
+/* linear scaling table */
 static
 fixed_t const linear_table[14] = {
   0x15555555L,  /*  2^2 / (2^2  - 1) == 1.33333333333333 */
@@ -54,6 +60,10 @@ fixed_t const linear_table[14] = {
   0x10002000L   /* 2^15 / (2^15 - 1) == 1.00003051850948 */
 };
 
+/*
+ * NAME:	I_sample()
+ * DESCRIPTION:	decode one requantized Layer I sample from a bitstream
+ */
 static
 fixed_t I_sample(struct mad_bitptr *ptr, unsigned int nb)
 {
@@ -64,6 +74,7 @@ fixed_t I_sample(struct mad_bitptr *ptr, unsigned int nb)
 
   /* invert most significant bit, then scale sample to fixed format */
 
+  /* FIXME: depends on 32-bit long and sign-extended right shift */
   requantized = ((fixed_t) (-0x80000000L ^ (sample << (32 - nb)))) >> 3;
 
   /* requantize the sample */
@@ -79,6 +90,10 @@ fixed_t I_sample(struct mad_bitptr *ptr, unsigned int nb)
   return requantized;
 }
 
+/*
+ * NAME:	layer->I()
+ * DESCRIPTION:	decode a single Layer I frame
+ */
 int mad_layer_I(struct mad_stream *stream, struct mad_frame *frame,
 		unsigned short const crc[2])
 {
@@ -87,16 +102,14 @@ int mad_layer_I(struct mad_stream *stream, struct mad_frame *frame,
 
   nch = MAD_NUMCHANNELS(frame);
 
-  if (frame->mode == MAD_MODE_JOINT_STEREO)
-    bound = 4 + frame->mode_ext * 4;
-  else
-    bound = 32;
+  bound = (frame->mode == MAD_MODE_JOINT_STEREO) ?
+    4 + frame->mode_ext * 4 : 32;
 
   /* check CRC word */
 
   if ((frame->flags & MAD_FLAG_PROTECTION) &&
-      mad_crc(crc[0], stream->ptr,
-	      4 * (bound * nch + (32 - bound))) != crc[1]) {
+      mad_bit_crc(stream->ptr, 4 * (bound * nch + (32 - bound)),
+		  crc[0]) != crc[1]) {
     stream->error = MAD_ERR_BADCRC;
     return -1;
   }
@@ -149,7 +162,7 @@ int mad_layer_I(struct mad_stream *stream, struct mad_frame *frame,
       for (ch = 0; ch < nch; ++ch) {
 	if ((nb = allocation[ch][sb])) {
 	  frame->sbsample[ch][s][sb] =
-	    f_mul(sf_table[scalefactor[ch][sb]], I_sample(&stream->ptr, nb));
+	    f_mul(I_sample(&stream->ptr, nb), sf_table[scalefactor[ch][sb]]);
 	}
 	else
 	  frame->sbsample[ch][s][sb] = 0;
@@ -179,6 +192,7 @@ int mad_layer_I(struct mad_stream *stream, struct mad_frame *frame,
 
 /* --- Layer II ------------------------------------------------------------ */
 
+/* bit allocation table */
 static
 unsigned char const bitalloc_table[4][32][16] = {
   {
@@ -320,6 +334,7 @@ unsigned char const bitalloc_table[4][32][16] = {
   }
 };
 
+/* quantization class table */
 struct quantclass {
   unsigned short nlevels;
   unsigned char group;
@@ -330,6 +345,10 @@ struct quantclass {
 # include "qc_table.dat"
 };
 
+/*
+ * NAME:	II_samples()
+ * DESCRIPTION:	decode three requantized Layer II samples from a bitstream
+ */
 static
 void II_samples(struct mad_bitptr *ptr,
 		struct quantclass const *quantclass,
@@ -360,6 +379,7 @@ void II_samples(struct mad_bitptr *ptr,
   for (s = 0; s < 3; ++s) {
     /* invert most significant bit, then scale sample to fixed format */
 
+    /* FIXME: depends on 32-bit long and sign-extended right shift */
     requantized = ((fixed_t) (-0x80000000L ^ (sample[s] << (32 - nb)))) >> 3;
 
     /* requantize the sample */
@@ -375,6 +395,10 @@ void II_samples(struct mad_bitptr *ptr,
   }
 }
 
+/*
+ * NAME:	layer->II()
+ * DESCRIPTION:	decode a single Layer II frame
+ */
 int mad_layer_II(struct mad_stream *stream, struct mad_frame *frame,
 		 unsigned short const crc[2])
 {
@@ -388,7 +412,7 @@ int mad_layer_II(struct mad_stream *stream, struct mad_frame *frame,
   switch (nch == 2 ? frame->bitrate >> 1 : frame->bitrate) {
   case 32000:
   case 48000:
-    if (frame->samplefreq == 32000) {
+    if (frame->sfreq == 32000) {
       table   = 3;
       sblimit = 12;
     }
@@ -406,7 +430,7 @@ int mad_layer_II(struct mad_stream *stream, struct mad_frame *frame,
     break;
 
   default:
-    if (frame->samplefreq == 48000) {
+    if (frame->sfreq == 48000) {
       table   = 0;
       sblimit = 27;
     }
@@ -416,10 +440,8 @@ int mad_layer_II(struct mad_stream *stream, struct mad_frame *frame,
     }
   }
 
-  if (frame->mode == MAD_MODE_JOINT_STEREO)
-    bound = 4 + frame->mode_ext * 4;
-  else
-    bound = 32;
+  bound = (frame->mode == MAD_MODE_JOINT_STEREO) ?
+    4 + frame->mode_ext * 4 : 32;
 
   if (bound > sblimit)
     bound = sblimit;
@@ -453,7 +475,8 @@ int mad_layer_II(struct mad_stream *stream, struct mad_frame *frame,
   /* check CRC word */
 
   if ((frame->flags & MAD_FLAG_PROTECTION) &&
-      mad_crc(crc[0], start, mad_bit_length(&start, &stream->ptr)) != crc[1]) {
+      mad_bit_crc(start, mad_bit_length(&start, &stream->ptr),
+		  crc[0]) != crc[1]) {
     stream->error = MAD_ERR_BADCRC;
     return -1;
   }
@@ -467,8 +490,9 @@ int mad_layer_II(struct mad_stream *stream, struct mad_frame *frame,
 
 	switch (scfsi[ch][sb]) {
 	case 2:
-	  scalefactor[ch][sb][2] = scalefactor[ch][sb][1] =
-	    scalefactor[ch][sb][0];
+	  scalefactor[ch][sb][2] =
+	  scalefactor[ch][sb][1] =
+	  scalefactor[ch][sb][0];
 	  break;
 
 	case 0:

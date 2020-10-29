@@ -16,17 +16,11 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: timer.h,v 1.5 2000/03/07 07:59:25 rob Exp $
+ * $Id: timer.h,v 1.6 2000/03/19 06:43:39 rob Exp $
  */
 
 # ifndef TIMER_H
 # define TIMER_H
-
-enum {
-  timer_hours,
-  timer_minutes,
-  timer_seconds
-};
 
 struct mad_timer {
   unsigned long seconds;		/* whole seconds */
@@ -34,11 +28,21 @@ struct mad_timer {
 };
 
 void mad_timer_init(struct mad_timer *);
+
+# define mad_timer_finish(timer)  /* nothing */
+
 void mad_timer_add(struct mad_timer *, struct mad_timer const *);
 void mad_timer_str(struct mad_timer const *, char *, char const *, int);
 
 # define mad_timer_seconds(timer)	((timer)->seconds)
-# define mad_timer_tenths(timer)	((timer)->parts36750 / 3675)
+
+# define MAD_TIMER_HOURS	0x0002
+# define MAD_TIMER_MINUTES	0x0001
+# define MAD_TIMER_SECONDS	0x0000
+
+# define MAD_TIMER_DECISECONDS	0x0003
+# define MAD_TIMER_CENTISECONDS	0x0004
+# define MAD_TIMER_MILLISECONDS	0x0005
 
 # endif
 

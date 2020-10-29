@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: version.c,v 1.4 2000/03/05 05:19:17 rob Exp $
+ * $Id: version.c,v 1.5 2000/03/19 06:43:39 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
@@ -25,7 +25,7 @@
 
 # include "version.h"
 
-char const mad_version[]   = "MPEG audio decoder version " MAD_VERSION;
+char const mad_version[]   = "MPEG Audio Decoder version " MAD_VERSION;
 char const mad_copyright[] = "Copyright (C) " MAD_PUBLISHYEAR " " MAD_AUTHOR;
 char const mad_author[]    = MAD_AUTHOR " <" MAD_EMAIL ">";
 
