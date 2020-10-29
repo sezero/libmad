@@ -16,11 +16,11 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: bit.h,v 1.5 2001/01/21 00:18:15 rob Exp $
+ * $Id: bit.h,v 1.7 2001/04/05 04:57:11 rob Exp $
  */
 
-# ifndef MAD_BIT_H
-# define MAD_BIT_H
+# ifndef LIBMAD_BIT_H
+# define LIBMAD_BIT_H
 
 struct mad_bitptr {
   unsigned char const *byte;
@@ -31,8 +31,6 @@ struct mad_bitptr {
 void mad_bit_init(struct mad_bitptr *, unsigned char const *);
 
 # define mad_bit_finish(bitptr)		/* nothing */
-
-# define mad_bit_set(bitptr1, bitptr2)	(*(bitptr1) = *(bitptr2))
 
 unsigned int mad_bit_length(struct mad_bitptr const *,
 			    struct mad_bitptr const *);

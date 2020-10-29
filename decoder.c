@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: decoder.c,v 1.9 2001/01/21 00:18:15 rob Exp $
+ * $Id: decoder.c,v 1.11 2001/03/09 20:08:34 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
@@ -58,6 +58,8 @@ void mad_decoder_init(struct mad_decoder *decoder, void *data,
 						    void *, unsigned int *))
 {
   decoder->mode         = -1;
+
+  decoder->options      = 0;
 
   decoder->async.pid    = 0;
   decoder->async.in     = -1;
@@ -199,6 +201,9 @@ enum mad_flow receive(int fd, void **message, unsigned int *size)
   enum mad_flow result;
   unsigned int actual;
 
+  if (*message == 0)
+    *size = 0;
+
   /* receive size */
 
   result = receive_io(fd, &actual, sizeof(actual));
@@ -213,22 +218,21 @@ enum mad_flow receive(int fd, void **message, unsigned int *size)
       actual = 0;
     }
 
-    if (*size == 0)
-      return result;
+    if (*size > 0) {
+      if (*message == 0) {
+	*message = malloc(*size);
+	if (*message == 0)
+	  return MAD_FLOW_BREAK;
+      }
 
-    if (*message == 0) {
-      *message = malloc(*size);
-      if (*message == 0)
-	return MAD_FLOW_BREAK;
+      result = receive_io_blocking(fd, *message, *size);
     }
 
-    result = receive_io_blocking(fd, *message, *size);
+    /* throw away remainder of message */
 
     while (actual && result == MAD_FLOW_CONTINUE) {
       char sink[256];
       unsigned int len;
-
-      /* throw away left over */
 
       len = actual > sizeof(sink) ? sizeof(sink) : actual;
 
@@ -321,6 +325,8 @@ int run_sync(struct mad_decoder *decoder)
   mad_stream_init(stream);
   mad_frame_init(frame);
   mad_synth_init(synth);
+
+  mad_stream_options(stream, decoder->options);
 
   do {
     switch (decoder->input_func(decoder->cb_data, stream)) {

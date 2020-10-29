@@ -16,11 +16,11 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: decoder.h,v 1.7 2001/01/21 00:18:15 rob Exp $
+ * $Id: decoder.h,v 1.9 2001/04/05 04:57:11 rob Exp $
  */
 
-# ifndef MAD_DECODER_H
-# define MAD_DECODER_H
+# ifndef LIBMAD_DECODER_H
+# define LIBMAD_DECODER_H
 
 # include "stream.h"
 # include "frame.h"
@@ -40,6 +40,8 @@ enum mad_flow {
 
 struct mad_decoder {
   enum mad_decoder_mode mode;
+
+  int options;
 
   struct {
     long pid;
@@ -76,6 +78,8 @@ void mad_decoder_init(struct mad_decoder *, void *,
 					struct mad_frame *),
 		      enum mad_flow (*)(void *, void *, unsigned int *));
 int mad_decoder_finish(struct mad_decoder *);
+
+# define mad_decoder_options(decoder, opts)  ((decoder)->options = (opts))
 
 int mad_decoder_run(struct mad_decoder *, enum mad_decoder_mode);
 int mad_decoder_message(struct mad_decoder *, void *, unsigned int *);

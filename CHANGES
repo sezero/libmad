@@ -2,9 +2,57 @@
  mad - MPEG audio decoder
  Copyright (C) 2000-2001 Robert Leslie
 
- $Id: CHANGES,v 1.43 2001/02/12 15:16:14 rob Exp $
+ $Id: CHANGES,v 1.52 2001/04/11 19:40:37 rob Exp $
 
 ===============================================================================
+
+Version 0.13.0 (beta)
+
+  * The last complete audio frame should now be properly decoded even when
+    it is not followed by other data [fixed in both `madplay' and the
+    plug-in for Winamp.]
+
+  * The plug-in for Winamp now reads Xing VBR headers for fast length
+    calculation.
+
+  * The plug-in for Winamp should now display visuals correctly for 24- and
+    32-bit output.
+
+  * Ancillary data is now properly extracted from Layer III streams.
+
+  * Rewrote the Layer III joint stereo decoding routine to correct a major
+    MPEG-2 problem and a minor MPEG-1 problem decoding intensity stereo.
+
+  * Eliminated the dependency on sign-extending right shifts for Layer I and
+    Layer II.
+
+  * Renamed `private' field to `private_bits' for better C++ compatibility.
+
+  * Gratuitously renamed `sfreq' field to `samplerate' and
+    MAD_ERROR_BADSAMPLEFREQ constant to MAD_ERROR_BADSAMPLERATE.
+
+  * Added `samplerate' and `channels' fields to synth.pcm struct to allow
+    these to be different from the decoded frame, and for simpler access.
+
+  * Added new mad_stream_options() and mad_decoder_options() API entries for
+    special runtime decoding options.
+
+  * Added new MAD_OPTION_IGNORECRC and MAD_OPTION_HALFSAMPLERATE options.
+
+  * Added new --downsample option to `madplay'.
+
+  * Added new MAD_FLAG_FREEFORMAT indicator flag.
+
+  * Fixed some bugs in the async decoder.
+
+  * Added a new mad_timer_multiply() API routine.
+
+  * Eliminated `+' from asm constraints under Intel for better compatibility
+    with some compilers.
+
+  * Fixed a PIC-related problem in libmad/imdct_l_arm.S.
+
+  * Eliminated a static variable to make libmad thread-safe.
 
 Version 0.12.5 (beta)
 

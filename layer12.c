@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: layer12.c,v 1.8 2001/01/21 00:18:15 rob Exp $
+ * $Id: layer12.c,v 1.11 2001/04/01 16:23:33 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
@@ -74,25 +74,24 @@ mad_fixed_t const linear_table[14] = {
 static
 mad_fixed_t I_sample(struct mad_bitptr *ptr, unsigned int nb)
 {
-  unsigned int sample;
-  mad_fixed_t requantized;
+  mad_fixed_t sample;
 
   sample = mad_bit_read(ptr, nb);
 
-  /* invert most significant bit, then scale sample to fixed format */
+  /* invert most significant bit, extend sign, then scale to fixed format */
 
-  /* FIXME: depends on sign-extending right shift */
-  requantized = (((mad_fixed_t) 1 << (CHAR_BIT * sizeof(mad_fixed_t) - 1)) ^
-		 ((mad_fixed_t) sample <<
-		  (CHAR_BIT * sizeof(mad_fixed_t) - nb))) >> 3;
+  sample ^= 1 << (nb - 1);
+  sample |= -(sample & (1 << (nb - 1)));
+
+  sample <<= MAD_F_FRACBITS - (nb - 1);
 
   /* requantize the sample */
 
   /* s'' = (2^nb / (2^nb - 1)) * (s''' + 2^(-nb + 1)) */
 
-  requantized += MAD_F_ONE >> (nb - 1);
+  sample += MAD_F_ONE >> (nb - 1);
 
-  return mad_f_mul(requantized, linear_table[nb - 2]);
+  return mad_f_mul(sample, linear_table[nb - 2]);
 
   /* s' = factor * s'' */
   /* (to be performed by caller) */
@@ -113,16 +112,21 @@ int mad_layer_I(struct mad_stream *stream, struct mad_frame *frame)
   bound = 32;
   if (header->mode == MAD_MODE_JOINT_STEREO) {
     header->flags |= MAD_FLAG_I_STEREO;
-    bound = 4 + header->mode_ext * 4;
+    bound = 4 + header->mode_extension * 4;
   }
 
   /* check CRC word */
 
-  if ((header->flags & MAD_FLAG_PROTECTION) &&
+  if (header->flags & MAD_FLAG_PROTECTION) {
+    header->crc_check =
       mad_bit_crc(stream->ptr, 4 * (bound * nch + (32 - bound)),
-		  header->crc_header) != header->crc_check) {
-    stream->error = MAD_ERROR_BADCRC;
-    return -1;
+		  header->crc_check);
+
+    if (header->crc_check != header->crc_target &&
+	!(frame->options & MAD_OPTION_IGNORECRC)) {
+      stream->error = MAD_ERROR_BADCRC;
+      return -1;
+    }
   }
 
   /* decode bit allocations */
@@ -148,7 +152,8 @@ int mad_layer_I(struct mad_stream *stream, struct mad_frame *frame)
       return -1;
     }
 
-    allocation[0][sb] = allocation[1][sb] = nb ? nb + 1 : 0;
+    allocation[0][sb] =
+    allocation[1][sb] = nb ? nb + 1 : 0;
   }
 
   /* decode scalefactors */
@@ -294,12 +299,12 @@ void II_samples(struct mad_bitptr *ptr,
   for (s = 0; s < 3; ++s) {
     mad_fixed_t requantized;
 
-    /* invert most significant bit, then scale sample to fixed format */
+    /* invert most significant bit, extend sign, then scale to fixed format */
 
-    /* FIXME: depends on sign-extending right shift */
-    requantized = (((mad_fixed_t) 1 << (CHAR_BIT * sizeof(mad_fixed_t) - 1)) ^
-		   ((mad_fixed_t) sample[s] <<
-		    (CHAR_BIT * sizeof(mad_fixed_t) - nb))) >> 3;
+    requantized  = sample[s] ^ (1 << (nb - 1));
+    requantized |= -(requantized & (1 << (nb - 1)));
+
+    requantized <<= MAD_F_FRACBITS - (nb - 1);
 
     /* requantize the sample */
 
@@ -333,7 +338,7 @@ int mad_layer_II(struct mad_stream *stream, struct mad_frame *frame)
     switch (nch == 2 ? header->bitrate / 2 : header->bitrate) {
     case 32000:
     case 48000:
-      index = (header->sfreq == 32000) ? 3 : 2;
+      index = (header->samplerate == 32000) ? 3 : 2;
       break;
 
     case 56000:
@@ -343,19 +348,18 @@ int mad_layer_II(struct mad_stream *stream, struct mad_frame *frame)
       break;
 
     default:
-      index = (header->sfreq == 48000) ? 0 : 1;
+      index = (header->samplerate == 48000) ? 0 : 1;
     }
   }
 
   sblimit = sbquant_table[index].sblimit;
   offsets = sbquant_table[index].offsets;
 
+  bound = 32;
   if (header->mode == MAD_MODE_JOINT_STEREO) {
     header->flags |= MAD_FLAG_I_STEREO;
-    bound = 4 + header->mode_ext * 4;
+    bound = 4 + header->mode_extension * 4;
   }
-  else
-    bound = 32;
 
   if (bound > sblimit)
     bound = sblimit;
@@ -374,7 +378,8 @@ int mad_layer_II(struct mad_stream *stream, struct mad_frame *frame)
   for (sb = bound; sb < sblimit; ++sb) {
     nbal = bitalloc_table[offsets[sb]].nbal;
 
-    allocation[0][sb] = allocation[1][sb] = mad_bit_read(&stream->ptr, nbal);
+    allocation[0][sb] =
+    allocation[1][sb] = mad_bit_read(&stream->ptr, nbal);
   }
 
   /* decode scalefactor selection info */
@@ -388,11 +393,16 @@ int mad_layer_II(struct mad_stream *stream, struct mad_frame *frame)
 
   /* check CRC word */
 
-  if ((header->flags & MAD_FLAG_PROTECTION) &&
+  if (header->flags & MAD_FLAG_PROTECTION) {
+    header->crc_check =
       mad_bit_crc(start, mad_bit_length(&start, &stream->ptr),
-		  header->crc_header) != header->crc_check) {
-    stream->error = MAD_ERROR_BADCRC;
-    return -1;
+		  header->crc_check);
+
+    if (header->crc_check != header->crc_target &&
+	!(frame->options & MAD_OPTION_IGNORECRC)) {
+      stream->error = MAD_ERROR_BADCRC;
+      return -1;
+    }
   }
 
   /* decode scalefactors */

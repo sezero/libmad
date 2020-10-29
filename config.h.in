@@ -17,11 +17,11 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: acconfig.h,v 1.10 2001/02/09 02:12:24 rob Exp $
+ * $Id: acconfig.h,v 1.11 2001/04/05 04:57:11 rob Exp $
  */
 
-# ifndef MAD_CONFIG_H
-# define MAD_CONFIG_H
+# ifndef LIBMAD_CONFIG_H
+# define LIBMAD_CONFIG_H
 
 /*****************************************************************************
  * Definitions selected automatically by `configure'                         *

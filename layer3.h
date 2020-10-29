@@ -16,11 +16,11 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: layer3.h,v 1.4 2001/01/21 00:18:15 rob Exp $
+ * $Id: layer3.h,v 1.5 2001/04/05 04:57:11 rob Exp $
  */
 
-# ifndef MAD_LAYER3_H
-# define MAD_LAYER3_H
+# ifndef LIBMAD_LAYER3_H
+# define LIBMAD_LAYER3_H
 
 # include "stream.h"
 # include "frame.h"

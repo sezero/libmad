@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: stream.c,v 1.4 2001/01/21 00:18:15 rob Exp $
+ * $Id: stream.c,v 1.5 2001/02/22 07:53:38 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
@@ -53,6 +53,7 @@ void mad_stream_init(struct mad_stream *stream)
   stream->main_data  = 0;
   stream->md_len     = 0;
 
+  stream->options    = 0;
   stream->error      = 0;
 }
 

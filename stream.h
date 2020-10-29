@@ -16,15 +16,15 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: stream.h,v 1.7 2001/01/21 00:18:15 rob Exp $
+ * $Id: stream.h,v 1.12 2001/04/10 05:18:21 rob Exp $
  */
 
-# ifndef MAD_STREAM_H
-# define MAD_STREAM_H
+# ifndef LIBMAD_STREAM_H
+# define LIBMAD_STREAM_H
 
 # include "bit.h"
 
-# define MAD_BUFFER_GUARD	4
+# define MAD_BUFFER_GUARD	8
 # define MAD_BUFFER_MDLEN	(511 + 2048 + MAD_BUFFER_GUARD)
 
 enum mad_error {
@@ -36,7 +36,7 @@ enum mad_error {
   MAD_ERROR_LOSTSYNC	   = 0x0101,	/* lost synchronization */
   MAD_ERROR_BADLAYER	   = 0x0102,	/* reserved header layer value */
   MAD_ERROR_BADBITRATE	   = 0x0103,	/* forbidden bitrate value */
-  MAD_ERROR_BADSAMPLEFREQ  = 0x0104,	/* reserved sample frequency value */
+  MAD_ERROR_BADSAMPLERATE  = 0x0104,	/* reserved sample frequency value */
   MAD_ERROR_BADEMPHASIS	   = 0x0105,	/* reserved emphasis value */
 
   MAD_ERROR_BADCRC	   = 0x0201,	/* CRC check failed */
@@ -45,13 +45,15 @@ enum mad_error {
   MAD_ERROR_BADFRAMELEN	   = 0x0231,	/* bad frame length */
   MAD_ERROR_BADBIGVALUES   = 0x0232,	/* bad big_values count */
   MAD_ERROR_BADBLOCKTYPE   = 0x0233,	/* reserved block_type */
-  MAD_ERROR_BADDATAPTR	   = 0x0234,	/* bad main_data_begin pointer */
-  MAD_ERROR_BADDATALEN	   = 0x0235,	/* bad main data length */
+  MAD_ERROR_BADSCFSI	   = 0x0234,	/* bad scalefactor selection info */
+  MAD_ERROR_BADDATAPTR	   = 0x0235,	/* bad main_data_begin pointer */
   MAD_ERROR_BADPART3LEN	   = 0x0236,	/* bad audio data length */
   MAD_ERROR_BADHUFFTABLE   = 0x0237,	/* bad Huffman table select */
   MAD_ERROR_BADHUFFDATA	   = 0x0238,	/* Huffman data overrun */
-  MAD_ERROR_BADSTEREO	   = 0x0239	/* incompatible block_type for MS */
+  MAD_ERROR_BADSTEREO	   = 0x0239	/* incompatible block_type for JS */
 };
+
+# define MAD_RECOVERABLE(error)	((error) & 0xff00)
 
 struct mad_stream {
   unsigned char const *buffer;		/* input bitstream buffer */
@@ -72,13 +74,24 @@ struct mad_stream {
 					/* Layer III main_data() */
   unsigned int md_len;			/* bytes in main_data */
 
+  int options;				/* decoding options (see below) */
   enum mad_error error;			/* error code (see above) */
 };
 
-# define MAD_RECOVERABLE(error)	((error) & 0xff00)
+enum {
+  MAD_OPTION_IGNORECRC      = 0x0001,	/* ignore CRC errors */
+  MAD_OPTION_HALFSAMPLERATE = 0x0002,	/* generate PCM at 1/2 sample rate */
+# if 0  /* not yet implemented */
+  MAD_OPTION_LEFTCHANNEL    = 0x0010,	/* decode left channel only */
+  MAD_OPTION_RIGHTCHANNEL   = 0x0020,	/* decode right channel only */
+  MAD_OPTION_SINGLECHANNEL  = 0x0030,	/* combine channels */
+# endif
+};
 
 void mad_stream_init(struct mad_stream *);
 void mad_stream_finish(struct mad_stream *);
+
+# define mad_stream_options(stream, opts)  ((stream)->options = (opts))
 
 void mad_stream_buffer(struct mad_stream *,
 		       unsigned char const *, unsigned long);

@@ -16,11 +16,11 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: fixed.h,v 1.20 2001/02/12 15:16:25 rob Exp $
+ * $Id: fixed.h,v 1.23 2001/04/05 04:57:11 rob Exp $
  */
 
-# ifndef MAD_FIXED_H
-# define MAD_FIXED_H
+# ifndef LIBMAD_FIXED_H
+# define LIBMAD_FIXED_H
 
 # if SIZEOF_INT >= 4
 typedef   signed int mad_fixed_t;
@@ -136,8 +136,8 @@ typedef unsigned long mad_fixed64lo_t;
        MAD_F_MLX(__hi, __lo, (x), (y));  \
        asm ("addl %2,%0\n\t"  \
 	    "adcl %3,%1"  \
-	    : "+rm" (lo), "+rm" (hi)  \
-	    : "r" (__lo), "r" (__hi)  \
+	    : "=rm" (lo), "=rm" (hi)  \
+	    : "r" (__lo), "r" (__hi), "0" (lo), "1" (hi)  \
 	    : "cc");  \
     })
 #  endif  /* OPT_ACCURACY */
@@ -262,6 +262,12 @@ typedef unsigned long mad_fixed64lo_t;
 	 : "+l" (lo), "+h" (hi)  \
 	 : "%r" ((x) >> 12), "r" ((y) >> 16))
 #  define MAD_F_MLZ(hi, lo)  ((mad_fixed_t) (lo))
+# endif
+
+# if defined(OPT_SPEED)
+#  define mad_f_scale64(hi, lo)  \
+    ((mad_fixed_t) ((hi) << (32 - MAD_F_SCALEBITS)))
+#  define MAD_F_SCALEBITS  MAD_F_FRACBITS
 # endif
 
 /* --- SPARC --------------------------------------------------------------- */

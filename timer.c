@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: timer.c,v 1.8 2001/01/21 00:18:15 rob Exp $
+ * $Id: timer.c,v 1.9 2001/04/01 20:16:58 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
@@ -230,6 +230,33 @@ void mad_timer_add(mad_timer_t *timer, mad_timer_t incr)
 
   if (timer->fraction >= MAD_TIMER_RESOLUTION)
     reduce_timer(timer);
+}
+
+/*
+ * NAME:	timer->multiply()
+ * DESCRIPTION:	multiply a timer by a scalar value
+ */
+void mad_timer_multiply(mad_timer_t *timer, signed long scalar)
+{
+  mad_timer_t addend;
+  unsigned long factor;
+
+  factor = scalar;
+  if (scalar < 0) {
+    mad_timer_negate(timer);
+    factor = -scalar;
+  }
+
+  addend = *timer;
+  *timer = mad_timer_zero;
+
+  while (factor) {
+    if (factor & 1)
+      mad_timer_add(timer, addend);
+
+    mad_timer_add(&addend, addend);
+    factor >>= 1;
+  }
 }
 
 /*

@@ -2,7 +2,7 @@
  mad - MPEG audio decoder
  Copyright (C) 2000-2001 Robert Leslie
 
- $Id: CREDITS,v 1.14 2001/02/12 15:16:14 rob Exp $
+ $Id: CREDITS,v 1.16 2001/04/11 19:40:37 rob Exp $
 
 ===============================================================================
 
@@ -61,11 +61,11 @@ CONTRIBUTORS
         2000/09/15: libmad/imdct_l_arm.S
           - Applied Nicolas Pitre's rounding optimisation in all remaining
             places.
-        2000/10/16: libmad/layer3.c
-          - Optimized short block IMDCT.
         2001/02/10: libmad/layer3.c
           - Inspiration for Huffman decoding and requantization rewrite, and
             other miscellany.
+        2001/03/24: libmad/imdct_l_arm.S
+          - Corrected PIC unsafe code.
 
       Christoffer Nicolaisen <chrn@start.no>
         2000/10/26: po/no.po
@@ -90,6 +90,11 @@ CONTRIBUTORS
         2000/09/17: libmad/synth.c
           - Changed D[] run-time shifts to compile-time.
           - Modified synthesis for better multiply/accumulate code output.
+
+      John Stewart <js@woh.rr.com>
+        2001/03/15: winamp/in_mad.c
+          - Suggested fix to correctly display visuals for 24- and 32-bit
+            output.
 
 ===============================================================================
 

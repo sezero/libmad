@@ -16,15 +16,15 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: version.h,v 1.14 2001/02/10 21:01:41 rob Exp $
+ * $Id: version.h,v 1.16 2001/04/05 04:57:11 rob Exp $
  */
 
-# ifndef MAD_VERSION_H
-# define MAD_VERSION_H
+# ifndef LIBMAD_VERSION_H
+# define LIBMAD_VERSION_H
 
 # define MAD_VERSION_MAJOR	0
-# define MAD_VERSION_MINOR	12
-# define MAD_VERSION_PATCH	5
+# define MAD_VERSION_MINOR	13
+# define MAD_VERSION_PATCH	0
 # define MAD_VERSION_EXTRA	" (beta)"
 
 # define MAD_VERSION_STRINGIZE(str)	#str

@@ -16,11 +16,11 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: synth.h,v 1.6 2001/01/21 00:18:15 rob Exp $
+ * $Id: synth.h,v 1.8 2001/04/05 04:57:11 rob Exp $
  */
 
-# ifndef MAD_SYNTH_H
-# define MAD_SYNTH_H
+# ifndef LIBMAD_SYNTH_H
+# define LIBMAD_SYNTH_H
 
 # include "fixed.h"
 # include "frame.h"
@@ -29,11 +29,13 @@ struct mad_synth {
   mad_fixed_t filter[2][2][2][16][8];	/* polyphase filterbank outputs */
   					/* [ch][eo][peo][s][v] */
 
-  unsigned short phase;			/* current processing phase */
+  unsigned int phase;			/* current processing phase */
 
   struct mad_pcm {
-    unsigned short length;		/* number of PCM samples */
-    mad_fixed_t samples[2][1152];	/* PCM sample outputs */
+    unsigned int samplerate;		/* sampling frequency (Hz) */
+    unsigned short channels;		/* number of channels */
+    unsigned short length;		/* number of samples per channel */
+    mad_fixed_t samples[2][1152];	/* PCM output samples */
   } pcm;
 };
 
@@ -41,8 +43,8 @@ void mad_synth_init(struct mad_synth *);
 
 # define mad_synth_finish(synth)  /* nothing */
 
-void mad_synth_frame(struct mad_synth *, struct mad_frame const *);
-
 void mad_synth_mute(struct mad_synth *);
+
+void mad_synth_frame(struct mad_synth *, struct mad_frame const *);
 
 # endif

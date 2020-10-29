@@ -19,7 +19,7 @@
 ## If you would like to negotiate alternate licensing terms, you may do
 ## so by contacting the author: Robert Leslie <rob@mars.org>
 ##
-## $Id: Makefile.am,v 1.6 2001/02/09 07:30:30 rob Exp $
+## $Id: Makefile.am,v 1.7 2001/02/22 07:53:38 rob Exp $
 ##
 
 ## Process this file with automake to produce Makefile.in
@@ -42,10 +42,10 @@ libmad_la_SOURCES =  \
 	version.c fixed.c bit.c timer.c stream.c frame.c synth.c decoder.c  \
 	layer12.c layer3.c huffman.c $(headers) $(data_includes)
 
-EXTRA_libmad_la_SOURCES =	imdct_l_arm.S
+EXTRA_libmad_la_SOURCES =	imdct_l_arm.S #synth_mmx.S
 
-libmad_la_DEPENDENCIES =	@IMDCT_L@
-libmad_la_LIBADD =		@IMDCT_L@
+libmad_la_DEPENDENCIES =	@ASO_OBJS@
+libmad_la_LIBADD =		@ASO_OBJS@
 
 #CFLAGS =	-Wall @CFLAGS@ $(ARCH) $(DEBUGGER) $(OPTIMIZER) $(PROFILER)
 #LDFLAGS =	@LDFLAGS@ $(PROFILER)

@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: synth.c,v 1.17 2001/02/12 15:16:25 rob Exp $
+ * $Id: synth.c,v 1.19 2001/04/11 19:43:46 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
@@ -35,8 +35,31 @@
  */
 void mad_synth_init(struct mad_synth *synth)
 {
-  synth->phase = 0;
   mad_synth_mute(synth);
+
+  synth->phase = 0;
+
+  synth->pcm.samplerate = 0;
+  synth->pcm.channels   = 0;
+  synth->pcm.length     = 0;
+}
+
+/*
+ * NAME:	synth->mute()
+ * DESCRIPTION:	zero all polyphase filterbank values, resetting synthesis
+ */
+void mad_synth_mute(struct mad_synth *synth)
+{
+  unsigned int ch, s, v;
+
+  for (ch = 0; ch < 2; ++ch) {
+    for (s = 0; s < 16; ++s) {
+      for (v = 0; v < 8; ++v) {
+	synth->filter[ch][0][0][s][v] = synth->filter[ch][0][1][s][v] =
+	synth->filter[ch][1][0][s][v] = synth->filter[ch][1][1][s][v] = 0;
+      }
+    }
+  }
 }
 
 /*
@@ -525,49 +548,44 @@ mad_fixed_t const D[17][32] = {
 # include "D.dat"
 };
 
+# if defined(ASO_SYNTH)
+void synth_full(struct mad_synth *, struct mad_frame const *,
+		unsigned int, unsigned int);
+# else
 /*
- * NAME:	synth->frame()
- * DESCRIPTION:	perform PCM synthesis of frame subband samples
+ * NAME:	synth->full()
+ * DESCRIPTION:	perform full frequency PCM synthesis
  */
-void mad_synth_frame(struct mad_synth *synth, struct mad_frame const *frame)
+static
+void synth_full(struct mad_synth *synth, struct mad_frame const *frame,
+		unsigned int nch, unsigned int ns)
 {
-  unsigned int nch, ns, ch, s, phase = 0;
-
-  nch = MAD_NCHANNELS(&frame->header);
-  ns  = MAD_NSBSAMPLES(&frame->header);
+  unsigned int phase, ch, s, sb, pe, po;
+  mad_fixed_t *pcm1, *pcm2, (*filter)[2][2][16][8];
+  mad_fixed_t const (*sbsample)[36][32];
+  register mad_fixed_t (*fe)[8], (*fx)[8], (*fo)[8];
+  register mad_fixed_t const (*Dptr)[32], *ptr;
+  register mad_fixed64hi_t hi;
+  register mad_fixed64lo_t lo;
 
   for (ch = 0; ch < nch; ++ch) {
-    mad_fixed_t *pcm1, *pcm2;
-    mad_fixed_t (*even)[2][16][8], (*odd)[2][16][8];
-    mad_fixed_t const (*sbsample)[36][32];
-
-    phase = synth->phase;
-    pcm1  = synth->pcm.samples[ch];
-
-    even = &synth->filter[ch][0];
-    odd  = &synth->filter[ch][1];
-
     sbsample = &frame->sbsample[ch];
+    filter   = &synth->filter[ch];
+    phase    = synth->phase;
+    pcm1     = synth->pcm.samples[ch];
 
     for (s = 0; s < ns; ++s) {
-      unsigned int pe, po;
-      register mad_fixed_t (*fe)[8], (*fx)[8], (*fo)[8];
-      register mad_fixed_t const (*Dptr)[32], *ptr;
-      register mad_fixed64hi_t hi;
-      register mad_fixed64lo_t lo;
-      unsigned int sb;
-
       dct32((*sbsample)[s], phase >> 1,
-	    (*even)[~phase & 1], (*odd)[~phase & 1]);
+	    (*filter)[0][phase & 1], (*filter)[1][phase & 1]);
 
       pe = phase & ~1;
       po = ((phase - 1) & 0xf) | 1;
 
       /* calculate 32 samples */
 
-      fe = &(*even)[~phase & 1][0];
-      fx = &(*even)[ phase & 1][0];
-      fo =  &(*odd)[ phase & 1][0];
+      fe = &(*filter)[0][ phase & 1][0];
+      fx = &(*filter)[0][~phase & 1][0];
+      fo = &(*filter)[1][~phase & 1][0];
 
       Dptr = &D[0];
 
@@ -666,25 +684,172 @@ void mad_synth_frame(struct mad_synth *synth, struct mad_frame const *frame)
       phase = (phase + 1) % 16;
     }
   }
+}
+# endif
 
-  synth->phase      = phase;
-  synth->pcm.length = 32 * ns;
+/*
+ * NAME:	synth->half()
+ * DESCRIPTION:	perform half frequency PCM synthesis
+ */
+static
+void synth_half(struct mad_synth *synth, struct mad_frame const *frame,
+		unsigned int nch, unsigned int ns)
+{
+  unsigned int phase, ch, s, sb, pe, po;
+  mad_fixed_t *pcm1, *pcm2, (*filter)[2][2][16][8];
+  mad_fixed_t const (*sbsample)[36][32];
+  register mad_fixed_t (*fe)[8], (*fx)[8], (*fo)[8];
+  register mad_fixed_t const (*Dptr)[32], *ptr;
+  register mad_fixed64hi_t hi;
+  register mad_fixed64lo_t lo;
+
+  for (ch = 0; ch < nch; ++ch) {
+    sbsample = &frame->sbsample[ch];
+    filter   = &synth->filter[ch];
+    phase    = synth->phase;
+    pcm1     = synth->pcm.samples[ch];
+
+    for (s = 0; s < ns; ++s) {
+      dct32((*sbsample)[s], phase >> 1,
+	    (*filter)[0][phase & 1], (*filter)[1][phase & 1]);
+
+      pe = phase & ~1;
+      po = ((phase - 1) & 0xf) | 1;
+
+      /* calculate 16 samples */
+
+      fe = &(*filter)[0][ phase & 1][0];
+      fx = &(*filter)[0][~phase & 1][0];
+      fo = &(*filter)[1][~phase & 1][0];
+
+      Dptr = &D[0];
+
+      ptr = *Dptr + pe;
+      ML0(hi, lo, (*fe)[0], ptr[ 0]);
+      MLA(hi, lo, (*fe)[1], ptr[14]);
+      MLA(hi, lo, (*fe)[2], ptr[12]);
+      MLA(hi, lo, (*fe)[3], ptr[10]);
+      MLA(hi, lo, (*fe)[4], ptr[ 8]);
+      MLA(hi, lo, (*fe)[5], ptr[ 6]);
+      MLA(hi, lo, (*fe)[6], ptr[ 4]);
+      MLA(hi, lo, (*fe)[7], ptr[ 2]);
+
+      ptr = *Dptr + po;
+      MLA(hi, lo, (*fx)[0], -ptr[ 0]);
+      MLA(hi, lo, (*fx)[1], -ptr[14]);
+      MLA(hi, lo, (*fx)[2], -ptr[12]);
+      MLA(hi, lo, (*fx)[3], -ptr[10]);
+      MLA(hi, lo, (*fx)[4], -ptr[ 8]);
+      MLA(hi, lo, (*fx)[5], -ptr[ 6]);
+      MLA(hi, lo, (*fx)[6], -ptr[ 4]);
+      MLA(hi, lo, (*fx)[7], -ptr[ 2]);
+
+      *pcm1++ = SHIFT(MLZ(hi, lo));
+
+      pcm2 = pcm1 + 14;
+
+      for (sb = 1; sb < 16; ++sb) {
+	++fe;
+	++Dptr;
+
+	/* D[32 - sb][i] == -D[sb][31 - i] */
+
+	if (!(sb & 1)) {
+	  ptr = *Dptr + pe;
+	  ML0(hi, lo, (*fe)[7], ptr[ 2]);
+	  MLA(hi, lo, (*fe)[6], ptr[ 4]);
+	  MLA(hi, lo, (*fe)[5], ptr[ 6]);
+	  MLA(hi, lo, (*fe)[4], ptr[ 8]);
+	  MLA(hi, lo, (*fe)[3], ptr[10]);
+	  MLA(hi, lo, (*fe)[2], ptr[12]);
+	  MLA(hi, lo, (*fe)[1], ptr[14]);
+	  MLA(hi, lo, (*fe)[0], ptr[ 0]);
+
+	  ptr = *Dptr + po;
+	  MLA(hi, lo, (*fo)[0], -ptr[ 0]);
+	  MLA(hi, lo, (*fo)[1], -ptr[14]);
+	  MLA(hi, lo, (*fo)[2], -ptr[12]);
+	  MLA(hi, lo, (*fo)[3], -ptr[10]);
+	  MLA(hi, lo, (*fo)[4], -ptr[ 8]);
+	  MLA(hi, lo, (*fo)[5], -ptr[ 6]);
+	  MLA(hi, lo, (*fo)[6], -ptr[ 4]);
+	  MLA(hi, lo, (*fo)[7], -ptr[ 2]);
+
+	  *pcm1++ = SHIFT(MLZ(hi, lo));
+
+	  ptr = *Dptr - po;
+	  ML0(hi, lo, (*fo)[7], ptr[31 -  2]);
+	  MLA(hi, lo, (*fo)[6], ptr[31 -  4]);
+	  MLA(hi, lo, (*fo)[5], ptr[31 -  6]);
+	  MLA(hi, lo, (*fo)[4], ptr[31 -  8]);
+	  MLA(hi, lo, (*fo)[3], ptr[31 - 10]);
+	  MLA(hi, lo, (*fo)[2], ptr[31 - 12]);
+	  MLA(hi, lo, (*fo)[1], ptr[31 - 14]);
+	  MLA(hi, lo, (*fo)[0], ptr[31 - 16]);
+
+	  ptr = *Dptr - pe;
+	  MLA(hi, lo, (*fe)[0], ptr[31 - 16]);
+	  MLA(hi, lo, (*fe)[1], ptr[31 - 14]);
+	  MLA(hi, lo, (*fe)[2], ptr[31 - 12]);
+	  MLA(hi, lo, (*fe)[3], ptr[31 - 10]);
+	  MLA(hi, lo, (*fe)[4], ptr[31 -  8]);
+	  MLA(hi, lo, (*fe)[5], ptr[31 -  6]);
+	  MLA(hi, lo, (*fe)[6], ptr[31 -  4]);
+	  MLA(hi, lo, (*fe)[7], ptr[31 -  2]);
+
+	  *pcm2-- = SHIFT(MLZ(hi, lo));
+	}
+
+	++fo;
+      }
+
+      ++Dptr;
+
+      ptr = *Dptr + po;
+      ML0(hi, lo, (*fo)[0], ptr[ 0]);
+      MLA(hi, lo, (*fo)[1], ptr[14]);
+      MLA(hi, lo, (*fo)[2], ptr[12]);
+      MLA(hi, lo, (*fo)[3], ptr[10]);
+      MLA(hi, lo, (*fo)[4], ptr[ 8]);
+      MLA(hi, lo, (*fo)[5], ptr[ 6]);
+      MLA(hi, lo, (*fo)[6], ptr[ 4]);
+      MLA(hi, lo, (*fo)[7], ptr[ 2]);
+
+      *pcm1 = SHIFT(-MLZ(hi, lo));
+      pcm1 += 8;
+
+      phase = (phase + 1) % 16;
+    }
+  }
 }
 
 /*
- * NAME:	synth->mute()
- * DESCRIPTION:	zero all polyphase filterbank values, resetting synthesis
+ * NAME:	synth->frame()
+ * DESCRIPTION:	perform PCM synthesis of frame subband samples
  */
-void mad_synth_mute(struct mad_synth *synth)
+void mad_synth_frame(struct mad_synth *synth, struct mad_frame const *frame)
 {
-  unsigned int ch, s, v;
+  unsigned int nch, ns;
+  void (*synth_frame)(struct mad_synth *, struct mad_frame const *,
+		      unsigned int, unsigned int);
 
-  for (ch = 0; ch < 2; ++ch) {
-    for (s = 0; s < 16; ++s) {
-      for (v = 0; v < 8; ++v) {
-	synth->filter[ch][0][0][s][v] = synth->filter[ch][0][1][s][v] =
-	synth->filter[ch][1][0][s][v] = synth->filter[ch][1][1][s][v] = 0;
-      }
-    }
+  nch = MAD_NCHANNELS(&frame->header);
+  ns  = MAD_NSBSAMPLES(&frame->header);
+
+  synth->pcm.samplerate = frame->header.samplerate;
+  synth->pcm.channels   = nch;
+  synth->pcm.length     = 32 * ns;
+
+  synth_frame = synth_full;
+
+  if (frame->options & MAD_OPTION_HALFSAMPLERATE) {
+    synth->pcm.samplerate /= 2;
+    synth->pcm.length     /= 2;
+
+    synth_frame = synth_half;
   }
+
+  synth_frame(synth, frame, nch, ns);
+
+  synth->phase = (synth->phase + ns) % 16;
 }

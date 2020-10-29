@@ -16,11 +16,11 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: frame.h,v 1.7 2001/01/21 00:18:15 rob Exp $
+ * $Id: frame.h,v 1.13 2001/04/05 04:57:11 rob Exp $
  */
 
-# ifndef MAD_FRAME_H
-# define MAD_FRAME_H
+# ifndef LIBMAD_FRAME_H
+# define LIBMAD_FRAME_H
 
 # include "fixed.h"
 # include "timer.h"
@@ -41,28 +41,30 @@ enum mad_mode {
 
 enum mad_emphasis {
   MAD_EMPHASIS_NONE	  = 0,		/* no emphasis */
-  MAD_EMPHASIS_50_15_MS	  = 1,		/* 50/15 microseconds */
-  MAD_EMPHASIS_CCITT_J_17 = 3		/* CCITT J.17 */
+  MAD_EMPHASIS_50_15_US	  = 1,		/* 50/15 microseconds emphasis */
+  MAD_EMPHASIS_CCITT_J_17 = 3		/* CCITT J.17 emphasis */
 };
 
 struct mad_frame {
   struct mad_header {
     enum mad_layer layer;		/* audio layer (1, 2, or 3) */
     enum mad_mode mode;			/* channel mode (see above) */
-    int mode_ext;			/* additional mode info */
+    int mode_extension;			/* additional mode info */
     enum mad_emphasis emphasis;		/* de-emphasis to use (see above) */
 
     unsigned long bitrate;		/* stream bitrate (bps) */
-    unsigned int sfreq;			/* sampling frequency (Hz) */
+    unsigned int samplerate;		/* sampling frequency (Hz) */
 
-    unsigned int crc_header;		/* header CRC partial checksum */
-    unsigned int crc_check;		/* target CRC final checksum */
+    unsigned short crc_check;		/* frame CRC accumulator */
+    unsigned short crc_target;		/* final target CRC checksum */
 
-    int flags;				/* flags (below) */
-    int private;			/* private bits (below) */
+    int flags;				/* flags (see below) */
+    int private_bits;			/* private bits (see below) */
 
     mad_timer_t duration;		/* audio playing time of frame */
   } header;
+
+  int options;				/* decoding options (from stream) */
 
   mad_fixed_t sbsample[2][36][32];	/* synthesis subband filter samples */
   mad_fixed_t (*overlap)[2][32][18];	/* Layer III block overlap data */
@@ -85,10 +87,11 @@ enum {
 
   MAD_FLAG_I_STEREO	  = 0x0100,	/* uses intensity joint stereo */
   MAD_FLAG_MS_STEREO	  = 0x0200,	/* uses middle/side joint stereo */
+  MAD_FLAG_FREEFORMAT	  = 0x0400,	/* uses free format bitrate */
 
   MAD_FLAG_LSF_EXT	  = 0x1000,	/* lower sampling freq. extension */
   MAD_FLAG_MC_EXT	  = 0x2000,	/* multichannel audio extension */
-  MAD_FLAG_MPEG_2_5_EXT	  = 0x4000	/* MPEG 2.5 unofficial extension */
+  MAD_FLAG_MPEG_2_5_EXT	  = 0x4000	/* MPEG 2.5 (unofficial) extension */
 };
 
 enum {

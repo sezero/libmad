@@ -16,11 +16,11 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: huffman.h,v 1.4 2001/01/21 00:18:15 rob Exp $
+ * $Id: huffman.h,v 1.5 2001/04/05 04:57:11 rob Exp $
  */
 
-# ifndef MAD_HUFFMAN_H
-# define MAD_HUFFMAN_H
+# ifndef LIBMAD_HUFFMAN_H
+# define LIBMAD_HUFFMAN_H
 
 union huffquad {
   struct {

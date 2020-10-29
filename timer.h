@@ -16,11 +16,11 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: timer.h,v 1.8 2001/01/21 00:18:15 rob Exp $
+ * $Id: timer.h,v 1.10 2001/04/05 04:57:11 rob Exp $
  */
 
-# ifndef MAD_TIMER_H
-# define MAD_TIMER_H
+# ifndef LIBMAD_TIMER_H
+# define LIBMAD_TIMER_H
 
 typedef struct {
   signed long seconds;		/* whole seconds */
@@ -90,6 +90,7 @@ mad_timer_t mad_timer_abs(mad_timer_t);
 
 void mad_timer_set(mad_timer_t *, unsigned long, unsigned long, unsigned long);
 void mad_timer_add(mad_timer_t *, mad_timer_t);
+void mad_timer_multiply(mad_timer_t *, signed long);
 
 signed long mad_timer_count(mad_timer_t, enum mad_units);
 unsigned long mad_timer_fraction(mad_timer_t, unsigned long);

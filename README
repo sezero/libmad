@@ -2,7 +2,7 @@
  mad - MPEG audio decoder
  Copyright (C) 2000-2001 Robert Leslie
 
- $Id: README,v 1.40 2001/02/09 02:12:17 rob Exp $
+ $Id: README,v 1.42 2001/04/10 19:26:20 rob Exp $
 
 ===============================================================================
 
@@ -149,12 +149,16 @@ Portability Issues
   the first.
 
   The code should not be sensitive to word sizes or byte ordering, however it
-  is known to be dependent on sign-extending arithmetic right shifts in
-  several places, and it also assumes A % B has the same sign as A.
+  does assume A % B has the same sign as A.
 
 ===============================================================================
 
 INSTALLATION
+
+  If you are trying to build MAD under Windows, you will almost certainly
+  want to use Cygwin:
+
+      http://www.cygwin.com/
 
   The code is distributed with a `configure' script which will generate for
   you a `Makefile' and a `config.h' in both the `libmad' and top-level
@@ -187,13 +191,14 @@ INSTALLATION
       --enable-sso              use the subband synthesis optimization,
                                 with reduced accuracy
 
-      --enable-aso              use architecture-specific optimizations,
-                                if available (currently only for ARM)
+      --disable-aso             do not use certain architecture-specific
+                                optimizations
 
   By default an appropriate fixed-point assembly routine will be selected
   for the configured host type, if it can be determined. Thus if you are
   cross-compiling for another architecture, you should be sure either to
-  give `configure' a host type or to use an explicit --enable-fpm option.
+  give `configure' a host type argument or to use an explicit --enable-fpm
+  option.
 
   If an appropriate assembly routine cannot be determined, the fast
   approximation version will be used. In this case, use of an alternate
