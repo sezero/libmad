@@ -161,6 +161,20 @@ mad_fixed_t mad_f_mul_inline(mad_fixed_t x, mad_fixed_t y)
 
 #   define mad_f_mul		mad_f_mul_inline
 #   define mad_f_scale64
+
+#  elif defined(__WATCOMC__) && defined(__386__)
+mad_fixed_t mad_f_mul_inl(mad_fixed_t,mad_fixed_t);
+/* 28 == MAD_F_FRACBITS */
+#pragma aux mad_f_mul_inl =		\
+	"imul ebx",			\
+	"shrd eax,edx,28"		\
+	parm	[eax] [ebx]		\
+	value	[eax]			\
+	modify exact [eax edx]
+
+#   define mad_f_mul		mad_f_mul_inl
+#   define mad_f_scale64
+
 #  else
 /*
  * This Intel version is fast and accurate; the disposition of the least
