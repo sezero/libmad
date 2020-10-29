@@ -1,6 +1,6 @@
 /*
  * mad - MPEG audio decoder
- * Copyright (C) 2000 Robert Leslie
+ * Copyright (C) 2000-2001 Robert Leslie
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: bit.c,v 1.3 2000/10/25 21:52:31 rob Exp $
+ * $Id: bit.c,v 1.5 2001/01/21 00:18:15 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
@@ -199,10 +199,14 @@ unsigned short mad_bit_crc(struct mad_bitptr bitptr, unsigned int len,
 {
   register unsigned int crc, data;
 
+# if CHAR_BIT == 8
   for (crc = init; len >= 8; len -= 8) {
     crc = (crc << 8) ^
       crc_table[((crc >> 8) ^ mad_bit_read(&bitptr, 8)) & 0xff];
   }
+# else
+  crc = init;
+# endif
 
   while (len--) {
     data = mad_bit_read(&bitptr, 1) ^ (crc >> 15);

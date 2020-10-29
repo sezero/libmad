@@ -1,6 +1,6 @@
 ##
 ## mad - MPEG audio decoder
-## Copyright (C) 2000 Robert Leslie
+## Copyright (C) 2000-2001 Robert Leslie
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@
 ## If you would like to negotiate alternate licensing terms, you may do
 ## so by contacting the author: Robert Leslie <rob@mars.org>
 ##
-## $Id: Makefile.am,v 1.3 2000/11/20 04:57:46 rob Exp $
+## $Id: Makefile.am,v 1.4 2001/01/21 00:18:15 rob Exp $
 ##
 
 ## Process this file with automake to produce Makefile.in

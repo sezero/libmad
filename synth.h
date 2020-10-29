@@ -1,6 +1,6 @@
 /*
  * mad - MPEG audio decoder
- * Copyright (C) 2000 Robert Leslie
+ * Copyright (C) 2000-2001 Robert Leslie
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: synth.h,v 1.5 2000/11/18 12:38:44 rob Exp $
+ * $Id: synth.h,v 1.6 2001/01/21 00:18:15 rob Exp $
  */
 
 # ifndef MAD_SYNTH_H

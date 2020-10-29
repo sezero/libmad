@@ -1,6 +1,6 @@
 /*
  * mad - MPEG audio decoder
- * Copyright (C) 2000 Robert Leslie
+ * Copyright (C) 2000-2001 Robert Leslie
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: frame.c,v 1.10 2000/11/16 10:51:10 rob Exp $
+ * $Id: frame.c,v 1.12 2001/01/21 00:18:15 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
@@ -102,12 +102,12 @@ void mad_frame_init(struct mad_frame *frame)
  */
 void mad_frame_finish(struct mad_frame *frame)
 {
+  mad_header_finish(&frame->header);
+
   if (frame->overlap) {
     free(frame->overlap);
     frame->overlap = 0;
   }
-
-  mad_header_finish(&frame->header);
 }
 
 /*
@@ -125,11 +125,19 @@ int decode_header(struct mad_header *header, struct mad_stream *stream)
   /* header() */
 
   /* syncword */
-  mad_bit_skip(&stream->ptr, 12);
+  mad_bit_skip(&stream->ptr, 11);
+
+  /* MPEG 2.5 indicator (really part of syncword) */
+  if (mad_bit_read(&stream->ptr, 1) == 0)
+    header->flags |= MAD_FLAG_MPEG_2_5_EXT;
 
   /* ID */
   if (mad_bit_read(&stream->ptr, 1) == 0)
     header->flags |= MAD_FLAG_LSF_EXT;
+  else if (header->flags & MAD_FLAG_MPEG_2_5_EXT) {
+    stream->error = MAD_ERROR_LOSTSYNC;
+    return -1;
+  }
 
   /* layer */
   header->layer = (4 - mad_bit_read(&stream->ptr, 2)) & 3;
@@ -166,8 +174,12 @@ int decode_header(struct mad_header *header, struct mad_stream *stream)
 
   header->sfreq = sfreq_table[index];
 
-  if (header->flags & MAD_FLAG_LSF_EXT)
+  if (header->flags & MAD_FLAG_LSF_EXT) {
     header->sfreq /= 2;
+
+    if (header->flags & MAD_FLAG_MPEG_2_5_EXT)
+      header->sfreq /= 2;
+  }
 
   /* padding_bit */
   if (mad_bit_read(&stream->ptr, 1))
@@ -321,7 +333,7 @@ int mad_header_decode(struct mad_header *header, struct mad_stream *stream)
       stream->error = MAD_ERROR_BUFLEN;
       goto fail;
     }
-    else if (!(ptr[0] == 0xff && (ptr[1] & 0xf0) == 0xf0)) {
+    else if (!(ptr[0] == 0xff && (ptr[1] & 0xe0) == 0xe0)) {
       /* mark point where frame sync word was expected */
       stream->this_frame = ptr;
       stream->next_frame = ptr + 1;
@@ -394,7 +406,7 @@ int mad_header_decode(struct mad_header *header, struct mad_stream *stream)
     /* check that a valid frame header follows this frame */
 
     ptr = stream->next_frame;
-    if (!(ptr[0] == 0xff && (ptr[1] & 0xf0) == 0xf0)) {
+    if (!(ptr[0] == 0xff && (ptr[1] & 0xe0) == 0xe0)) {
       ptr = stream->next_frame = stream->this_frame + 1;
       goto sync;
     }

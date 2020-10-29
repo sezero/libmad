@@ -1,6 +1,6 @@
 /*
  * mad - MPEG audio decoder
- * Copyright (C) 2000 Robert Leslie
+ * Copyright (C) 2000-2001 Robert Leslie
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: stream.h,v 1.5 2000/10/25 21:52:32 rob Exp $
+ * $Id: stream.h,v 1.7 2001/01/21 00:18:15 rob Exp $
  */
 
 # ifndef MAD_STREAM_H
@@ -49,7 +49,8 @@ enum mad_error {
   MAD_ERROR_BADDATALEN	   = 0x0235,	/* bad main data length */
   MAD_ERROR_BADPART3LEN	   = 0x0236,	/* bad audio data length */
   MAD_ERROR_BADHUFFTABLE   = 0x0237,	/* bad Huffman table select */
-  MAD_ERROR_BADSTEREO	   = 0x0238	/* incompatible block_type for MS */
+  MAD_ERROR_BADHUFFDATA	   = 0x0238,	/* Huffman data overrun */
+  MAD_ERROR_BADSTEREO	   = 0x0239	/* incompatible block_type for MS */
 };
 
 struct mad_stream {

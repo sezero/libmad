@@ -1,6 +1,6 @@
 /*
  * mad - MPEG audio decoder
- * Copyright (C) 2000 Robert Leslie
+ * Copyright (C) 2000-2001 Robert Leslie
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: synth.c,v 1.11 2000/11/18 12:38:44 rob Exp $
+ * $Id: synth.c,v 1.12 2001/01/21 00:18:15 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
@@ -112,37 +112,37 @@ void dct32(mad_fixed_t const in[32], unsigned int slot,
   /* costab[i] = cos(PI / (2 * 32) * i) */
 
   enum {
-    costab1  = 0x0ffb10f2L,  /* 0.998795456 */
-    costab2  = 0x0fec46d2L,  /* 0.995184727 */
-    costab3  = 0x0fd3aac0L,  /* 0.989176510 */
-    costab4  = 0x0fb14be8L,  /* 0.980785280 */
-    costab5  = 0x0f853f7eL,  /* 0.970031253 */
-    costab6  = 0x0f4fa0abL,  /* 0.956940336 */
-    costab7  = 0x0f109082L,  /* 0.941544065 */
-    costab8  = 0x0ec835e8L,  /* 0.923879533 */
-    costab9  = 0x0e76bd7aL,  /* 0.903989293 */
-    costab10 = 0x0e1c5979L,  /* 0.881921264 */
-    costab11 = 0x0db941a3L,  /* 0.857728610 */
-    costab12 = 0x0d4db315L,  /* 0.831469612 */
-    costab13 = 0x0cd9f024L,  /* 0.803207531 */
-    costab14 = 0x0c5e4036L,  /* 0.773010453 */
-    costab15 = 0x0bdaef91L,  /* 0.740951125 */
-    costab16 = 0x0b504f33L,  /* 0.707106781 */
-    costab17 = 0x0abeb49aL,  /* 0.671558955 */
-    costab18 = 0x0a267993L,  /* 0.634393284 */
-    costab19 = 0x0987fbfeL,  /* 0.595699304 */
-    costab20 = 0x08e39d9dL,  /* 0.555570233 */
-    costab21 = 0x0839c3cdL,  /* 0.514102744 */
-    costab22 = 0x078ad74eL,  /* 0.471396737 */
-    costab23 = 0x06d74402L,  /* 0.427555093 */
-    costab24 = 0x061f78aaL,  /* 0.382683432 */
-    costab25 = 0x0563e69dL,  /* 0.336889853 */
-    costab26 = 0x04a5018cL,  /* 0.290284677 */
-    costab27 = 0x03e33f2fL,  /* 0.242980180 */
-    costab28 = 0x031f1708L,  /* 0.195090322 */
-    costab29 = 0x0259020eL,  /* 0.146730474 */
-    costab30 = 0x01917a6cL,  /* 0.098017140 */
-    costab31 = 0x00c8fb30L   /* 0.049067674 */
+    costab1  = MAD_F(0x0ffb10f2),  /* 0.998795456 */
+    costab2  = MAD_F(0x0fec46d2),  /* 0.995184727 */
+    costab3  = MAD_F(0x0fd3aac0),  /* 0.989176510 */
+    costab4  = MAD_F(0x0fb14be8),  /* 0.980785280 */
+    costab5  = MAD_F(0x0f853f7e),  /* 0.970031253 */
+    costab6  = MAD_F(0x0f4fa0ab),  /* 0.956940336 */
+    costab7  = MAD_F(0x0f109082),  /* 0.941544065 */
+    costab8  = MAD_F(0x0ec835e8),  /* 0.923879533 */
+    costab9  = MAD_F(0x0e76bd7a),  /* 0.903989293 */
+    costab10 = MAD_F(0x0e1c5979),  /* 0.881921264 */
+    costab11 = MAD_F(0x0db941a3),  /* 0.857728610 */
+    costab12 = MAD_F(0x0d4db315),  /* 0.831469612 */
+    costab13 = MAD_F(0x0cd9f024),  /* 0.803207531 */
+    costab14 = MAD_F(0x0c5e4036),  /* 0.773010453 */
+    costab15 = MAD_F(0x0bdaef91),  /* 0.740951125 */
+    costab16 = MAD_F(0x0b504f33),  /* 0.707106781 */
+    costab17 = MAD_F(0x0abeb49a),  /* 0.671558955 */
+    costab18 = MAD_F(0x0a267993),  /* 0.634393284 */
+    costab19 = MAD_F(0x0987fbfe),  /* 0.595699304 */
+    costab20 = MAD_F(0x08e39d9d),  /* 0.555570233 */
+    costab21 = MAD_F(0x0839c3cd),  /* 0.514102744 */
+    costab22 = MAD_F(0x078ad74e),  /* 0.471396737 */
+    costab23 = MAD_F(0x06d74402),  /* 0.427555093 */
+    costab24 = MAD_F(0x061f78aa),  /* 0.382683432 */
+    costab25 = MAD_F(0x0563e69d),  /* 0.336889853 */
+    costab26 = MAD_F(0x04a5018c),  /* 0.290284677 */
+    costab27 = MAD_F(0x03e33f2f),  /* 0.242980180 */
+    costab28 = MAD_F(0x031f1708),  /* 0.195090322 */
+    costab29 = MAD_F(0x0259020e),  /* 0.146730474 */
+    costab30 = MAD_F(0x01917a6c),  /* 0.098017140 */
+    costab31 = MAD_F(0x00c8fb30)   /* 0.049067674 */
   };
 
   t0   = in[0]  + in[31];  t16  = mad_f_mul(in[0]  - in[31], costab1);
@@ -420,19 +420,19 @@ void dct32(mad_fixed_t const in[32], unsigned int slot,
 # if defined(OPT_SSO)
 #  undef  MAD_F_HAVEMLA
 #  define MUL(x, y)		((x) * (y))
-#  define PRESHIFT(x)		(((x) + (1L << 13)) >> 14)
+#  define PRESHIFT(x)		((MAD_F(x) + (1L << 13)) >> 14)
 #  define SHIFT(x)		((x) >> 2)
 # elif defined(MAD_F_SCALEBITS)
 #  undef  MAD_F_SCALEBITS
 #  define MAD_F_SCALEBITS	(MAD_F_FRACBITS - 12)
 #  define MLA(hi, lo, x, y)	mad_f_mla(&(hi), &(lo), (x), (y))
 #  define MUL(x, y)		mad_f_mul((x), (y))
-#  define PRESHIFT(x)		((x) >> 12)
+#  define PRESHIFT(x)		(MAD_F(x) >> 12)
 #  define SHIFT(x)		(x)
 # else
 #  define MLA(hi, lo, x, y)	mad_f_mla(&(hi), &(lo), (x), (y))
 #  define MUL(x, y)		mad_f_mul((x), (y))
-#  define PRESHIFT(x)		(x)
+#  define PRESHIFT(x)		MAD_F(x)
 #  define SHIFT(x)		(x)
 # endif
 

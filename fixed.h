@@ -1,6 +1,6 @@
 /*
  * mad - MPEG audio decoder
- * Copyright (C) 2000 Robert Leslie
+ * Copyright (C) 2000-2001 Robert Leslie
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: fixed.h,v 1.12 2000/10/25 21:52:31 rob Exp $
+ * $Id: fixed.h,v 1.13 2001/01/21 00:18:15 rob Exp $
  */
 
 # ifndef MAD_FIXED_H
@@ -52,17 +52,38 @@ typedef unsigned long mad_fixed64lo_t;
  * Fixed-point numbers can be added or subtracted as normal
  * integers, but multiplication requires shifting the 64-bit result
  * from 56 fractional bits back to 28 (and rounding.)
+ *
+ * Changing the definition of MAD_F_FRACBITS is only partially
+ * supported, and must be done with care.
  */
 
 # define MAD_F_FRACBITS		28
 
-# define MAD_F_MIN		(-0x80000000L)
-# define MAD_F_MAX		  0x7fffffffL
+# if MAD_F_FRACBITS == 28
+#  define MAD_F(x)		((mad_fixed_t) (x##L))
+# else
+#  if MAD_F_FRACBITS < 28
+#   warning "MAD_F_FRACBITS < 28"
+#   define MAD_F(x)		((mad_fixed_t)  \
+				 (((x##L) +  \
+				   (1L << (28 - MAD_F_FRACBITS - 1))) >>  \
+				  (28 - MAD_F_FRACBITS)))
+#  elif MAD_F_FRACBITS > 28
+#   error "MAD_F_FRACBITS > 28 not currently supported"
+#   define MAD_F(x)		((mad_fixed_t)  \
+				 ((x##L) << (MAD_F_FRACBITS - 28)))
+#  endif
+# endif
 
-# define MAD_F_ONE		  0x10000000L
+# define MAD_F_MIN		((mad_fixed_t) -0x80000000L)
+# define MAD_F_MAX		((mad_fixed_t) +0x7fffffffL)
 
-# define mad_f_tofixed(x)	((mad_fixed_t) ((x) * 268435456.0 + 0.5))
-# define mad_f_todouble(x)	((double)      ((x) / 268435456.0))
+# define MAD_F_ONE		MAD_F(0x10000000)
+
+# define mad_f_tofixed(x)	((mad_fixed_t)  \
+				 ((x) * (double) (1L << MAD_F_FRACBITS) + 0.5))
+# define mad_f_todouble(x)	((double)  \
+				 ((x) / (double) (1L << MAD_F_FRACBITS)))
 
 # define mad_f_intpart(x)	((x) >> MAD_F_FRACBITS)
 # define mad_f_fracpart(x)	((x) & ((1L << MAD_F_FRACBITS) - 1))

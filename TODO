@@ -1,12 +1,15 @@
 
 libmad:
+  - x86 performance optimization compiler flags
   - Nicolas's PCM shortcut?
   - function documentation, general docs
   - finish async API
   - parse system streams
-  - MPEG-2 MC, AAC, 2.5?
+  - MPEG-2 MC, AAC?
   - 64-bit synthesis optimization?
   - logarithmic multiplication?
+  - multiple frame decoding for better locality of reference?
+  - frame serial numbers
 
 libmad Layer I:
   - check frame length sanity
@@ -20,11 +23,10 @@ libmad Layer III:
   - perform requantization during Huffman decoding
   - optimize imdct12 (short blocks)
   - ancillary bits
-  - ms_stereo + intensity_stereo not right?
   - stereo->mono conversion optimization?
-  - 64-bit IMDCT optimization?
 
 madplay:
+  - auto attenuation?
   - ESD output module
   - 24-bit output under Win32
   - fade-out support
@@ -61,8 +63,7 @@ Winamp plug-in:
   - better streaming support
   - ID3v2 tag viewer/editor
   - buffer size/read whole file
-  - mono downmix
-  - left/right/reverse channel selection
   - DSP before dither?
   - better VBR seek
+  - equalizer
 

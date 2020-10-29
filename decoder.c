@@ -1,6 +1,6 @@
 /*
  * mad - MPEG audio decoder
- * Copyright (C) 2000 Robert Leslie
+ * Copyright (C) 2000-2001 Robert Leslie
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: decoder.c,v 1.7 2000/11/16 10:51:10 rob Exp $
+ * $Id: decoder.c,v 1.9 2001/01/21 00:18:15 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
@@ -91,6 +91,10 @@ int mad_decoder_finish(struct mad_decoder *decoder)
     decoder->mode = -1;
 
     close(decoder->async.out);
+
+    decoder->async.pid = 0;
+    decoder->async.in  = -1;
+    decoder->async.out = -1;
 
     if (pid == -1)
       return -1;

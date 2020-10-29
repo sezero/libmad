@@ -1,10 +1,43 @@
 
  mad - MPEG audio decoder
- Copyright (C) 2000 Robert Leslie
+ Copyright (C) 2000-2001 Robert Leslie
 
- $Id: CHANGES,v 1.38 2000/11/20 04:56:56 rob Exp $
+ $Id: CHANGES,v 1.41 2001/01/21 00:18:09 rob Exp $
 
 ===============================================================================
+
+Version 0.12.3 (beta)
+
+  * Added MPEG 2.5 support.
+
+  * Added preliminary support for parameterizing the binary point position in
+    the fixed-point representation.
+
+  * Added calls to madvise() on supported systems to reduce memory overhead
+    when using mmap().
+
+  * Added support for automatic mono/stereo channel selection based on output
+    capability.
+
+  * Added a new option to force stereo output of single or dual channel
+    streams.
+
+  * Added a new option to amplify/attenuate the output signal by an amount
+    expressed in decibels.
+
+  * Output statistics (peak amplitude, clipped samples) are now gathered and
+    displayed after decoding.
+
+  * Added multiply/accumulate optimization to the Layer III IMDCT for long
+    blocks.
+
+  * Fixed a bug in the handling of Layer III mixed_block_flag.
+
+  * Many Winamp plug-in enhancements.
+
+  * Fixed a problem calling setlocale() when NLS is disabled.
+
+  * Fixed a configure problem when multiple -O CFLAGS are present.
 
 Version 0.12.2 (beta)
 
@@ -120,7 +153,7 @@ Version 0.11.3 (beta)
   * Added new --enable-speed and --enable-accuracy options for `configure'
     to automatically select appropriate SSO/ASO options, et al.
 
-  * Modified subband synthesis to use multiply-accumulate optimization
+  * Modified subband synthesis to use multiply/accumulate optimization
     (if available) for better speed and/or accuracy.
 
   * Incorporated Andre McCurdy's changes for further rounding optimizations

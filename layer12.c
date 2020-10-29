@@ -1,6 +1,6 @@
 /*
  * mad - MPEG audio decoder
- * Copyright (C) 2000 Robert Leslie
+ * Copyright (C) 2000-2001 Robert Leslie
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: layer12.c,v 1.6 2000/11/16 10:51:10 rob Exp $
+ * $Id: layer12.c,v 1.8 2001/01/21 00:18:15 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
@@ -51,20 +51,20 @@ mad_fixed_t const sf_table[63] = {
 /* linear scaling table */
 static
 mad_fixed_t const linear_table[14] = {
-  0x15555555L,  /* 2^2  / (2^2  - 1) == 1.33333333333333 */
-  0x12492492L,  /* 2^3  / (2^3  - 1) == 1.14285714285714 */
-  0x11111111L,  /* 2^4  / (2^4  - 1) == 1.06666666666667 */
-  0x10842108L,  /* 2^5  / (2^5  - 1) == 1.03225806451613 */
-  0x10410410L,  /* 2^6  / (2^6  - 1) == 1.01587301587302 */
-  0x10204081L,  /* 2^7  / (2^7  - 1) == 1.00787401574803 */
-  0x10101010L,  /* 2^8  / (2^8  - 1) == 1.00392156862745 */
-  0x10080402L,  /* 2^9  / (2^9  - 1) == 1.00195694716243 */
-  0x10040100L,  /* 2^10 / (2^10 - 1) == 1.00097751710655 */
-  0x10020040L,  /* 2^11 / (2^11 - 1) == 1.00048851978505 */
-  0x10010010L,  /* 2^12 / (2^12 - 1) == 1.00024420024420 */
-  0x10008004L,  /* 2^13 / (2^13 - 1) == 1.00012208521548 */
-  0x10004001L,  /* 2^14 / (2^14 - 1) == 1.00006103888177 */
-  0x10002000L   /* 2^15 / (2^15 - 1) == 1.00003051850948 */
+  MAD_F(0x15555555),  /* 2^2  / (2^2  - 1) == 1.33333333333333 */
+  MAD_F(0x12492492),  /* 2^3  / (2^3  - 1) == 1.14285714285714 */
+  MAD_F(0x11111111),  /* 2^4  / (2^4  - 1) == 1.06666666666667 */
+  MAD_F(0x10842108),  /* 2^5  / (2^5  - 1) == 1.03225806451613 */
+  MAD_F(0x10410410),  /* 2^6  / (2^6  - 1) == 1.01587301587302 */
+  MAD_F(0x10204081),  /* 2^7  / (2^7  - 1) == 1.00787401574803 */
+  MAD_F(0x10101010),  /* 2^8  / (2^8  - 1) == 1.00392156862745 */
+  MAD_F(0x10080402),  /* 2^9  / (2^9  - 1) == 1.00195694716243 */
+  MAD_F(0x10040100),  /* 2^10 / (2^10 - 1) == 1.00097751710655 */
+  MAD_F(0x10020040),  /* 2^11 / (2^11 - 1) == 1.00048851978505 */
+  MAD_F(0x10010010),  /* 2^12 / (2^12 - 1) == 1.00024420024420 */
+  MAD_F(0x10008004),  /* 2^13 / (2^13 - 1) == 1.00012208521548 */
+  MAD_F(0x10004001),  /* 2^14 / (2^14 - 1) == 1.00006103888177 */
+  MAD_F(0x10002000)   /* 2^15 / (2^15 - 1) == 1.00003051850948 */
 };
 
 /*
@@ -90,7 +90,7 @@ mad_fixed_t I_sample(struct mad_bitptr *ptr, unsigned int nb)
 
   /* s'' = (2^nb / (2^nb - 1)) * (s''' + 2^(-nb + 1)) */
 
-  requantized += 0x10000000L >> (nb - 1);
+  requantized += MAD_F_ONE >> (nb - 1);
 
   return mad_f_mul(requantized, linear_table[nb - 2]);
 
@@ -110,12 +110,11 @@ int mad_layer_I(struct mad_stream *stream, struct mad_frame *frame)
 
   nch = MAD_NCHANNELS(header);
 
+  bound = 32;
   if (header->mode == MAD_MODE_JOINT_STEREO) {
     header->flags |= MAD_FLAG_I_STEREO;
     bound = 4 + header->mode_ext * 4;
   }
-  else
-    bound = 32;
 
   /* check CRC word */
 
@@ -172,13 +171,10 @@ int mad_layer_I(struct mad_stream *stream, struct mad_frame *frame)
   for (s = 0; s < 12; ++s) {
     for (sb = 0; sb < bound; ++sb) {
       for (ch = 0; ch < nch; ++ch) {
-	if ((nb = allocation[ch][sb])) {
-	  frame->sbsample[ch][s][sb] =
-	    mad_f_mul(I_sample(&stream->ptr, nb),
-		      sf_table[scalefactor[ch][sb]]);
-	}
-	else
-	  frame->sbsample[ch][s][sb] = 0;
+	nb = allocation[ch][sb];
+	frame->sbsample[ch][s][sb] = nb ?
+	  mad_f_mul(I_sample(&stream->ptr, nb),
+		    sf_table[scalefactor[ch][sb]]) : 0;
       }
     }
 
@@ -463,24 +459,24 @@ int mad_layer_II(struct mad_stream *stream, struct mad_frame *frame)
 
 	II_samples(&stream->ptr, &qc_table[index], samples);
 
-	for (s = 0; s < 3; ++s) {
-	  for (ch = 0; ch < nch; ++ch) {
+	for (ch = 0; ch < nch; ++ch) {
+	  for (s = 0; s < 3; ++s) {
 	    frame->sbsample[ch][3 * gr + s][sb] =
 	      mad_f_mul(samples[s], sf_table[scalefactor[ch][sb][gr / 4]]);
 	  }
 	}
       }
       else {
-	for (s = 0; s < 3; ++s) {
-	  for (ch = 0; ch < nch; ++ch)
+	for (ch = 0; ch < nch; ++ch) {
+	  for (s = 0; s < 3; ++s)
 	    frame->sbsample[ch][3 * gr + s][sb] = 0;
 	}
       }
     }
 
-    for (sb = sblimit; sb < 32; ++sb) {
+    for (ch = 0; ch < nch; ++ch) {
       for (s = 0; s < 3; ++s) {
-	for (ch = 0; ch < nch; ++ch)
+	for (sb = sblimit; sb < 32; ++sb)
 	  frame->sbsample[ch][3 * gr + s][sb] = 0;
       }
     }

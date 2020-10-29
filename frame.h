@@ -1,6 +1,6 @@
 /*
  * mad - MPEG audio decoder
- * Copyright (C) 2000 Robert Leslie
+ * Copyright (C) 2000-2001 Robert Leslie
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: frame.h,v 1.6 2000/11/16 10:51:10 rob Exp $
+ * $Id: frame.h,v 1.7 2001/01/21 00:18:15 rob Exp $
  */
 
 # ifndef MAD_FRAME_H
@@ -87,7 +87,8 @@ enum {
   MAD_FLAG_MS_STEREO	  = 0x0200,	/* uses middle/side joint stereo */
 
   MAD_FLAG_LSF_EXT	  = 0x1000,	/* lower sampling freq. extension */
-  MAD_FLAG_MC_EXT	  = 0x2000	/* multichannel audio extension */
+  MAD_FLAG_MC_EXT	  = 0x2000,	/* multichannel audio extension */
+  MAD_FLAG_MPEG_2_5_EXT	  = 0x4000	/* MPEG 2.5 unofficial extension */
 };
 
 enum {

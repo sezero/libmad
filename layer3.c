@@ -1,6 +1,6 @@
 /*
  * mad - MPEG audio decoder
- * Copyright (C) 2000 Robert Leslie
+ * Copyright (C) 2000-2001 Robert Leslie
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: layer3.c,v 1.15 2000/11/20 04:57:46 rob Exp $
+ * $Id: layer3.c,v 1.19 2001/01/21 00:18:15 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
@@ -107,18 +107,23 @@ unsigned char const nsfb_table[6][3][4] = {
   { {  6,  5,  5, 5 },
     {  9,  9,  9, 9 },
     {  6,  9,  9, 9 } },
+
   { {  6,  5,  7, 3 },
     {  9,  9, 12, 6 },
     {  6,  9, 12, 6 } },
+
   { { 11, 10,  0, 0 },
     { 18, 18,  0, 0 },
     { 15, 18,  0, 0 } },
+
   { {  7,  7,  7, 0 },
     { 12, 12, 12, 0 },
     {  6, 15, 12, 0 } },
+
   { {  6,  6,  6, 3 },
     { 12,  9,  9, 6 },
     {  6, 12,  9, 6 } },
+
   { {  8,  8,  5, 0 },
     { 15, 12,  9, 0 },
     {  6, 18,  9, 0 } }
@@ -127,37 +132,56 @@ unsigned char const nsfb_table[6][3][4] = {
 /*
  * scalefactor band widths for long blocks
  * derived from Table B.8 of ISO/IEC 11172-3 and Table B.2 of ISO/IEC 13838-3
+ * MPEG 2.5 band widths derived from other public sources
  */
 static
-unsigned short const sfwidth_l[6][22] = {
-  /*    48 kHz */ {  4,  4,  4,  4,  4,  4,  6,  6,  6,   8,  10,
-		    12, 16, 18, 22, 28, 34, 40, 46, 54,  54, 192 },
-  /*  44.1 kHz */ {  4,  4,  4,  4,  4,  4,  6,  6,  8,   8,  10,
-		    12, 16, 20, 24, 28, 34, 42, 50, 54,  76, 158 },
-  /*    32 kHz */ {  4,  4,  4,  4,  4,  4,  6,  6,  8,  10,  12,
-		    16, 20, 24, 30, 38, 46, 56, 68, 84, 102,  26 },
+unsigned char const sfwidth_l[9][22] = {
+  /*  MPEG-1  */
+  /* 48000 Hz */ {  4,  4,  4,  4,  4,  4,  6,  6,  6,   8,  10,
+		   12, 16, 18, 22, 28, 34, 40, 46, 54,  54, 192 },
+  /* 44100 Hz */ {  4,  4,  4,  4,  4,  4,  6,  6,  8,   8,  10,
+		   12, 16, 20, 24, 28, 34, 42, 50, 54,  76, 158 },
+  /* 32000 Hz */ {  4,  4,  4,  4,  4,  4,  6,  6,  8,  10,  12,
+		   16, 20, 24, 30, 38, 46, 56, 68, 84, 102,  26 },
 
-  /*    24 kHz */ {  6,  6,  6,  6,  6,  6,  8, 10, 12,  14,  16,
-		    18, 22, 26, 32, 38, 46, 54, 62, 70,  76,  36 },
-  /* 22.05 kHz */ {  6,  6,  6,  6,  6,  6,  8, 10, 12,  14,  16,
-		    20, 24, 28, 32, 38, 46, 52, 60, 68,  58,  54 },
-  /*    16 kHz */ {  6,  6,  6,  6,  6,  6,  8, 10, 12,  14,  16,
-		    20, 24, 28, 32, 38, 46, 52, 60, 68,  58,  54 }
+  /*  MPEG-2  */
+  /* 24000 Hz */ {  6,  6,  6,  6,  6,  6,  8, 10, 12,  14,  16,
+		   18, 22, 26, 32, 38, 46, 54, 62, 70,  76,  36 },
+  /* 22050 Hz */ {  6,  6,  6,  6,  6,  6,  8, 10, 12,  14,  16,
+		   20, 24, 28, 32, 38, 46, 52, 60, 68,  58,  54 },
+  /* 16000 Hz */ {  6,  6,  6,  6,  6,  6,  8, 10, 12,  14,  16,
+		   20, 24, 28, 32, 38, 46, 52, 60, 68,  58,  54 },
+
+  /* MPEG 2.5 */
+  /* 12000 Hz */ {  6,  6,  6,  6,  6,  6,  8, 10, 12,  14,  16,
+		   20, 24, 28, 32, 38, 46, 52, 60, 68,  58,  54 },
+  /* 11025 Hz */ {  6,  6,  6,  6,  6,  6,  8, 10, 12,  14,  16,
+		   20, 24, 28, 32, 38, 46, 52, 60, 68,  58,  54 },
+  /*  8000 Hz */ { 12, 12, 12, 12, 12, 12, 16, 20, 24,  28,  32,
+		   40, 48, 56, 64, 76, 90,  2,  2,  2,   2,   2 }
 };
 
 /*
  * scalefactor band widths for short blocks
  * derived from Table B.8 of ISO/IEC 11172-3 and Table B.2 of ISO/IEC 13838-3
+ * MPEG 2.5 band widths derived from other public sources
  */
 static
-unsigned short const sfwidth_s[6][13] = {
-  /*    48 kHz */ { 4, 4, 4, 4, 6,  6, 10, 12, 14, 16, 20, 26, 66 },
-  /*  44.1 kHz */ { 4, 4, 4, 4, 6,  8, 10, 12, 14, 18, 22, 30, 56 },
-  /*    32 kHz */ { 4, 4, 4, 4, 6,  8, 12, 16, 20, 26, 34, 42, 12 },
+unsigned char const sfwidth_s[9][13] = {
+  /*  MPEG-1  */
+  /* 48000 Hz */ { 4, 4, 4,  4,  6,  6, 10, 12, 14, 16, 20, 26, 66 },
+  /* 44100 Hz */ { 4, 4, 4,  4,  6,  8, 10, 12, 14, 18, 22, 30, 56 },
+  /* 32000 Hz */ { 4, 4, 4,  4,  6,  8, 12, 16, 20, 26, 34, 42, 12 },
 
-  /*    24 kHz */ { 4, 4, 4, 6, 8, 10, 12, 14, 18, 24, 32, 44, 12 },
-  /* 22.05 kHz */ { 4, 4, 4, 6, 6,  8, 10, 14, 18, 26, 32, 42, 18 },
-  /*    16 kHz */ { 4, 4, 4, 6, 8, 10, 12, 14, 18, 24, 30, 40, 18 }
+  /*  MPEG-2  */
+  /* 24000 Hz */ { 4, 4, 4,  6,  8, 10, 12, 14, 18, 24, 32, 44, 12 },
+  /* 22050 Hz */ { 4, 4, 4,  6,  6,  8, 10, 14, 18, 26, 32, 42, 18 },
+  /* 16000 Hz */ { 4, 4, 4,  6,  8, 10, 12, 14, 18, 24, 30, 40, 18 },
+
+  /* MPEG 2.5 */
+  /* 12000 Hz */ { 4, 4, 4,  6,  8, 10, 12, 14, 18, 24, 30, 40, 18 },
+  /* 11025 Hz */ { 4, 4, 4,  6,  8, 10, 12, 14, 18, 24, 30, 40, 18 },
+  /*  8000 Hz */ { 8, 8, 8, 12, 16, 20, 24, 28, 36,  2,  2,  2, 26 }
 };
 
 /*
@@ -184,13 +208,13 @@ struct fixedfloat {
 /* fractional powers of two used during requantization */
 static
 mad_fixed_t const root_table[7] = {
-  0x09837f05L /* 2^(-3/4) == 0.59460355750136 */,
-  0x0b504f33L /* 2^(-2/4) == 0.70710678118655 */,
-  0x0d744fcdL /* 2^(-1/4) == 0.84089641525371 */,
-  0x10000000L /* 2^( 0/4) == 1.00000000000000 */,
-  0x1306fe0aL /* 2^(+1/4) == 1.18920711500272 */,
-  0x16a09e66L /* 2^(+2/4) == 1.41421356237310 */,
-  0x1ae89f99L /* 2^(+3/4) == 1.68179283050743 */
+  MAD_F(0x09837f05) /* 2^(-3/4) == 0.59460355750136 */,
+  MAD_F(0x0b504f33) /* 2^(-2/4) == 0.70710678118655 */,
+  MAD_F(0x0d744fcd) /* 2^(-1/4) == 0.84089641525371 */,
+  MAD_F(0x10000000) /* 2^( 0/4) == 1.00000000000000 */,
+  MAD_F(0x1306fe0a) /* 2^(+1/4) == 1.18920711500272 */,
+  MAD_F(0x16a09e66) /* 2^(+2/4) == 1.41421356237310 */,
+  MAD_F(0x1ae89f99) /* 2^(+3/4) == 1.68179283050743 */
 };
 
 /*
@@ -203,18 +227,18 @@ mad_fixed_t const root_table[7] = {
  */
 static
 mad_fixed_t const cs[8] = {
-  +0x0db84a81L /* +0.857492926 */, +0x0e1b9d7fL /* +0.881741997 */,
-  +0x0f31adcfL /* +0.949628649 */, +0x0fbba815L /* +0.983314592 */,
-  +0x0feda417L /* +0.995517816 */, +0x0ffc8fc8L /* +0.999160558 */,
-  +0x0fff964cL /* +0.999899195 */, +0x0ffff8d3L /* +0.999993155 */
+  +MAD_F(0x0db84a81) /* +0.857492926 */, +MAD_F(0x0e1b9d7f) /* +0.881741997 */,
+  +MAD_F(0x0f31adcf) /* +0.949628649 */, +MAD_F(0x0fbba815) /* +0.983314592 */,
+  +MAD_F(0x0feda417) /* +0.995517816 */, +MAD_F(0x0ffc8fc8) /* +0.999160558 */,
+  +MAD_F(0x0fff964c) /* +0.999899195 */, +MAD_F(0x0ffff8d3) /* +0.999993155 */
 };
 
 static
 mad_fixed_t const ca[8] = {
-  -0x083b5fe7L /* -0.514495755 */, -0x078c36d2L /* -0.471731969 */,
-  -0x05039814L /* -0.313377454 */, -0x02e91dd1L /* -0.181913200 */,
-  -0x0183603aL /* -0.094574193 */, -0x00a7cb87L /* -0.040965583 */,
-  -0x003a2847L /* -0.014198569 */, -0x000f27b4L /* -0.003699975 */
+  -MAD_F(0x083b5fe7) /* -0.514495755 */, -MAD_F(0x078c36d2) /* -0.471731969 */,
+  -MAD_F(0x05039814) /* -0.313377454 */, -MAD_F(0x02e91dd1) /* -0.181913200 */,
+  -MAD_F(0x0183603a) /* -0.094574193 */, -MAD_F(0x00a7cb87) /* -0.040965583 */,
+  -MAD_F(0x003a2847) /* -0.014198569 */, -MAD_F(0x000f27b4) /* -0.003699975 */
 };
 
 /*
@@ -237,26 +261,26 @@ mad_fixed_t const imdct_s[12][6] = {
  */
 static
 mad_fixed_t const window_l[36] = {
-  0x00b2aa3eL /* 0.043619387 */, 0x0216a2a2L /* 0.130526192 */,
-  0x03768962L /* 0.216439614 */, 0x04cfb0e2L /* 0.300705800 */,
-  0x061f78aaL /* 0.382683432 */, 0x07635284L /* 0.461748613 */,
-  0x0898c779L /* 0.537299608 */, 0x09bd7ca0L /* 0.608761429 */,
-  0x0acf37adL /* 0.675590208 */, 0x0bcbe352L /* 0.737277337 */,
-  0x0cb19346L /* 0.793353340 */, 0x0d7e8807L /* 0.843391446 */,
+  MAD_F(0x00b2aa3e) /* 0.043619387 */, MAD_F(0x0216a2a2) /* 0.130526192 */,
+  MAD_F(0x03768962) /* 0.216439614 */, MAD_F(0x04cfb0e2) /* 0.300705800 */,
+  MAD_F(0x061f78aa) /* 0.382683432 */, MAD_F(0x07635284) /* 0.461748613 */,
+  MAD_F(0x0898c779) /* 0.537299608 */, MAD_F(0x09bd7ca0) /* 0.608761429 */,
+  MAD_F(0x0acf37ad) /* 0.675590208 */, MAD_F(0x0bcbe352) /* 0.737277337 */,
+  MAD_F(0x0cb19346) /* 0.793353340 */, MAD_F(0x0d7e8807) /* 0.843391446 */,
 
-  0x0e313245L /* 0.887010833 */, 0x0ec835e8L /* 0.923879533 */,
-  0x0f426cb5L /* 0.953716951 */, 0x0f9ee890L /* 0.976296007 */,
-  0x0fdcf549L /* 0.991444861 */, 0x0ffc19fdL /* 0.999048222 */,
-  0x0ffc19fdL /* 0.999048222 */, 0x0fdcf549L /* 0.991444861 */,
-  0x0f9ee890L /* 0.976296007 */, 0x0f426cb5L /* 0.953716951 */,
-  0x0ec835e8L /* 0.923879533 */, 0x0e313245L /* 0.887010833 */,
+  MAD_F(0x0e313245) /* 0.887010833 */, MAD_F(0x0ec835e8) /* 0.923879533 */,
+  MAD_F(0x0f426cb5) /* 0.953716951 */, MAD_F(0x0f9ee890) /* 0.976296007 */,
+  MAD_F(0x0fdcf549) /* 0.991444861 */, MAD_F(0x0ffc19fd) /* 0.999048222 */,
+  MAD_F(0x0ffc19fd) /* 0.999048222 */, MAD_F(0x0fdcf549) /* 0.991444861 */,
+  MAD_F(0x0f9ee890) /* 0.976296007 */, MAD_F(0x0f426cb5) /* 0.953716951 */,
+  MAD_F(0x0ec835e8) /* 0.923879533 */, MAD_F(0x0e313245) /* 0.887010833 */,
 
-  0x0d7e8807L /* 0.843391446 */, 0x0cb19346L /* 0.793353340 */,
-  0x0bcbe352L /* 0.737277337 */, 0x0acf37adL /* 0.675590208 */,
-  0x09bd7ca0L /* 0.608761429 */, 0x0898c779L /* 0.537299608 */,
-  0x07635284L /* 0.461748613 */, 0x061f78aaL /* 0.382683432 */,
-  0x04cfb0e2L /* 0.300705800 */, 0x03768962L /* 0.216439614 */,
-  0x0216a2a2L /* 0.130526192 */, 0x00b2aa3eL /* 0.043619387 */,
+  MAD_F(0x0d7e8807) /* 0.843391446 */, MAD_F(0x0cb19346) /* 0.793353340 */,
+  MAD_F(0x0bcbe352) /* 0.737277337 */, MAD_F(0x0acf37ad) /* 0.675590208 */,
+  MAD_F(0x09bd7ca0) /* 0.608761429 */, MAD_F(0x0898c779) /* 0.537299608 */,
+  MAD_F(0x07635284) /* 0.461748613 */, MAD_F(0x061f78aa) /* 0.382683432 */,
+  MAD_F(0x04cfb0e2) /* 0.300705800 */, MAD_F(0x03768962) /* 0.216439614 */,
+  MAD_F(0x0216a2a2) /* 0.130526192 */, MAD_F(0x00b2aa3e) /* 0.043619387 */,
 };
 # endif  /* ASO_IMDCT */
 
@@ -268,12 +292,12 @@ mad_fixed_t const window_l[36] = {
  */
 static
 mad_fixed_t const window_s[12] = {
-  0x0216a2a2L /* 0.130526192 */, 0x061f78aaL /* 0.382683432 */,
-  0x09bd7ca0L /* 0.608761429 */, 0x0cb19346L /* 0.793353340 */,
-  0x0ec835e8L /* 0.923879533 */, 0x0fdcf549L /* 0.991444861 */,
-  0x0fdcf549L /* 0.991444861 */, 0x0ec835e8L /* 0.923879533 */,
-  0x0cb19346L /* 0.793353340 */, 0x09bd7ca0L /* 0.608761429 */,
-  0x061f78aaL /* 0.382683432 */, 0x0216a2a2L /* 0.130526192 */,
+  MAD_F(0x0216a2a2) /* 0.130526192 */, MAD_F(0x061f78aa) /* 0.382683432 */,
+  MAD_F(0x09bd7ca0) /* 0.608761429 */, MAD_F(0x0cb19346) /* 0.793353340 */,
+  MAD_F(0x0ec835e8) /* 0.923879533 */, MAD_F(0x0fdcf549) /* 0.991444861 */,
+  MAD_F(0x0fdcf549) /* 0.991444861 */, MAD_F(0x0ec835e8) /* 0.923879533 */,
+  MAD_F(0x0cb19346) /* 0.793353340 */, MAD_F(0x09bd7ca0) /* 0.608761429 */,
+  MAD_F(0x061f78aa) /* 0.382683432 */, MAD_F(0x0216a2a2) /* 0.130526192 */,
 };
 
 /*
@@ -285,13 +309,13 @@ mad_fixed_t const window_s[12] = {
  */
 static
 mad_fixed_t const is_table[7] = {
-  0x00000000L /* 0.000000000 */,
-  0x0361962fL /* 0.211324865 */,
-  0x05db3d74L /* 0.366025404 */,
-  0x08000000L /* 0.500000000 */,
-  0x0a24c28cL /* 0.633974596 */,
-  0x0c9e69d1L /* 0.788675135 */,
-  0x10000000L /* 1.000000000 */
+  MAD_F(0x00000000) /* 0.000000000 */,
+  MAD_F(0x0361962f) /* 0.211324865 */,
+  MAD_F(0x05db3d74) /* 0.366025404 */,
+  MAD_F(0x08000000) /* 0.500000000 */,
+  MAD_F(0x0a24c28c) /* 0.633974596 */,
+  MAD_F(0x0c9e69d1) /* 0.788675135 */,
+  MAD_F(0x10000000) /* 1.000000000 */
 };
 
 /*
@@ -304,13 +328,13 @@ mad_fixed_t const is_table[7] = {
 static
 mad_fixed_t const lsf_is_table[2][3] = {
   {
-    0x0d744fcdL /* 0.840896415 */,
-    0x0b504f33L /* 0.707106781 */,
-    0x09837f05L /* 0.594603558 */
+    MAD_F(0x0d744fcd) /* 0.840896415 */,
+    MAD_F(0x0b504f33) /* 0.707106781 */,
+    MAD_F(0x09837f05) /* 0.594603558 */
   }, {
-    0x0b504f33L /* 0.707106781 */,
-    0x08000000L /* 0.500000000 */,
-    0x05a8279aL /* 0.353553391 */
+    MAD_F(0x0b504f33) /* 0.707106781 */,
+    MAD_F(0x08000000) /* 0.500000000 */,
+    MAD_F(0x05a8279a) /* 0.353553391 */
   }
 };
 
@@ -643,10 +667,24 @@ mad_fixed_t III_requantize(signed int value, signed int exp, unsigned int scf,
   exp /= 4;
 
   if (value < 0) {
+# if 0 && defined(EXPERIMENTAL)
+    if (value < -1023) {
+      value /= 8;
+      exp += 4;
+    }
+# endif
+
     power = &rq_table[-value];
     requantized = -power->mantissa;
   }
   else {
+# if 0 && defined(EXPERIMENTAL)
+    if (value > 1023) {
+      value /= 8;
+      exp += 4;
+    }
+# endif
+
     power = &rq_table[value];
     requantized = power->mantissa;
   }
@@ -724,6 +762,165 @@ mad_fixed_t III_requantize_s(signed int value, unsigned int sfb,
 # define MASK1BIT(cache, sz)  \
     ((cache) & (1 << ((sz) - 1)))
 
+# if 0 && defined(EXPERIMENTAL)
+/*
+ * NAME:	III_huffdecode()
+ * DESCRIPTION:	decode Huffman code words of one channel of one granule
+ */
+static
+enum mad_error III_huffdecode(struct mad_bitptr *ptr, mad_fixed_t xr[576],
+			      struct channel *channel, unsigned int sfreqi,
+			      unsigned int part2_length)
+{
+  struct mad_bitptr peek;
+  signed int bits_left, cachesz;
+  unsigned long bitcache;
+  mad_fixed_t *xrptr;
+
+  bits_left = (signed) channel->part2_3_length - (signed) part2_length;
+  if (bits_left < 0)
+    return MAD_ERROR_BADPART3LEN;
+
+  peek = *ptr;
+  mad_bit_skip(ptr, bits_left);
+
+  /* align bit reads to byte boundaries */
+  cachesz  = mad_bit_bitsleft(&peek);
+  cachesz += (7 + (24 - cachesz)) & ~7;
+
+  bitcache   = mad_bit_read(&peek, cachesz);
+  bits_left -= cachesz;
+
+  xrptr = &xr[0];
+
+  /* big_values */
+  {
+    unsigned int sfb, window, region, rcount, fcount;
+    unsigned short const *sfwidth[2];
+    struct hufftable const *entry;
+    union huffpair const *table;
+    unsigned int linbits, startbits, big_values;
+
+    sfb    = 0;
+    window = 0;
+    region = 0;
+    rcount = channel->region0_count + 1;
+
+    if (channel->block_type == 2) {
+      sfwidth[0] = (channel->flags & mixed_block_flag) ?
+	&sfwidth_l[sfreqi][0] : &sfwidth_s[sfreqi][0];
+      sfwidth[1] = &sfwidth_s[sfreqi][3];
+    }
+    else {
+      sfwidth[0] = &sfwidth_l[sfreqi][0];
+      sfwidth[1] = &sfwidth_l[sfreqi][LSF ? 6 : 8];
+    }
+
+    /* ... */
+
+    big_values = channel->big_values;
+
+    while (big_values-- && cachesz + bits_left > 0) {
+      unsigned int clumpsz;
+      union huffpair const *pair;
+      signed int x, y;
+
+      /* hcod (0..19) */
+
+      if (cachesz < 19) {
+	unsigned int bits;
+
+	bits       = (12 + (19 - cachesz)) & ~7;
+	bitcache   = (bitcache << bits) | mad_bit_read(&peek, bits);
+	cachesz   += bits;
+	bits_left -= bits;
+      }
+
+      clumpsz = startbits;
+      pair    = &table[MASK(bitcache, cachesz, clumpsz)];
+
+      while (!pair->final) {
+	cachesz -= clumpsz;
+
+	clumpsz = pair->ptr.bits;
+	pair    = &table[pair->ptr.offset + MASK(bitcache, cachesz, clumpsz)];
+      }
+
+      cachesz -= pair->value.hlen;
+
+      /* x (0..14) */
+
+      if (cachesz < 14) {
+	bitcache   = (bitcache << 16) | mad_bit_read(&peek, 16);
+	cachesz   += 16;
+	bits_left -= 16;
+      }
+
+      x = pair->value.x;
+      if (x == 15 && linbits) {
+	x += MASK(bitcache, cachesz, linbits);
+	cachesz -= linbits;
+      }
+
+      if (x && MASK1BIT(bitcache, cachesz--))
+	x = -x;
+
+      *xrptr++ = III_requantize_(x, sfb, window, channel);
+
+      /* y (0..14) */
+
+      if (cachesz < 14) {
+	bitcache   = (bitcache << 16) | mad_bit_read(&peek, 16);
+	cachesz   += 16;
+	bits_left -= 16;
+      }
+
+      y = pair->value.y;
+      if (y == 15 && linbits) {
+	y += MASK(bitcache, cachesz, linbits);
+	cachesz -= linbits;
+      }
+
+      if (y && MASK1BIT(bitcache, cachesz--))
+	y = -y;
+
+      *xrptr++ = III_requantize_(y, sfb, window, channel);
+    }
+  }
+
+  if (cachesz + bits_left < 0) {
+# if 1 && defined(DEBUG)
+    fprintf(stderr, "huffman big_values overrun (%d bits)\n",
+	    -(cachesz + bits_left));
+# endif
+
+    xrptr[-2] = 0;
+    xrptr[-1] = 0;
+
+    channel->count1 = 0;
+  }
+  else {  /* count1 */
+    /* ... */
+  }
+
+# if 0 && defined(DEBUG)
+  if (bits_left < 0)
+    fprintf(stderr, "read %d bits too many\n", -bits_left);
+  else if (cachesz + bits_left > 0)
+    fprintf(stderr, "%d stuffing bits\n", cachesz + bits_left);
+# endif
+
+  /* rzero */
+  while (xrptr < &xr[576]) {
+    xrptr[0] = 0;
+    xrptr[1] = 0;
+
+    xrptr += 2;
+  }
+
+  return 0;
+}
+# else
 /*
  * NAME:	III_huffdecode()
  * DESCRIPTION:	decode Huffman code words of one channel of one granule
@@ -757,7 +954,7 @@ enum mad_error III_huffdecode(struct mad_bitptr *ptr, signed short is[576],
   /* big_values */
   {
     unsigned int region, rcount, pcount;
-    unsigned short const *fwidth;
+    unsigned char const *fwidth;
     struct hufftable const *entry;
     union huffpair const *table;
     unsigned int linbits, startbits, big_values;
@@ -879,17 +1076,8 @@ enum mad_error III_huffdecode(struct mad_bitptr *ptr, signed short is[576],
     }
   }
 
-  if (cachesz + bits_left < 0) {
-# if 1 && defined(DEBUG)
-    fprintf(stderr, "huffman big_values overrun (%d bits)\n",
-	    -(cachesz + bits_left));
-# endif
-
-    isptr[-2] = 0;
-    isptr[-1] = 0;
-
-    channel->count1 = 0;
-  }
+  if (cachesz + bits_left < 0)
+    return MAD_ERROR_BADHUFFDATA;  /* big_values overrun */
   else {  /* count1 */
     union huffquad const *table;
     unsigned int count1 = 0;
@@ -992,6 +1180,7 @@ enum mad_error III_huffdecode(struct mad_bitptr *ptr, signed short is[576],
 
   return 0;
 }
+# endif
 
 # undef MASK
 # undef MASK1BIT
@@ -1002,7 +1191,7 @@ enum mad_error III_huffdecode(struct mad_bitptr *ptr, signed short is[576],
  */
 static
 void III_reorder(mad_fixed_t xr[576], struct channel const *channel,
-		 unsigned short const sfwidth[13])
+		 unsigned char const sfwidth[13])
 {
   mad_fixed_t tmp[32][3][6];
   unsigned int sb, l, sfb, f, w, sbw[3], sw[3];
@@ -1142,12 +1331,18 @@ enum mad_error III_stereo(mad_fixed_t xr[2][576], struct granule *granule,
 	if (header->flags & MAD_FLAG_LSF_EXT) {
 	  if (is_pos == 0)
 	    xr[1][i] = left;
-	  else if (is_pos & 0x1) {
-	    xr[0][i] = mad_f_mul(left, lsf_scale[(is_pos - 1) / 2]);
-	    xr[1][i] = left;
+	  else {
+	    mad_fixed_t opposite;
+
+	    opposite = mad_f_mul(left, lsf_scale[(is_pos - 1) / 2]);
+
+	    if (is_pos & 0x1) {
+	      xr[0][i] = opposite;
+	      xr[1][i] = left;
+	    }
+	    else
+	      xr[1][i] = opposite;
 	  }
-	  else
-	    xr[1][i] = mad_f_mul(left, lsf_scale[(is_pos - 1) / 2]);
 	}
 	else {
 	  xr[0][i] = mad_f_mul(left, is_table[is_pos]);
@@ -1247,258 +1442,578 @@ void imdct36(mad_fixed_t const X[18], mad_fixed_t x[36])
   mad_fixed_t t0,  t1,  t2,  t3,  t4,  t5;
   mad_fixed_t t6,  t7,  t8,  t9,  t10, t11;
   mad_fixed_t t12, t13, t14, t15, t16, t17;
+# if defined(MAD_F_HAVEMLA)
+  mad_fixed64hi_t hi;
+  mad_fixed64lo_t lo;
+# endif
 
   t6 =
-    mad_f_mul(X[4],  0x0ec835e8L) +
-    mad_f_mul(X[13], 0x061f78aaL);
+    mad_f_mul(X[4],  MAD_F(0x0ec835e8)) +
+    mad_f_mul(X[13], MAD_F(0x061f78aa));
 
   t0 = t6 +
-    (t7 = mad_f_mul((t16 = X[1] - X[10]), -0x061f78aaL)) +
-    (t8 = mad_f_mul((t17 = X[7] + X[16]), -0x0ec835e8L));
+    (t7 = mad_f_mul((t16 = X[1] - X[10]), -MAD_F(0x061f78aa))) +
+    (t8 = mad_f_mul((t17 = X[7] + X[16]), -MAD_F(0x0ec835e8)));
 
+# if defined(MAD_F_HAVEMLA)
+  hi = lo = 0;
+
+  mad_f_mla(&hi, &lo, (t10 = X[0] - X[11] - X[12]),  MAD_F(0x0216a2a2));
+  mad_f_mla(&hi, &lo, (t11 = X[2] - X[9]  - X[14]),  MAD_F(0x09bd7ca0));
+  mad_f_mla(&hi, &lo, (t12 = X[3] - X[8]  - X[15]), -MAD_F(0x0cb19346));
+  mad_f_mla(&hi, &lo, (t13 = X[5] - X[6]  - X[17]), -MAD_F(0x0fdcf549));
+
+  x[7] = mad_f_scale64(hi, lo) + t0;
+# else
   x[7] = t0 +
-    mad_f_mul((t10 = X[0] - X[11] - X[12]),  0x0216a2a2L) +
-    mad_f_mul((t11 = X[2] - X[9]  - X[14]),  0x09bd7ca0L) +
-    mad_f_mul((t12 = X[3] - X[8]  - X[15]), -0x0cb19346L) +
-    mad_f_mul((t13 = X[5] - X[6]  - X[17]), -0x0fdcf549L);
+    mad_f_mul((t10 = X[0] - X[11] - X[12]),  MAD_F(0x0216a2a2)) +
+    mad_f_mul((t11 = X[2] - X[9]  - X[14]),  MAD_F(0x09bd7ca0)) +
+    mad_f_mul((t12 = X[3] - X[8]  - X[15]), -MAD_F(0x0cb19346)) +
+    mad_f_mul((t13 = X[5] - X[6]  - X[17]), -MAD_F(0x0fdcf549));
+# endif
   x[10] = -x[7];
 
-  x[19] = x[34] = -t6 + -t7 + -t8 +
-    mad_f_mul(t10, -0x0cb19346L) +
-    mad_f_mul(t11,  0x0fdcf549L) +
-    mad_f_mul(t12,  0x0216a2a2L) +
-    mad_f_mul(t13, -0x09bd7ca0L);
+# if defined(MAD_F_HAVEMLA)
+  hi = lo = 0;
+
+  mad_f_mla(&hi, &lo, t10, -MAD_F(0x0cb19346));
+  mad_f_mla(&hi, &lo, t11,  MAD_F(0x0fdcf549));
+  mad_f_mla(&hi, &lo, t12,  MAD_F(0x0216a2a2));
+  mad_f_mla(&hi, &lo, t13, -MAD_F(0x09bd7ca0));
+
+  x[19] = x[34] = mad_f_scale64(hi, lo) - t6 - t7 - t8;
+# else
+  x[19] = x[34] = -t6 - t7 - t8 +
+    mad_f_mul(t10, -MAD_F(0x0cb19346)) +
+    mad_f_mul(t11,  MAD_F(0x0fdcf549)) +
+    mad_f_mul(t12,  MAD_F(0x0216a2a2)) +
+    mad_f_mul(t13, -MAD_F(0x09bd7ca0));
+# endif
 
   t14 = X[0] - X[3] + X[8] - X[11] - X[12] + X[15];
   t15 = X[2] + X[5] - X[6] - X[9]  - X[14] - X[17];
 
   x[22] = x[31] = t0 +
-    mad_f_mul(t14, -0x0ec835e8L) +
-    mad_f_mul(t15,  0x061f78aaL);
+    mad_f_mul(t14, -MAD_F(0x0ec835e8)) +
+    mad_f_mul(t15,  MAD_F(0x061f78aa));
 
+# if defined(MAD_F_HAVEMLA)
+  hi = lo = 0;
+
+  mad_f_mla(&hi, &lo, X[1],  -MAD_F(0x09bd7ca0));
+  mad_f_mla(&hi, &lo, X[7],   MAD_F(0x0216a2a2));
+  mad_f_mla(&hi, &lo, X[10], -MAD_F(0x0fdcf549));
+  mad_f_mla(&hi, &lo, X[16],  MAD_F(0x0cb19346));
+
+  t1 = mad_f_scale64(hi, lo) + t6;
+# else
   t1 = t6 +
-    mad_f_mul(X[1],  -0x09bd7ca0L) +
-    mad_f_mul(X[7],   0x0216a2a2L) +
-    mad_f_mul(X[10], -0x0fdcf549L) +
-    mad_f_mul(X[16],  0x0cb19346L);
+    mad_f_mul(X[1],  -MAD_F(0x09bd7ca0)) +
+    mad_f_mul(X[7],   MAD_F(0x0216a2a2)) +
+    mad_f_mul(X[10], -MAD_F(0x0fdcf549)) +
+    mad_f_mul(X[16],  MAD_F(0x0cb19346));
+# endif
 
+# if defined(MAD_F_HAVEMLA)
+  hi = lo = 0;
+
+  mad_f_mla(&hi, &lo, X[0],   MAD_F(0x03768962));
+  mad_f_mla(&hi, &lo, X[2],   MAD_F(0x0e313245));
+  mad_f_mla(&hi, &lo, X[3],  -MAD_F(0x0ffc19fd));
+  mad_f_mla(&hi, &lo, X[5],  -MAD_F(0x0acf37ad));
+  mad_f_mla(&hi, &lo, X[6],   MAD_F(0x04cfb0e2));
+  mad_f_mla(&hi, &lo, X[8],  -MAD_F(0x0898c779));
+  mad_f_mla(&hi, &lo, X[9],   MAD_F(0x0d7e8807));
+  mad_f_mla(&hi, &lo, X[11],  MAD_F(0x0f426cb5));
+  mad_f_mla(&hi, &lo, X[12], -MAD_F(0x0bcbe352));
+  mad_f_mla(&hi, &lo, X[14],  MAD_F(0x00b2aa3e));
+  mad_f_mla(&hi, &lo, X[15], -MAD_F(0x07635284));
+  mad_f_mla(&hi, &lo, X[17], -MAD_F(0x0f9ee890));
+
+  x[6] = mad_f_scale64(hi, lo) + t1;
+# else
   x[6] = t1 +
-    mad_f_mul(X[0],   0x03768962L) +
-    mad_f_mul(X[2],   0x0e313245L) +
-    mad_f_mul(X[3],  -0x0ffc19fdL) +
-    mad_f_mul(X[5],  -0x0acf37adL) +
-    mad_f_mul(X[6],   0x04cfb0e2L) +
-    mad_f_mul(X[8],  -0x0898c779L) +
-    mad_f_mul(X[9],   0x0d7e8807L) +
-    mad_f_mul(X[11],  0x0f426cb5L) +
-    mad_f_mul(X[12], -0x0bcbe352L) +
-    mad_f_mul(X[14],  0x00b2aa3eL) +
-    mad_f_mul(X[15], -0x07635284L) +
-    mad_f_mul(X[17], -0x0f9ee890L);
+    mad_f_mul(X[0],   MAD_F(0x03768962)) +
+    mad_f_mul(X[2],   MAD_F(0x0e313245)) +
+    mad_f_mul(X[3],  -MAD_F(0x0ffc19fd)) +
+    mad_f_mul(X[5],  -MAD_F(0x0acf37ad)) +
+    mad_f_mul(X[6],   MAD_F(0x04cfb0e2)) +
+    mad_f_mul(X[8],  -MAD_F(0x0898c779)) +
+    mad_f_mul(X[9],   MAD_F(0x0d7e8807)) +
+    mad_f_mul(X[11],  MAD_F(0x0f426cb5)) +
+    mad_f_mul(X[12], -MAD_F(0x0bcbe352)) +
+    mad_f_mul(X[14],  MAD_F(0x00b2aa3e)) +
+    mad_f_mul(X[15], -MAD_F(0x07635284)) +
+    mad_f_mul(X[17], -MAD_F(0x0f9ee890));
+# endif
   x[11] = -x[6];
 
-  x[23] = x[30] = t1 +
-    mad_f_mul(X[0],  -0x0f426cb5L) +
-    mad_f_mul(X[2],  -0x00b2aa3eL) +
-    mad_f_mul(X[3],   0x0898c779L) +
-    mad_f_mul(X[5],   0x0f9ee890L) +
-    mad_f_mul(X[6],   0x0acf37adL) +
-    mad_f_mul(X[8],  -0x07635284L) +
-    mad_f_mul(X[9],  -0x0e313245L) +
-    mad_f_mul(X[11], -0x0bcbe352L) +
-    mad_f_mul(X[12], -0x03768962L) +
-    mad_f_mul(X[14],  0x0d7e8807L) +
-    mad_f_mul(X[15],  0x0ffc19fdL) +
-    mad_f_mul(X[17],  0x04cfb0e2L);
+# if defined(MAD_F_HAVEMLA)
+  hi = lo = 0;
 
+  mad_f_mla(&hi, &lo, X[0],  -MAD_F(0x0f426cb5));
+  mad_f_mla(&hi, &lo, X[2],  -MAD_F(0x00b2aa3e));
+  mad_f_mla(&hi, &lo, X[3],   MAD_F(0x0898c779));
+  mad_f_mla(&hi, &lo, X[5],   MAD_F(0x0f9ee890));
+  mad_f_mla(&hi, &lo, X[6],   MAD_F(0x0acf37ad));
+  mad_f_mla(&hi, &lo, X[8],  -MAD_F(0x07635284));
+  mad_f_mla(&hi, &lo, X[9],  -MAD_F(0x0e313245));
+  mad_f_mla(&hi, &lo, X[11], -MAD_F(0x0bcbe352));
+  mad_f_mla(&hi, &lo, X[12], -MAD_F(0x03768962));
+  mad_f_mla(&hi, &lo, X[14],  MAD_F(0x0d7e8807));
+  mad_f_mla(&hi, &lo, X[15],  MAD_F(0x0ffc19fd));
+  mad_f_mla(&hi, &lo, X[17],  MAD_F(0x04cfb0e2));
+
+  x[23] = x[30] = mad_f_scale64(hi, lo) + t1;
+# else
+  x[23] = x[30] = t1 +
+    mad_f_mul(X[0],  -MAD_F(0x0f426cb5)) +
+    mad_f_mul(X[2],  -MAD_F(0x00b2aa3e)) +
+    mad_f_mul(X[3],   MAD_F(0x0898c779)) +
+    mad_f_mul(X[5],   MAD_F(0x0f9ee890)) +
+    mad_f_mul(X[6],   MAD_F(0x0acf37ad)) +
+    mad_f_mul(X[8],  -MAD_F(0x07635284)) +
+    mad_f_mul(X[9],  -MAD_F(0x0e313245)) +
+    mad_f_mul(X[11], -MAD_F(0x0bcbe352)) +
+    mad_f_mul(X[12], -MAD_F(0x03768962)) +
+    mad_f_mul(X[14],  MAD_F(0x0d7e8807)) +
+    mad_f_mul(X[15],  MAD_F(0x0ffc19fd)) +
+    mad_f_mul(X[17],  MAD_F(0x04cfb0e2));
+# endif
+
+# if defined(MAD_F_HAVEMLA)
+  hi = lo = 0;
+
+  mad_f_mla(&hi, &lo, X[0],  -MAD_F(0x0bcbe352));
+  mad_f_mla(&hi, &lo, X[2],   MAD_F(0x0d7e8807));
+  mad_f_mla(&hi, &lo, X[3],  -MAD_F(0x07635284));
+  mad_f_mla(&hi, &lo, X[5],   MAD_F(0x04cfb0e2));
+  mad_f_mla(&hi, &lo, X[6],   MAD_F(0x0f9ee890));
+  mad_f_mla(&hi, &lo, X[8],  -MAD_F(0x0ffc19fd));
+  mad_f_mla(&hi, &lo, X[9],  -MAD_F(0x00b2aa3e));
+  mad_f_mla(&hi, &lo, X[11],  MAD_F(0x03768962));
+  mad_f_mla(&hi, &lo, X[12], -MAD_F(0x0f426cb5));
+  mad_f_mla(&hi, &lo, X[14],  MAD_F(0x0e313245));
+  mad_f_mla(&hi, &lo, X[15],  MAD_F(0x0898c779));
+  mad_f_mla(&hi, &lo, X[17], -MAD_F(0x0acf37ad));
+
+  x[18] = x[35] = mad_f_scale64(hi, lo) - t1;
+# else
   x[18] = x[35] = -t1 +
-    mad_f_mul(X[0],  -0x0bcbe352L) +
-    mad_f_mul(X[2],   0x0d7e8807L) +
-    mad_f_mul(X[3],  -0x07635284L) +
-    mad_f_mul(X[5],   0x04cfb0e2L) +
-    mad_f_mul(X[6],   0x0f9ee890L) +
-    mad_f_mul(X[8],  -0x0ffc19fdL) +
-    mad_f_mul(X[9],  -0x00b2aa3eL) +
-    mad_f_mul(X[11],  0x03768962L) +
-    mad_f_mul(X[12], -0x0f426cb5L) +
-    mad_f_mul(X[14],  0x0e313245L) +
-    mad_f_mul(X[15],  0x0898c779L) +
-    mad_f_mul(X[17], -0x0acf37adL);
+    mad_f_mul(X[0],  -MAD_F(0x0bcbe352)) +
+    mad_f_mul(X[2],   MAD_F(0x0d7e8807)) +
+    mad_f_mul(X[3],  -MAD_F(0x07635284)) +
+    mad_f_mul(X[5],   MAD_F(0x04cfb0e2)) +
+    mad_f_mul(X[6],   MAD_F(0x0f9ee890)) +
+    mad_f_mul(X[8],  -MAD_F(0x0ffc19fd)) +
+    mad_f_mul(X[9],  -MAD_F(0x00b2aa3e)) +
+    mad_f_mul(X[11],  MAD_F(0x03768962)) +
+    mad_f_mul(X[12], -MAD_F(0x0f426cb5)) +
+    mad_f_mul(X[14],  MAD_F(0x0e313245)) +
+    mad_f_mul(X[15],  MAD_F(0x0898c779)) +
+    mad_f_mul(X[17], -MAD_F(0x0acf37ad));
+# endif
 
   t9 =
-    mad_f_mul(X[4],   0x061f78aaL) +
-    mad_f_mul(X[13], -0x0ec835e8L);
+    mad_f_mul(X[4],   MAD_F(0x061f78aa)) +
+    mad_f_mul(X[13], -MAD_F(0x0ec835e8));
 
+# if defined(MAD_F_HAVEMLA)
+  hi = lo = 0;
+
+  mad_f_mla(&hi, &lo, X[1],  -MAD_F(0x0cb19346));
+  mad_f_mla(&hi, &lo, X[7],   MAD_F(0x0fdcf549));
+  mad_f_mla(&hi, &lo, X[10],  MAD_F(0x0216a2a2));
+  mad_f_mla(&hi, &lo, X[16], -MAD_F(0x09bd7ca0));
+
+  t2 = mad_f_scale64(hi, lo) + t9;
+# else
   t2 = t9 +
-    mad_f_mul(X[1],  -0x0cb19346L)  +
-    mad_f_mul(X[7],   0x0fdcf549L)  +
-    mad_f_mul(X[10],  0x0216a2a2L)  +
-    mad_f_mul(X[16], -0x09bd7ca0L);
+    mad_f_mul(X[1],  -MAD_F(0x0cb19346))  +
+    mad_f_mul(X[7],   MAD_F(0x0fdcf549))  +
+    mad_f_mul(X[10],  MAD_F(0x0216a2a2))  +
+    mad_f_mul(X[16], -MAD_F(0x09bd7ca0));
+# endif
 
+# if defined(MAD_F_HAVEMLA)
+  hi = lo = 0;
+
+  mad_f_mla(&hi, &lo, X[0],   MAD_F(0x04cfb0e2));
+  mad_f_mla(&hi, &lo, X[2],   MAD_F(0x0ffc19fd));
+  mad_f_mla(&hi, &lo, X[3],  -MAD_F(0x0d7e8807));
+  mad_f_mla(&hi, &lo, X[5],   MAD_F(0x03768962));
+  mad_f_mla(&hi, &lo, X[6],  -MAD_F(0x0bcbe352));
+  mad_f_mla(&hi, &lo, X[8],  -MAD_F(0x0e313245));
+  mad_f_mla(&hi, &lo, X[9],   MAD_F(0x07635284));
+  mad_f_mla(&hi, &lo, X[11], -MAD_F(0x0acf37ad));
+  mad_f_mla(&hi, &lo, X[12],  MAD_F(0x0f9ee890));
+  mad_f_mla(&hi, &lo, X[14],  MAD_F(0x0898c779));
+  mad_f_mla(&hi, &lo, X[15],  MAD_F(0x00b2aa3e));
+  mad_f_mla(&hi, &lo, X[17],  MAD_F(0x0f426cb5));
+
+  x[5] = mad_f_scale64(hi, lo) + t2;
+# else
   x[5] = t2 +
-    mad_f_mul(X[0],   0x04cfb0e2L) +
-    mad_f_mul(X[2],   0x0ffc19fdL) +
-    mad_f_mul(X[3],  -0x0d7e8807L) +
-    mad_f_mul(X[5],   0x03768962L) +
-    mad_f_mul(X[6],  -0x0bcbe352L) +
-    mad_f_mul(X[8],  -0x0e313245L) +
-    mad_f_mul(X[9],   0x07635284L) +
-    mad_f_mul(X[11], -0x0acf37adL) +
-    mad_f_mul(X[12],  0x0f9ee890L) +
-    mad_f_mul(X[14],  0x0898c779L) +
-    mad_f_mul(X[15],  0x00b2aa3eL) +
-    mad_f_mul(X[17],  0x0f426cb5L);
+    mad_f_mul(X[0],   MAD_F(0x04cfb0e2)) +
+    mad_f_mul(X[2],   MAD_F(0x0ffc19fd)) +
+    mad_f_mul(X[3],  -MAD_F(0x0d7e8807)) +
+    mad_f_mul(X[5],   MAD_F(0x03768962)) +
+    mad_f_mul(X[6],  -MAD_F(0x0bcbe352)) +
+    mad_f_mul(X[8],  -MAD_F(0x0e313245)) +
+    mad_f_mul(X[9],   MAD_F(0x07635284)) +
+    mad_f_mul(X[11], -MAD_F(0x0acf37ad)) +
+    mad_f_mul(X[12],  MAD_F(0x0f9ee890)) +
+    mad_f_mul(X[14],  MAD_F(0x0898c779)) +
+    mad_f_mul(X[15],  MAD_F(0x00b2aa3e)) +
+    mad_f_mul(X[17],  MAD_F(0x0f426cb5));
+# endif
   x[12] = -x[5];
 
+# if defined(MAD_F_HAVEMLA)
+  hi = lo = 0;
+
+  mad_f_mla(&hi, &lo, X[0],   MAD_F(0x0acf37ad));
+  mad_f_mla(&hi, &lo, X[2],  -MAD_F(0x0898c779));
+  mad_f_mla(&hi, &lo, X[3],   MAD_F(0x0e313245));
+  mad_f_mla(&hi, &lo, X[5],  -MAD_F(0x0f426cb5));
+  mad_f_mla(&hi, &lo, X[6],  -MAD_F(0x03768962));
+  mad_f_mla(&hi, &lo, X[8],   MAD_F(0x00b2aa3e));
+  mad_f_mla(&hi, &lo, X[9],  -MAD_F(0x0ffc19fd));
+  mad_f_mla(&hi, &lo, X[11],  MAD_F(0x0f9ee890));
+  mad_f_mla(&hi, &lo, X[12], -MAD_F(0x04cfb0e2));
+  mad_f_mla(&hi, &lo, X[14],  MAD_F(0x07635284));
+  mad_f_mla(&hi, &lo, X[15],  MAD_F(0x0d7e8807));
+  mad_f_mla(&hi, &lo, X[17], -MAD_F(0x0bcbe352));
+
+  x[0] = mad_f_scale64(hi, lo) + t2;
+# else
   x[0] = t2 +
-    mad_f_mul(X[0],   0x0acf37adL) +
-    mad_f_mul(X[2],  -0x0898c779L) +
-    mad_f_mul(X[3],   0x0e313245L) +
-    mad_f_mul(X[5],  -0x0f426cb5L) +
-    mad_f_mul(X[6],  -0x03768962L) +
-    mad_f_mul(X[8],   0x00b2aa3eL) +
-    mad_f_mul(X[9],  -0x0ffc19fdL) +
-    mad_f_mul(X[11],  0x0f9ee890L) +
-    mad_f_mul(X[12], -0x04cfb0e2L) +
-    mad_f_mul(X[14],  0x07635284L) +
-    mad_f_mul(X[15],  0x0d7e8807L) +
-    mad_f_mul(X[17], -0x0bcbe352L);
+    mad_f_mul(X[0],   MAD_F(0x0acf37ad)) +
+    mad_f_mul(X[2],  -MAD_F(0x0898c779)) +
+    mad_f_mul(X[3],   MAD_F(0x0e313245)) +
+    mad_f_mul(X[5],  -MAD_F(0x0f426cb5)) +
+    mad_f_mul(X[6],  -MAD_F(0x03768962)) +
+    mad_f_mul(X[8],   MAD_F(0x00b2aa3e)) +
+    mad_f_mul(X[9],  -MAD_F(0x0ffc19fd)) +
+    mad_f_mul(X[11],  MAD_F(0x0f9ee890)) +
+    mad_f_mul(X[12], -MAD_F(0x04cfb0e2)) +
+    mad_f_mul(X[14],  MAD_F(0x07635284)) +
+    mad_f_mul(X[15],  MAD_F(0x0d7e8807)) +
+    mad_f_mul(X[17], -MAD_F(0x0bcbe352));
+# endif
   x[17] = -x[0];
 
+# if defined(MAD_F_HAVEMLA)
+  hi = lo = 0;
+
+  mad_f_mla(&hi, &lo, X[0],  -MAD_F(0x0f9ee890));
+  mad_f_mla(&hi, &lo, X[2],  -MAD_F(0x07635284));
+  mad_f_mla(&hi, &lo, X[3],  -MAD_F(0x00b2aa3e));
+  mad_f_mla(&hi, &lo, X[5],   MAD_F(0x0bcbe352));
+  mad_f_mla(&hi, &lo, X[6],   MAD_F(0x0f426cb5));
+  mad_f_mla(&hi, &lo, X[8],   MAD_F(0x0d7e8807));
+  mad_f_mla(&hi, &lo, X[9],   MAD_F(0x0898c779));
+  mad_f_mla(&hi, &lo, X[11], -MAD_F(0x04cfb0e2));
+  mad_f_mla(&hi, &lo, X[12], -MAD_F(0x0acf37ad));
+  mad_f_mla(&hi, &lo, X[14], -MAD_F(0x0ffc19fd));
+  mad_f_mla(&hi, &lo, X[15], -MAD_F(0x0e313245));
+  mad_f_mla(&hi, &lo, X[17], -MAD_F(0x03768962));
+
+  x[24] = x[29] = mad_f_scale64(hi, lo) + t2;
+# else
   x[24] = x[29] = t2 +
-    mad_f_mul(X[0],  -0x0f9ee890L) +
-    mad_f_mul(X[2],  -0x07635284L) +
-    mad_f_mul(X[3],  -0x00b2aa3eL) +
-    mad_f_mul(X[5],   0x0bcbe352L) +
-    mad_f_mul(X[6],   0x0f426cb5L) +
-    mad_f_mul(X[8],   0x0d7e8807L) +
-    mad_f_mul(X[9],   0x0898c779L) +
-    mad_f_mul(X[11], -0x04cfb0e2L) +
-    mad_f_mul(X[12], -0x0acf37adL) +
-    mad_f_mul(X[14], -0x0ffc19fdL) +
-    mad_f_mul(X[15], -0x0e313245L) +
-    mad_f_mul(X[17], -0x03768962L);
+    mad_f_mul(X[0],  -MAD_F(0x0f9ee890)) +
+    mad_f_mul(X[2],  -MAD_F(0x07635284)) +
+    mad_f_mul(X[3],  -MAD_F(0x00b2aa3e)) +
+    mad_f_mul(X[5],   MAD_F(0x0bcbe352)) +
+    mad_f_mul(X[6],   MAD_F(0x0f426cb5)) +
+    mad_f_mul(X[8],   MAD_F(0x0d7e8807)) +
+    mad_f_mul(X[9],   MAD_F(0x0898c779)) +
+    mad_f_mul(X[11], -MAD_F(0x04cfb0e2)) +
+    mad_f_mul(X[12], -MAD_F(0x0acf37ad)) +
+    mad_f_mul(X[14], -MAD_F(0x0ffc19fd)) +
+    mad_f_mul(X[15], -MAD_F(0x0e313245)) +
+    mad_f_mul(X[17], -MAD_F(0x03768962));
+# endif
 
+# if defined(MAD_F_HAVEMLA)
+  hi = lo = 0;
+
+  mad_f_mla(&hi, &lo, X[1],  -MAD_F(0x0216a2a2));
+  mad_f_mla(&hi, &lo, X[7],  -MAD_F(0x09bd7ca0));
+  mad_f_mla(&hi, &lo, X[10],  MAD_F(0x0cb19346));
+  mad_f_mla(&hi, &lo, X[16],  MAD_F(0x0fdcf549));
+
+  t3 = mad_f_scale64(hi, lo) + t9;
+# else
   t3 = t9 +
-    mad_f_mul(X[1],  -0x0216a2a2L) +
-    mad_f_mul(X[7],  -0x09bd7ca0L) +
-    mad_f_mul(X[10],  0x0cb19346L) +
-    mad_f_mul(X[16],  0x0fdcf549L);
+    mad_f_mul(X[1],  -MAD_F(0x0216a2a2)) +
+    mad_f_mul(X[7],  -MAD_F(0x09bd7ca0)) +
+    mad_f_mul(X[10],  MAD_F(0x0cb19346)) +
+    mad_f_mul(X[16],  MAD_F(0x0fdcf549));
+# endif
 
+# if defined(MAD_F_HAVEMLA)
+  hi = lo = 0;
+
+  mad_f_mla(&hi, &lo, X[0],   MAD_F(0x00b2aa3e));
+  mad_f_mla(&hi, &lo, X[2],   MAD_F(0x03768962));
+  mad_f_mla(&hi, &lo, X[3],  -MAD_F(0x04cfb0e2));
+  mad_f_mla(&hi, &lo, X[5],  -MAD_F(0x07635284));
+  mad_f_mla(&hi, &lo, X[6],   MAD_F(0x0898c779));
+  mad_f_mla(&hi, &lo, X[8],   MAD_F(0x0acf37ad));
+  mad_f_mla(&hi, &lo, X[9],  -MAD_F(0x0bcbe352));
+  mad_f_mla(&hi, &lo, X[11], -MAD_F(0x0d7e8807));
+  mad_f_mla(&hi, &lo, X[12],  MAD_F(0x0e313245));
+  mad_f_mla(&hi, &lo, X[14],  MAD_F(0x0f426cb5));
+  mad_f_mla(&hi, &lo, X[15], -MAD_F(0x0f9ee890));
+  mad_f_mla(&hi, &lo, X[17], -MAD_F(0x0ffc19fd));
+
+  x[8] = mad_f_scale64(hi, lo) + t3;
+# else
   x[8] = t3 +
-    mad_f_mul(X[0],   0x00b2aa3eL) +
-    mad_f_mul(X[2],   0x03768962L) +
-    mad_f_mul(X[3],  -0x04cfb0e2L) +
-    mad_f_mul(X[5],  -0x07635284L) +
-    mad_f_mul(X[6],   0x0898c779L) +
-    mad_f_mul(X[8],   0x0acf37adL) +
-    mad_f_mul(X[9],  -0x0bcbe352L) +
-    mad_f_mul(X[11], -0x0d7e8807L) +
-    mad_f_mul(X[12],  0x0e313245L) +
-    mad_f_mul(X[14],  0x0f426cb5L) +
-    mad_f_mul(X[15], -0x0f9ee890L) +
-    mad_f_mul(X[17], -0x0ffc19fdL);
+    mad_f_mul(X[0],   MAD_F(0x00b2aa3e)) +
+    mad_f_mul(X[2],   MAD_F(0x03768962)) +
+    mad_f_mul(X[3],  -MAD_F(0x04cfb0e2)) +
+    mad_f_mul(X[5],  -MAD_F(0x07635284)) +
+    mad_f_mul(X[6],   MAD_F(0x0898c779)) +
+    mad_f_mul(X[8],   MAD_F(0x0acf37ad)) +
+    mad_f_mul(X[9],  -MAD_F(0x0bcbe352)) +
+    mad_f_mul(X[11], -MAD_F(0x0d7e8807)) +
+    mad_f_mul(X[12],  MAD_F(0x0e313245)) +
+    mad_f_mul(X[14],  MAD_F(0x0f426cb5)) +
+    mad_f_mul(X[15], -MAD_F(0x0f9ee890)) +
+    mad_f_mul(X[17], -MAD_F(0x0ffc19fd));
+# endif
   x[9] = -x[8];
 
-  x[21] = x[32] = t3 +
-    mad_f_mul(X[0],  -0x0e313245L) +
-    mad_f_mul(X[2],   0x0bcbe352L) +
-    mad_f_mul(X[3],   0x0f9ee890L) +
-    mad_f_mul(X[5],  -0x0898c779L) +
-    mad_f_mul(X[6],  -0x0ffc19fdL) +
-    mad_f_mul(X[8],   0x04cfb0e2L) +
-    mad_f_mul(X[9],   0x0f426cb5L) +
-    mad_f_mul(X[11], -0x00b2aa3eL) +
-    mad_f_mul(X[12], -0x0d7e8807L) +
-    mad_f_mul(X[14], -0x03768962L) +
-    mad_f_mul(X[15],  0x0acf37adL) +
-    mad_f_mul(X[17],  0x07635284L);
+# if defined(MAD_F_HAVEMLA)
+  hi = lo = 0;
 
+  mad_f_mla(&hi, &lo, X[0],  -MAD_F(0x0e313245));
+  mad_f_mla(&hi, &lo, X[2],   MAD_F(0x0bcbe352));
+  mad_f_mla(&hi, &lo, X[3],   MAD_F(0x0f9ee890));
+  mad_f_mla(&hi, &lo, X[5],  -MAD_F(0x0898c779));
+  mad_f_mla(&hi, &lo, X[6],  -MAD_F(0x0ffc19fd));
+  mad_f_mla(&hi, &lo, X[8],   MAD_F(0x04cfb0e2));
+  mad_f_mla(&hi, &lo, X[9],   MAD_F(0x0f426cb5));
+  mad_f_mla(&hi, &lo, X[11], -MAD_F(0x00b2aa3e));
+  mad_f_mla(&hi, &lo, X[12], -MAD_F(0x0d7e8807));
+  mad_f_mla(&hi, &lo, X[14], -MAD_F(0x03768962));
+  mad_f_mla(&hi, &lo, X[15],  MAD_F(0x0acf37ad));
+  mad_f_mla(&hi, &lo, X[17],  MAD_F(0x07635284));
+
+  x[21] = x[32] = mad_f_scale64(hi, lo) + t3;
+# else
+  x[21] = x[32] = t3 +
+    mad_f_mul(X[0],  -MAD_F(0x0e313245)) +
+    mad_f_mul(X[2],   MAD_F(0x0bcbe352)) +
+    mad_f_mul(X[3],   MAD_F(0x0f9ee890)) +
+    mad_f_mul(X[5],  -MAD_F(0x0898c779)) +
+    mad_f_mul(X[6],  -MAD_F(0x0ffc19fd)) +
+    mad_f_mul(X[8],   MAD_F(0x04cfb0e2)) +
+    mad_f_mul(X[9],   MAD_F(0x0f426cb5)) +
+    mad_f_mul(X[11], -MAD_F(0x00b2aa3e)) +
+    mad_f_mul(X[12], -MAD_F(0x0d7e8807)) +
+    mad_f_mul(X[14], -MAD_F(0x03768962)) +
+    mad_f_mul(X[15],  MAD_F(0x0acf37ad)) +
+    mad_f_mul(X[17],  MAD_F(0x07635284));
+# endif
+
+# if defined(MAD_F_HAVEMLA)
+  hi = lo = 0;
+
+  mad_f_mla(&hi, &lo, X[0],  -MAD_F(0x0d7e8807));
+  mad_f_mla(&hi, &lo, X[2],   MAD_F(0x0f426cb5));
+  mad_f_mla(&hi, &lo, X[3],   MAD_F(0x0acf37ad));
+  mad_f_mla(&hi, &lo, X[5],  -MAD_F(0x0ffc19fd));
+  mad_f_mla(&hi, &lo, X[6],  -MAD_F(0x07635284));
+  mad_f_mla(&hi, &lo, X[8],   MAD_F(0x0f9ee890));
+  mad_f_mla(&hi, &lo, X[9],   MAD_F(0x03768962));
+  mad_f_mla(&hi, &lo, X[11], -MAD_F(0x0e313245));
+  mad_f_mla(&hi, &lo, X[12],  MAD_F(0x00b2aa3e));
+  mad_f_mla(&hi, &lo, X[14],  MAD_F(0x0bcbe352));
+  mad_f_mla(&hi, &lo, X[15], -MAD_F(0x04cfb0e2));
+  mad_f_mla(&hi, &lo, X[17], -MAD_F(0x0898c779));
+
+  x[20] = x[33] = mad_f_scale64(hi, lo) - t3;
+# else
   x[20] = x[33] = -t3 +
-    mad_f_mul(X[0],  -0x0d7e8807L) +
-    mad_f_mul(X[2],   0x0f426cb5L) +
-    mad_f_mul(X[3],   0x0acf37adL) +
-    mad_f_mul(X[5],  -0x0ffc19fdL) +
-    mad_f_mul(X[6],  -0x07635284L) +
-    mad_f_mul(X[8],   0x0f9ee890L) +
-    mad_f_mul(X[9],   0x03768962L) +
-    mad_f_mul(X[11], -0x0e313245L) +
-    mad_f_mul(X[12],  0x00b2aa3eL) +
-    mad_f_mul(X[14],  0x0bcbe352L) +
-    mad_f_mul(X[15], -0x04cfb0e2L) +
-    mad_f_mul(X[17], -0x0898c779L);
+    mad_f_mul(X[0],  -MAD_F(0x0d7e8807)) +
+    mad_f_mul(X[2],   MAD_F(0x0f426cb5)) +
+    mad_f_mul(X[3],   MAD_F(0x0acf37ad)) +
+    mad_f_mul(X[5],  -MAD_F(0x0ffc19fd)) +
+    mad_f_mul(X[6],  -MAD_F(0x07635284)) +
+    mad_f_mul(X[8],   MAD_F(0x0f9ee890)) +
+    mad_f_mul(X[9],   MAD_F(0x03768962)) +
+    mad_f_mul(X[11], -MAD_F(0x0e313245)) +
+    mad_f_mul(X[12],  MAD_F(0x00b2aa3e)) +
+    mad_f_mul(X[14],  MAD_F(0x0bcbe352)) +
+    mad_f_mul(X[15], -MAD_F(0x04cfb0e2)) +
+    mad_f_mul(X[17], -MAD_F(0x0898c779));
+# endif
 
   t4 = -t9 +
-    mad_f_mul(t16, -0x0ec835e8L) +
-    mad_f_mul(t17,  0x061f78aaL);
+    mad_f_mul(t16, -MAD_F(0x0ec835e8)) +
+    mad_f_mul(t17,  MAD_F(0x061f78aa));
 
   x[4] = t4 +
-    mad_f_mul(t14, 0x061f78aaL) +
-    mad_f_mul(t15, 0x0ec835e8L);
+    mad_f_mul(t14, MAD_F(0x061f78aa)) +
+    mad_f_mul(t15, MAD_F(0x0ec835e8));
   x[13] = -x[4];
 
+# if defined(MAD_F_HAVEMLA)
+  hi = lo = 0;
+
+  mad_f_mla(&hi, &lo, t10,  MAD_F(0x09bd7ca0));
+  mad_f_mla(&hi, &lo, t11, -MAD_F(0x0216a2a2));
+  mad_f_mla(&hi, &lo, t12,  MAD_F(0x0fdcf549));
+  mad_f_mla(&hi, &lo, t13, -MAD_F(0x0cb19346));
+
+  x[1] = mad_f_scale64(hi, lo) + t4;
+# else
   x[1] = t4 +
-    mad_f_mul(t10,  0x09bd7ca0L) +
-    mad_f_mul(t11, -0x0216a2a2L) +
-    mad_f_mul(t12,  0x0fdcf549L) +
-    mad_f_mul(t13, -0x0cb19346L);
+    mad_f_mul(t10,  MAD_F(0x09bd7ca0)) +
+    mad_f_mul(t11, -MAD_F(0x0216a2a2)) +
+    mad_f_mul(t12,  MAD_F(0x0fdcf549)) +
+    mad_f_mul(t13, -MAD_F(0x0cb19346));
+# endif
   x[16] = -x[1];
 
+# if defined(MAD_F_HAVEMLA)
+  hi = lo = 0;
+
+  mad_f_mla(&hi, &lo, t10, -MAD_F(0x0fdcf549));
+  mad_f_mla(&hi, &lo, t11, -MAD_F(0x0cb19346));
+  mad_f_mla(&hi, &lo, t12, -MAD_F(0x09bd7ca0));
+  mad_f_mla(&hi, &lo, t13, -MAD_F(0x0216a2a2));
+
+  x[25] = x[28] = mad_f_scale64(hi, lo) + t4;
+# else
   x[25] = x[28] = t4 +
-    mad_f_mul(t10, -0x0fdcf549L) +
-    mad_f_mul(t11, -0x0cb19346L) +
-    mad_f_mul(t12, -0x09bd7ca0L) +
-    mad_f_mul(t13, -0x0216a2a2L);
+    mad_f_mul(t10, -MAD_F(0x0fdcf549)) +
+    mad_f_mul(t11, -MAD_F(0x0cb19346)) +
+    mad_f_mul(t12, -MAD_F(0x09bd7ca0)) +
+    mad_f_mul(t13, -MAD_F(0x0216a2a2));
+# endif
 
+# if defined(MAD_F_HAVEMLA)
+  hi = lo = 0;
+
+  mad_f_mla(&hi, &lo, X[1],  -MAD_F(0x0fdcf549));
+  mad_f_mla(&hi, &lo, X[7],  -MAD_F(0x0cb19346));
+  mad_f_mla(&hi, &lo, X[10], -MAD_F(0x09bd7ca0));
+  mad_f_mla(&hi, &lo, X[16], -MAD_F(0x0216a2a2));
+
+  t5 = mad_f_scale64(hi, lo) - t6;
+# else
   t5 = -t6 +
-    mad_f_mul(X[1],  -0x0fdcf549L) +
-    mad_f_mul(X[7],  -0x0cb19346L) +
-    mad_f_mul(X[10], -0x09bd7ca0L) +
-    mad_f_mul(X[16], -0x0216a2a2L);
+    mad_f_mul(X[1],  -MAD_F(0x0fdcf549)) +
+    mad_f_mul(X[7],  -MAD_F(0x0cb19346)) +
+    mad_f_mul(X[10], -MAD_F(0x09bd7ca0)) +
+    mad_f_mul(X[16], -MAD_F(0x0216a2a2));
+# endif
 
+# if defined(MAD_F_HAVEMLA)
+  hi = lo = 0;
+
+  mad_f_mla(&hi, &lo, X[0],   MAD_F(0x0898c779));
+  mad_f_mla(&hi, &lo, X[2],   MAD_F(0x04cfb0e2));
+  mad_f_mla(&hi, &lo, X[3],   MAD_F(0x0bcbe352));
+  mad_f_mla(&hi, &lo, X[5],   MAD_F(0x00b2aa3e));
+  mad_f_mla(&hi, &lo, X[6],   MAD_F(0x0e313245));
+  mad_f_mla(&hi, &lo, X[8],  -MAD_F(0x03768962));
+  mad_f_mla(&hi, &lo, X[9],   MAD_F(0x0f9ee890));
+  mad_f_mla(&hi, &lo, X[11], -MAD_F(0x07635284));
+  mad_f_mla(&hi, &lo, X[12],  MAD_F(0x0ffc19fd));
+  mad_f_mla(&hi, &lo, X[14], -MAD_F(0x0acf37ad));
+  mad_f_mla(&hi, &lo, X[15],  MAD_F(0x0f426cb5));
+  mad_f_mla(&hi, &lo, X[17], -MAD_F(0x0d7e8807));
+
+  x[2] = mad_f_scale64(hi, lo) + t5;
+# else
   x[2] = t5 +
-    mad_f_mul(X[0],   0x0898c779L) +
-    mad_f_mul(X[2],   0x04cfb0e2L) +
-    mad_f_mul(X[3],   0x0bcbe352L) +
-    mad_f_mul(X[5],   0x00b2aa3eL) +
-    mad_f_mul(X[6],   0x0e313245L) +
-    mad_f_mul(X[8],  -0x03768962L) +
-    mad_f_mul(X[9],   0x0f9ee890L) +
-    mad_f_mul(X[11], -0x07635284L) +
-    mad_f_mul(X[12],  0x0ffc19fdL) +
-    mad_f_mul(X[14], -0x0acf37adL) +
-    mad_f_mul(X[15],  0x0f426cb5L) +
-    mad_f_mul(X[17], -0x0d7e8807L);
+    mad_f_mul(X[0],   MAD_F(0x0898c779)) +
+    mad_f_mul(X[2],   MAD_F(0x04cfb0e2)) +
+    mad_f_mul(X[3],   MAD_F(0x0bcbe352)) +
+    mad_f_mul(X[5],   MAD_F(0x00b2aa3e)) +
+    mad_f_mul(X[6],   MAD_F(0x0e313245)) +
+    mad_f_mul(X[8],  -MAD_F(0x03768962)) +
+    mad_f_mul(X[9],   MAD_F(0x0f9ee890)) +
+    mad_f_mul(X[11], -MAD_F(0x07635284)) +
+    mad_f_mul(X[12],  MAD_F(0x0ffc19fd)) +
+    mad_f_mul(X[14], -MAD_F(0x0acf37ad)) +
+    mad_f_mul(X[15],  MAD_F(0x0f426cb5)) +
+    mad_f_mul(X[17], -MAD_F(0x0d7e8807));
+# endif
   x[15] = -x[2];
 
+# if defined(MAD_F_HAVEMLA)
+  hi = lo = 0;
+
+  mad_f_mla(&hi, &lo, X[0],   MAD_F(0x07635284));
+  mad_f_mla(&hi, &lo, X[2],   MAD_F(0x0acf37ad));
+  mad_f_mla(&hi, &lo, X[3],   MAD_F(0x03768962));
+  mad_f_mla(&hi, &lo, X[5],   MAD_F(0x0d7e8807));
+  mad_f_mla(&hi, &lo, X[6],  -MAD_F(0x00b2aa3e));
+  mad_f_mla(&hi, &lo, X[8],   MAD_F(0x0f426cb5));
+  mad_f_mla(&hi, &lo, X[9],  -MAD_F(0x04cfb0e2));
+  mad_f_mla(&hi, &lo, X[11],  MAD_F(0x0ffc19fd));
+  mad_f_mla(&hi, &lo, X[12], -MAD_F(0x0898c779));
+  mad_f_mla(&hi, &lo, X[14],  MAD_F(0x0f9ee890));
+  mad_f_mla(&hi, &lo, X[15], -MAD_F(0x0bcbe352));
+  mad_f_mla(&hi, &lo, X[17],  MAD_F(0x0e313245));
+
+  x[3] = mad_f_scale64(hi, lo) + t5;
+# else
   x[3] = t5 +
-    mad_f_mul(X[0],   0x07635284L) +
-    mad_f_mul(X[2],   0x0acf37adL) +
-    mad_f_mul(X[3],   0x03768962L) +
-    mad_f_mul(X[5],   0x0d7e8807L) +
-    mad_f_mul(X[6],  -0x00b2aa3eL) +
-    mad_f_mul(X[8],   0x0f426cb5L) +
-    mad_f_mul(X[9],  -0x04cfb0e2L) +
-    mad_f_mul(X[11],  0x0ffc19fdL) +
-    mad_f_mul(X[12], -0x0898c779L) +
-    mad_f_mul(X[14],  0x0f9ee890L) +
-    mad_f_mul(X[15], -0x0bcbe352L) +
-    mad_f_mul(X[17],  0x0e313245L);
+    mad_f_mul(X[0],   MAD_F(0x07635284)) +
+    mad_f_mul(X[2],   MAD_F(0x0acf37ad)) +
+    mad_f_mul(X[3],   MAD_F(0x03768962)) +
+    mad_f_mul(X[5],   MAD_F(0x0d7e8807)) +
+    mad_f_mul(X[6],  -MAD_F(0x00b2aa3e)) +
+    mad_f_mul(X[8],   MAD_F(0x0f426cb5)) +
+    mad_f_mul(X[9],  -MAD_F(0x04cfb0e2)) +
+    mad_f_mul(X[11],  MAD_F(0x0ffc19fd)) +
+    mad_f_mul(X[12], -MAD_F(0x0898c779)) +
+    mad_f_mul(X[14],  MAD_F(0x0f9ee890)) +
+    mad_f_mul(X[15], -MAD_F(0x0bcbe352)) +
+    mad_f_mul(X[17],  MAD_F(0x0e313245));
+# endif
   x[14] = -x[3];
 
+# if defined(MAD_F_HAVEMLA)
+  hi = lo = 0;
+
+  mad_f_mla(&hi, &lo, X[0],  -MAD_F(0x0ffc19fd));
+  mad_f_mla(&hi, &lo, X[2],  -MAD_F(0x0f9ee890));
+  mad_f_mla(&hi, &lo, X[3],  -MAD_F(0x0f426cb5));
+  mad_f_mla(&hi, &lo, X[5],  -MAD_F(0x0e313245));
+  mad_f_mla(&hi, &lo, X[6],  -MAD_F(0x0d7e8807));
+  mad_f_mla(&hi, &lo, X[8],  -MAD_F(0x0bcbe352));
+  mad_f_mla(&hi, &lo, X[9],  -MAD_F(0x0acf37ad));
+  mad_f_mla(&hi, &lo, X[11], -MAD_F(0x0898c779));
+  mad_f_mla(&hi, &lo, X[12], -MAD_F(0x07635284));
+  mad_f_mla(&hi, &lo, X[14], -MAD_F(0x04cfb0e2));
+  mad_f_mla(&hi, &lo, X[15], -MAD_F(0x03768962));
+  mad_f_mla(&hi, &lo, X[17], -MAD_F(0x00b2aa3e));
+
+  x[26] = x[27] = mad_f_scale64(hi, lo) + t5;
+# else
   x[26] = x[27] = t5 +
-    mad_f_mul(X[0],  -0x0ffc19fdL) +
-    mad_f_mul(X[2],  -0x0f9ee890L) +
-    mad_f_mul(X[3],  -0x0f426cb5L) +
-    mad_f_mul(X[5],  -0x0e313245L) +
-    mad_f_mul(X[6],  -0x0d7e8807L) +
-    mad_f_mul(X[8],  -0x0bcbe352L) +
-    mad_f_mul(X[9],  -0x0acf37adL) +
-    mad_f_mul(X[11], -0x0898c779L) +
-    mad_f_mul(X[12], -0x07635284L) +
-    mad_f_mul(X[14], -0x04cfb0e2L) +
-    mad_f_mul(X[15], -0x03768962L) +
-    mad_f_mul(X[17], -0x00b2aa3eL);
+    mad_f_mul(X[0],  -MAD_F(0x0ffc19fd)) +
+    mad_f_mul(X[2],  -MAD_F(0x0f9ee890)) +
+    mad_f_mul(X[3],  -MAD_F(0x0f426cb5)) +
+    mad_f_mul(X[5],  -MAD_F(0x0e313245)) +
+    mad_f_mul(X[6],  -MAD_F(0x0d7e8807)) +
+    mad_f_mul(X[8],  -MAD_F(0x0bcbe352)) +
+    mad_f_mul(X[9],  -MAD_F(0x0acf37ad)) +
+    mad_f_mul(X[11], -MAD_F(0x0898c779)) +
+    mad_f_mul(X[12], -MAD_F(0x07635284)) +
+    mad_f_mul(X[14], -MAD_F(0x04cfb0e2)) +
+    mad_f_mul(X[15], -MAD_F(0x03768962)) +
+    mad_f_mul(X[17], -MAD_F(0x00b2aa3e));
+# endif
 }
 
 /*
@@ -1636,10 +2151,21 @@ int III_decode(struct mad_bitptr *ptr, struct mad_frame *frame,
   struct mad_header *header = &frame->header;
   unsigned int sfreqi, ngr, gr, sfbcut;
 
-  /* 48000 => 0, 44100 => 1, 32000 => 2,
-     24000 => 3, 22050 => 4, 16000 => 5 */
-  sfreqi = ((header->sfreq >>  7) & 0x000f) +
-           ((header->sfreq >> 15) & 0x0001) - 8;
+  {
+    unsigned int sfreq;
+
+    sfreq = header->sfreq;
+    if (header->flags & MAD_FLAG_MPEG_2_5_EXT)
+      sfreq *= 2;
+
+    /* 48000 => 0, 44100 => 1, 32000 => 2,
+       24000 => 3, 22050 => 4, 16000 => 5 */
+    sfreqi = ((sfreq >>  7) & 0x000f) +
+             ((sfreq >> 15) & 0x0001) - 8;
+
+    if (header->flags & MAD_FLAG_MPEG_2_5_EXT)
+      sfreqi += 3;
+  }
 
   /* scalefactors, Huffman decoding, requantization */
 
@@ -1739,9 +2265,15 @@ int III_decode(struct mad_bitptr *ptr, struct mad_frame *frame,
       /* subbands 0-1 */
 
       if (channel->block_type != 2 || (channel->flags & mixed_block_flag)) {
+	unsigned int block_type;
+
+	block_type = channel->block_type;
+	if (channel->flags & mixed_block_flag)
+	  block_type = 0;
+
 	/* long blocks */
 	for (sb = 0; sb < 2; ++sb, l += 18) {
-	  III_imdct_l(&xr[ch][l], output, channel->block_type);
+	  III_imdct_l(&xr[ch][l], output, block_type);
 	  III_overlap(output, (*frame->overlap)[ch][sb], sample, sb);
 	}
       }
@@ -1784,7 +2316,7 @@ int III_decode(struct mad_bitptr *ptr, struct mad_frame *frame,
 	}
       }
 
-      /* (zero) remaining subbands */
+      /* remaining (zero) subbands */
 
       for (sb = sblimit; sb < 32; ++sb) {
 	III_overlap_z((*frame->overlap)[ch][sb], sample, sb);

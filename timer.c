@@ -1,6 +1,6 @@
 /*
  * mad - MPEG audio decoder
- * Copyright (C) 2000 Robert Leslie
+ * Copyright (C) 2000-2001 Robert Leslie
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: timer.c,v 1.7 2000/11/16 10:51:10 rob Exp $
+ * $Id: timer.c,v 1.8 2001/01/21 00:18:15 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
@@ -171,6 +171,18 @@ void mad_timer_set(mad_timer_t *timer, unsigned long seconds,
 
   case MAD_TIMER_RESOLUTION:
     timer->fraction = fraction;
+    break;
+
+  case 8000:
+    timer->fraction = fraction * (MAD_TIMER_RESOLUTION /  8000);
+    break;
+
+  case 11025:
+    timer->fraction = fraction * (MAD_TIMER_RESOLUTION / 11025);
+    break;
+
+  case 12000:
+    timer->fraction = fraction * (MAD_TIMER_RESOLUTION / 12000);
     break;
 
   case 16000:

@@ -1,6 +1,6 @@
 /*
  * mad - MPEG audio decoder
- * Copyright (C) 2000 Robert Leslie
+ * Copyright (C) 2000-2001 Robert Leslie
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: version.h,v 1.9 2000/11/18 12:38:44 rob Exp $
+ * $Id: version.h,v 1.12 2001/01/21 00:18:15 rob Exp $
  */
 
 # ifndef MAD_VERSION_H
@@ -24,7 +24,7 @@
 
 # define MAD_VERSION_MAJOR	0
 # define MAD_VERSION_MINOR	12
-# define MAD_VERSION_PATCH	2
+# define MAD_VERSION_PATCH	3
 # define MAD_VERSION_EXTRA	" (beta)"
 
 # define MAD_VERSION_STRINGIZE(str)	#str
@@ -35,14 +35,13 @@
 				MAD_VERSION_STRING(MAD_VERSION_PATCH)  \
 				MAD_VERSION_EXTRA
 
-# define MAD_PUBLISHYEAR	"2000"
+# define MAD_PUBLISHYEAR	"2000-2001"
 # define MAD_AUTHOR		"Robert Leslie"
 # define MAD_EMAIL		"rob@mars.org"
 
 extern char const mad_version[];
 extern char const mad_copyright[];
 extern char const mad_author[];
-extern char const mad_license[];
 extern char const mad_build[];
 
 # endif
