@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: stream.h,v 1.7 2000/06/03 23:07:41 rob Exp $
+ * $Id: stream.h,v 1.1 2000/08/02 05:48:52 rob Exp $
  */
 
 # ifndef STREAM_H
@@ -66,8 +66,7 @@ struct mad_stream {
 # define MAD_ERR_BADDATALEN	0x0235	/* bad main data length */
 # define MAD_ERR_BADPART3LEN	0x0236	/* bad audio data length */
 # define MAD_ERR_BADHUFFTABLE	0x0237	/* bad Huffman table select */
-# define MAD_ERR_BADHUFFDATA	0x0238	/* Huffman data value out of range */
-# define MAD_ERR_BADSTEREO	0x0239	/* incompatible block_type for M/S */
+# define MAD_ERR_BADSTEREO	0x0238	/* incompatible block_type for M/S */
 
 # define MAD_RECOVERABLE(error)	((error) & 0xff00)
 
@@ -78,8 +77,7 @@ void mad_stream_buffer(struct mad_stream *,
 		       unsigned char const *, unsigned long);
 void mad_stream_skip(struct mad_stream *, unsigned long);
 
-unsigned char const *mad_stream_sync(unsigned char const *,
-				     unsigned char const *);
+int mad_stream_sync(struct mad_stream *);
 
 # endif
 

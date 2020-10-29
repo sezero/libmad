@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: frame.c,v 1.6 2000/06/03 23:07:41 rob Exp $
+ * $Id: frame.c,v 1.1 2000/08/02 05:48:51 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
@@ -79,11 +79,11 @@ void mad_frame_init(struct mad_frame *frame)
   frame->mode_ext = 0;
   frame->emphasis = 0;
 
-  frame->bitrate = 0;
-  frame->sfreq   = 0;
+  frame->bitrate  = 0;
+  frame->sfreq    = 0;
 
-  frame->flags   = 0;
-  frame->private = 0;
+  frame->flags    = 0;
+  frame->private  = 0;
 
   mad_timer_init(&frame->duration);
 
@@ -176,15 +176,17 @@ int mad_frame_header(struct mad_frame *frame, struct mad_stream *stream,
     }
   }
   else {
-    ptr = mad_stream_sync(ptr, end);
+    mad_bit_init(&stream->ptr, ptr);
 
-    if (ptr == 0) {
+    if (mad_stream_sync(stream) == -1) {
       if (end - stream->next_frame >= 4)
 	stream->next_frame = end - 4;
 
       stream->error = MAD_ERR_BUFLEN;
       goto fail;
     }
+
+    ptr = mad_bit_nextbyte(&stream->ptr);
   }
 
   /* begin processing */
@@ -340,18 +342,19 @@ int mad_frame_header(struct mad_frame *frame, struct mad_stream *stream,
 static
 int free_bitrate(struct mad_stream *stream, struct mad_frame *frame)
 {
-  unsigned char const *ptr;
   unsigned int rate, pad_slot, slots_per_frame;
 
-  ptr  = mad_bit_nextbyte(&stream->ptr);
   rate = 0;
 
   pad_slot = (frame->flags & MAD_FLAG_PADDING) ? 1 : 0;
   slots_per_frame =
     (frame->layer == 3 && (frame->flags & MAD_FLAG_LSF_EXT)) ? 72 : 144;
 
-  while (rate == 0 && (ptr = mad_stream_sync(ptr, stream->bufend))) {
+  while (rate == 0 && mad_stream_sync(stream) == 0) {
+    unsigned char const *ptr;
     unsigned int N, num;
+
+    ptr = mad_bit_nextbyte(&stream->ptr);
 
     N = ptr - stream->this_frame;
 
@@ -392,7 +395,7 @@ int free_bitrate(struct mad_stream *stream, struct mad_frame *frame)
 # endif
     }
     else
-      ++ptr;
+      mad_bit_skip(&stream->ptr, 8);
   }
 
   if (rate == 0) {
@@ -401,7 +404,7 @@ int free_bitrate(struct mad_stream *stream, struct mad_frame *frame)
   }
 
   if (frame->layer == 2) {
-    /* restart Layer II decoding since it depends on knowing bitrate */
+    /* restart Layer II decoding since it depends on knowing the bitrate */
     stream->next_frame = stream->this_frame;
 
     stream->error = MAD_ERR_LOSTSYNC;

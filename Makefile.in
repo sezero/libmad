@@ -16,7 +16,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
-# $Id: Makefile.in,v 1.24 2000/05/27 20:28:43 rob Exp $
+# $Id: Makefile.in,v 1.2 2000/08/02 16:55:07 rob Exp $
 #
 
 ## OPTIONS ####################################################################
@@ -31,7 +31,7 @@
 # FPM_SPARC	use SPARC V8 assembly
 # (default)	use slow explicit computation
 
-# now set by configure
+# set by --enable-fpm during configure
 FPM =		@FPM@
 
 # Subband Synthesis Optimization options:
@@ -39,6 +39,7 @@ FPM =		@FPM@
 # SSO_FAST	use fast approximation
 # (default)	use standard calculation
 
+# set by --enable-sso during configure
 SSO =		@SSO@
 
 ## ENVIRONMENT ################################################################
@@ -51,15 +52,14 @@ VPATH =		@srcdir@
 prefix =	@prefix@
 exec_prefix =	@exec_prefix@
 
-BINDEST =	@bindir@
 MANDEST =	@mandir@
-LIBDEST =	@libdir@
-INCDEST =	@includedir@
 
-MANEXT =	1
+INCDEST =	@includedir@
+LIBDEST =	@libdir@
+
+MANEXT =	3
 
 INSTALL =	@INSTALL@
-BININSTALL =	@INSTALL_PROGRAM@ -m 755
 LIBINSTALL =	@INSTALL_DATA@
 
 CC =		@CC@
@@ -85,57 +85,34 @@ LDFLAGS =	$(LDOPTS)
 
 ## OBJECTS ####################################################################
 
-TARGET =	$(LIBMAD)
+TARGETS =	$(LIBMAD) $(INCMAD)
 
-MADINCLUDES =	version.h fixed.h bit.h timer.h stream.h frame.h synth.h  \
-		decoder.h
+LIBMAD =	libmad.a
+INCMAD =	mad.h
+
 MADOBJS =	version.o fixed.o bit.o timer.o stream.o frame.o synth.o  \
 		decoder.o layer12.o layer3.o huffman.o
-LIBMAD =	libmad.a
-INCMAD =	libmad.h
+MADINCLUDES =	version.h fixed.h bit.h timer.h stream.h frame.h synth.h  \
+		decoder.h
 
-## RULES ######################################################################
+## GENERIC RULES ##############################################################
 
-all :: @MAKE_TARGETS@
-
-all_lib :: $(LIBMAD) $(INCMAD)
+all :: $(TARGETS)
 
 check :: all
 	@echo "No self-tests available."
 
-default :: $(TARGET)
-
-install :: @INSTALL_TARGETS@
-
-install_default :: all
-	$(BININSTALL) $(TARGET) "$(BINDEST)/."
-
-install_lib :: all_lib
+install :: all
 	$(LIBINSTALL) $(LIBMAD) "$(LIBDEST)/."
 	$(LIBINSTALL) $(INCMAD) "$(INCDEST)/."
-
-minimad: minimad.o $(LIBMAD)
-	$(CC) $(LDFLAGS) -o $@ minimad.o $(LIBMAD) $(LIBS)
-
-$(LIBMAD): $(MADOBJS)
-	$(AR) rc $@ $(MADOBJS)
-	$(RANLIB) $@
-
-$(INCMAD): $(MADINCLUDES)
-	sed -e '/\$$''Id: /s/\$$//g' -e '/^# include/d'  \
-		$(MADINCLUDES) >libmad.h
-
-.c.s:
-	$(CC) $(ARCH) $(OPTIMIZER) $(DEFINES) -S $<
-
-*.o *.s: Makefile
 
 again :: clean all
 
 clean ::
-	rm -f $(TARGET) *.o *.a gmon.* core
+	rm -f $(TARGETS) *.o *.a gmon.* core
 
 distclean :: clean
+	rm -f mad.h
 	rm -f config.status config.cache config.log config.h
 	rm -f Makefile
 
@@ -173,6 +150,27 @@ config.status: .stamp/configure .stamp/config.h.in Makefile.in
 	mv -f config.h.in.new config.h.in &&  \
 	touch .stamp/config.h.in
 
+## BUILD RULES ################################################################
+
+$(LIBMAD): $(MADOBJS)
+	$(AR) rc $@ $(MADOBJS)
+	$(RANLIB) $@
+
+$(INCMAD): Makefile mad.h.sed ../COPYRIGHT $(MADINCLUDES)
+	(sed -e '1s|.*|/*|' -e '1b' -e '$$s|.*| */|' -e '$$b'  \
+		-e 's/^.*/ *&/' ../COPYRIGHT;  \
+	echo;  \
+	if [ ".$(FPM)" != "." ]; then  \
+		echo ".$(FPM)" | sed -e 's|^\.-D|# define |'; echo;  \
+	fi;  \
+	grep SIZEOF config.h | sed -e 's/^#d/# d/'; echo;  \
+	sed -n -f mad.h.sed $(MADINCLUDES)) >$@
+
+.c.s:
+	$(CC) $(ARCH) $(OPTIMIZER) $(DEFINES) -S $<
+
+*.o *.s: Makefile
+
 ## DEPENDENCIES ###############################################################
 
 bit.o: bit.c config.h bit.h
@@ -186,7 +184,6 @@ layer12.o: layer12.c config.h fixed.h bit.h stream.h frame.h timer.h \
  layer12.h sf_table.dat qc_table.dat
 layer3.o: layer3.c config.h fixed.h bit.h stream.h frame.h timer.h \
  huffman.h layer3.h rq_table.dat imdct_s.dat
-minimad.o: minimad.c libmad.h
 stream.o: stream.c config.h bit.h stream.h
 synth.o: synth.c config.h fixed.h frame.h timer.h stream.h bit.h \
  synth.h D.dat

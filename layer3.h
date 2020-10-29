@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: layer3.h,v 1.4 2000/03/19 06:43:38 rob Exp $
+ * $Id: layer3.h,v 1.1 2000/08/02 05:48:51 rob Exp $
  */
 
 # include "stream.h"

@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: layer12.c,v 1.12 2000/06/03 23:07:41 rob Exp $
+ * $Id: layer12.c,v 1.1 2000/08/02 05:48:51 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H

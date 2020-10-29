@@ -2,9 +2,32 @@
  mad - MPEG audio decoder
  Copyright (C) 2000 Robert Leslie
 
- $Id: CHANGES,v 1.14 2000/06/03 23:07:41 rob Exp $
+ $Id: CHANGES,v 1.18 2000/08/02 05:48:45 rob Exp $
 
 ===============================================================================
+
+Version 0.11.1 (beta)
+
+  * Moved libmad code into a separate directory.
+
+  * Improved the robustness of the Win32 audio output module.
+
+  * Changed SSO to be disabled by default, as output accuracy is deemed to
+    be more important than speed in the general case.
+
+  * Fixed a bug in Layer III sanity checking that could cause a crash on
+    certain random data input.
+
+  * Extended the Layer III requantization table from 8191 to 8206 as some
+    encoders are known to use these values, even though ISO/IEC 11172-3
+    suggests the maximum should be 8191.
+
+  * Added a short man page for madplay.
+
+  * Wrote most of the code for madtime.
+
+  * Wrote code for an experimental multi-stream mixer `madmix'
+    (--enable-experimental to add -x option support for this to madplay).
 
 Version 0.11.0 (beta)
 

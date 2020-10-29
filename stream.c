@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: stream.c,v 1.3 2000/03/19 06:43:38 rob Exp $
+ * $Id: stream.c,v 1.1 2000/08/02 05:48:52 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
@@ -100,14 +100,21 @@ void mad_stream_skip(struct mad_stream *stream, unsigned long length)
  * NAME:	stream->sync()
  * DESCRIPTION:	locate the next stream sync word
  */
-unsigned char const *mad_stream_sync(unsigned char const *start,
-				     unsigned char const *end)
+int mad_stream_sync(struct mad_stream *stream)
 {
-  register unsigned char const *ptr = start;
+  register unsigned char const *ptr, *end;
+
+  ptr = mad_bit_nextbyte(&stream->ptr);
+  end = stream->bufend;
 
   while (ptr < end - 1 &&
 	 !(ptr[0] == 0xff && (ptr[1] & 0xf0) == 0xf0))
     ++ptr;
 
-  return (end - ptr < 4) ? 0 : ptr;
+  if (end - ptr < 4)
+    return -1;
+
+  mad_bit_init(&stream->ptr, ptr);
+
+  return 0;
 }

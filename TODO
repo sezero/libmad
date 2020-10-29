@@ -1,13 +1,11 @@
 
 libmad:
   - fix broken fixed-point semantics in synth.c
-  - fix generic DCT matrix multiply (now broken after V[] resize/reorder)
   - fix free format fixed bitrate discovery
   - speed up mad_bit_read()
   - MPEG 2 MC, 2.5?
   - parse system streams
   - function documentation, general docs
-  - look into 16-bit fixed-point representation
   - finish async API
   - fix frame muting within decoder
 
@@ -27,16 +25,14 @@ libmad Layer III:
   - ancillary bits
   - ms_stereo + intensity_stereo not right?
   - stereo->mono conversion optimization
-  - verify last Huffman table
 
 madplay:
+  - byte position reporting
   - dual channel output selection?
   - better bitstream error recovery
   - ensure last frame is played at end-of-stream
   - further ID3v2 support
-  - let OSS module use native endianness
   - move static vars from audio_* to audio control union
-  - change message() to key off '\r' rather than '\n'
 
 ID3v2:
   - Unicode support

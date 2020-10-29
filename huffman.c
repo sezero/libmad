@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: huffman.c,v 1.7 2000/03/22 23:52:59 rob Exp $
+ * $Id: huffman.c,v 1.1 2000/08/02 05:48:51 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H

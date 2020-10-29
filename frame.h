@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: frame.h,v 1.6 2000/06/03 23:07:41 rob Exp $
+ * $Id: frame.h,v 1.1 2000/08/02 05:48:51 rob Exp $
  */
 
 # ifndef FRAME_H

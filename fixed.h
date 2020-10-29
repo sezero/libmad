@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: fixed.h,v 1.9 2000/04/22 04:36:50 rob Exp $
+ * $Id: fixed.h,v 1.2 2000/08/02 16:55:07 rob Exp $
  */
 
 # ifndef FIXED_H
@@ -56,8 +56,11 @@ typedef unsigned long mad_fixed64lo_t;
  * The CPU-specific versions of mad_f_mul() perform rounding by truncation.
  */
 
-# define MAD_F_MIN		0x80000000L
-# define MAD_F_MAX		0x7fffffffL
+# define MAD_F_MIN		(-0x80000000L)
+# define MAD_F_MAX		  0x7fffffffL
+
+# define mad_f_tofixed(x)	((mad_fixed_t) ((x) * 268435456.0 + 0.5))
+# define mad_f_todouble(x)	((double)      ((x) / 268435456.0))
 
 # define mad_f_add(x, y)	((x) + (y))
 # define mad_f_sub(x, y)	((x) - (y))
@@ -195,14 +198,9 @@ typedef unsigned long mad_fixed64lo_t;
      })
 
 # else
+
 mad_fixed_t mad_f_mul(mad_fixed_t, mad_fixed_t);
-# endif
 
-# ifdef DEBUG
-mad_fixed_t mad_f_abs(mad_fixed_t);
-
-mad_fixed_t mad_f_tofixed(double);
-double mad_f_todouble(mad_fixed_t);
 # endif
 
 # endif

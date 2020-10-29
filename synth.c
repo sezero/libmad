@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: synth.c,v 1.11 2000/05/27 20:28:43 rob Exp $
+ * $Id: synth.c,v 1.1 2000/08/02 05:48:52 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H

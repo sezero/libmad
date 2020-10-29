@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: imdct_s.dat,v 1.2 2000/02/28 02:31:01 rob Exp $
+ * $Id: imdct_s.dat,v 1.1 2000/08/02 05:48:51 rob Exp $
  */
 
   {  0x09bd7ca0L /*  0.608761429 */, -0x0ec835e8L /* -0.923879533 */,   /* 0 */

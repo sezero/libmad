@@ -2,7 +2,7 @@
  mad - MPEG audio decoder
  Copyright (C) 2000 Robert Leslie
 
- $Id: README,v 1.20 2000/06/03 23:07:41 rob Exp $
+ $Id: README,v 1.25 2000/08/02 17:16:09 rob Exp $
 
 ===============================================================================
 
@@ -44,7 +44,7 @@ ABOUT THE CODE
   a simple front-end called `madplay' that supports several audio output
   modules:
 
-    - an Open Sound System interface module
+    - an Open Sound System interface module (for Linux, et al.)
     - a Sun audio interface module
     - a Win32 audio interface module
     - a WAV file output module
@@ -53,28 +53,31 @@ ABOUT THE CODE
     - a null module (for timing the decoder)
 
   The code is optimized and performs very well, although specific
-  improvements can and will still be made.
+  improvements can and will still be made. The output from the decoder
+  library consists of 32-bit signed linear fixed-point values which can be
+  easily scaled for any size PCM output, up to 24 bits per sample.
 
   The API for libmad is likely to change soon, so it is not yet documented.
-  However, the header file `libmad.h' may be informative, as may also be the
-  sample code in `minimad.c'.
+  However, the header file `libmad/mad.h' may be informative, as may also be
+  the sample code in `minimad.c'. Note that the `libmad/mad.h' file is
+  automatically generated, and will not exist until you have built the
+  library.
 
   There are two APIs available, one high-level, and the other low-level.
   With the low-level API, each step of the decoding process must be handled
-  explicitly. With the high-level API, after callbacks are configured, a
-  single routine will decode an entire bitstream.
+  explicitly, offering the greatest amount of control. With the high-level
+  API, after callbacks are configured, a single routine will decode an
+  entire bitstream.
 
   The high-level API may either be used synchronously or asynchronously. If
   used asynchronously, decoding will occur in a separate process.
   Communication is possible with the decoding process by passing control
-  messages.
-
-  [The asynchronous API is not yet completed.]
+  messages. [The asynchronous API is not yet completed.]
 
   The `madplay' front-end is written to use the high-level synchronous API.
 
   The file `minimad.c' contains an example usage of the libmad API which is
-  less complex than `madplay.c' but shows only the bare minimum required to
+  less complex than `madplay.c' and shows only the bare minimum required to
   implement a useful decoder. It expects a regular file to be redirected to
   standard input, and it sends decoded 16-bit signed little-endian PCM
   samples to standard output. It will abort at the first discovery of a
@@ -118,50 +121,51 @@ Integer Performance
   compiler, another C version can be used which is both fast and accurate.
   However, using an assembly version is generally faster still.
 
-  More information can be gathered from the `fixed.h' header file.
+  More information can be gathered from the `libmad/fixed.h' header file.
 
-  MAD's CPU-intensive subband synthesis routine has been optimized in such a
-  way that the output may contain subtle errors due to a modified method for
-  fixed-point multiplication with a small windowing constant. While this is
-  helpful for performance and is generally undetectable, an option exists
-  for purists to disable this optimization.
+  MAD's CPU-intensive subband synthesis routine can be further optimized at
+  the expense of a slight loss in output accuracy due to a modified method
+  for fixed-point multiplication with a small windowing constant. While this
+  is helpful for performance and the output accuracy loss is generally
+  undetectable, it is disabled by default and must be explicitly enabled.
 
 Compilation Issues
 
   GCC is probably required to compile the code, but YMMV. Besides the
-  assembly code notation, a GNU extension was used in `huffman.c' to specify
-  union initialization of a member other than the first.
+  assembly code notation, a GNU extension was used in `libmad/huffman.c' to
+  specify union initialization of a member other than the first.
 
-  The code is known to be dependent on sign-extended arithmetic right shifts
-  in several places.
+  The code should not be sensitive to word sizes or byte ordering, however it
+  is known to be dependent on sign-extended arithmetic right shifts in several
+  places.
 
 ===============================================================================
 
 INSTALLATION
 
   The code is distributed with a `configure' script which will generate for
-  you a `Makefile' and a `config.h'. See the file `INSTALL' for generic
-  instructions.
+  you a `Makefile' and a `config.h' in the both the `libmad' and top-level
+  subdirectories. See the file `INSTALL' for generic instructions.
 
   The specific options you may want to give configure are:
 
-      --enable-fpm=<arch>      use the <arch>-specific version of the
-                               fixed-point math assembly routines
-                               (current options are: intel, arm, mips,
-                               sparc; also allowed are: 64bit, approx)
+      --enable-fpm=<arch>	use the <arch>-specific version of the
+				fixed-point math assembly routines
+				(current options are: intel, arm, mips,
+				sparc; also allowed are: 64bit, approx)
 
-      --disable-is-kluge       don't use the intensity stereo kluge
-                               described above
+      --disable-is-kluge	don't use the intensity stereo kluge
+				described above
 
-      --disable-sso            don't use the subband synthesis optimization
-                               which can introduce minor errors
+      --enable-sso		use the subband synthesis optimization for
+				better speed, despite reduced accuracy
 
-      --disable-debugging      do not compile with debugging support, and
-                               use more optimizations
+      --disable-debugging	do not compile with debugging support, and
+				use more optimizations
 
-      --enable-devlib          install `libmad.a' developer library and
-                               `libmad.h' header file in addition to the
-                               user program
+      --enable-devlib		install `libmad.a' developer library and
+				`mad.h' header file in addition to the
+				user programs
 
   By default an appropriate fixed-point assembly routine will be selected
   for the configured host type, if it can be determined. Thus if you are
@@ -171,6 +175,21 @@ INSTALLATION
   If an appropriate assembly routine cannot be determined, the fast
   approximation version will be used. In this case, use of an alternate
   --enable-fpm is highly recommended.
+
+==============================================================================
+
+EXPERIMENTING AND DEVELOPING
+
+  Further options for `configure' that may be useful to developers and
+  experimenters are:
+
+      --enable-debugging	enable diagnostic debugging support and
+				debugging symbols
+
+      --enable-profiling	generate `gprof' profiling code
+
+      --enable-experimental	enable code using the EXPERIMENTAL
+				preprocessor define
 
 ===============================================================================
 

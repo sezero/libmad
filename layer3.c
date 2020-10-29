@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: layer3.c,v 1.25 2000/06/03 23:07:41 rob Exp $
+ * $Id: layer3.c,v 1.1 2000/08/02 05:48:51 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
@@ -178,7 +178,7 @@ static
 struct fixedfloat {
   unsigned long mantissa  : 27;
   unsigned short exponent :  5;
-} const rq_table[8192] = {
+} const rq_table[8207] = {
 # include "rq_table.dat"
 };
 
@@ -376,7 +376,9 @@ int III_sideinfo(struct mad_bitptr *ptr, unsigned int nch,
 	for (i = 0; i < 2; ++i)
 	  channel->table_select[i] = mad_bit_read(ptr, 5);
 
+# ifdef DEBUG
 	channel->table_select[2] = 4;  /* not used */
+# endif
 
 	for (i = 0; i < 3; ++i)
 	  channel->subblock_gain[i] = mad_bit_read(ptr, 3);
@@ -736,7 +738,6 @@ int III_huffdecode(struct mad_bitptr *ptr, signed short is[576],
   unsigned long bitcache;
 
   bits_left = (signed) channel->part2_3_length - (signed) part2_length;
-
   if (bits_left < 0)
     return MAD_ERR_BADPART3LEN;
 
@@ -849,9 +850,6 @@ int III_huffdecode(struct mad_bitptr *ptr, signed short is[576],
       if (linbits && x == 15) {
 	x += MASK(bitcache, cachesz, linbits);
 	cachesz -= linbits;
-
-	if (x > 8191)
-	  return MAD_ERR_BADHUFFDATA;
       }
 
       if (x && MASK1BIT(bitcache, cachesz--))
@@ -871,9 +869,6 @@ int III_huffdecode(struct mad_bitptr *ptr, signed short is[576],
       if (linbits && y == 15) {
 	y += MASK(bitcache, cachesz, linbits);
 	cachesz -= linbits;
-
-	if (y > 8191)
-	  return MAD_ERR_BADHUFFDATA;
       }
 
       if (y && MASK1BIT(bitcache, cachesz--))
@@ -1586,7 +1581,7 @@ void III_imdct_s(mad_fixed_t const X[18], mad_fixed_t z[36])
  * NAME:	III_overlap()
  * DESCRIPTION:	perform overlap-add of windowed IMDCT outputs
  */
-static inline
+static
 void III_overlap(mad_fixed_t const output[36], mad_fixed_t overlap[18],
 		 mad_fixed_t sample[18][32], unsigned int sb)
 {
@@ -1618,7 +1613,7 @@ void III_overlap_z(mad_fixed_t overlap[18],
  * NAME:	III_freqinver()
  * DESCRIPTION:	perform subband frequency inversion for odd sample lines
  */
-static inline
+static
 void III_freqinver(mad_fixed_t sample[18][32], unsigned int sb)
 {
   unsigned int i;
@@ -1851,7 +1846,8 @@ int mad_layer_III(struct mad_stream *stream, struct mad_frame *frame,
 
   /* check frame sanity */
 
-  if (stream->next_frame - mad_bit_nextbyte(&stream->ptr) < sideinfo_length) {
+  if (stream->next_frame - mad_bit_nextbyte(&stream->ptr) <
+      (signed int) sideinfo_length) {
     stream->error = MAD_ERR_BADFRAMELEN;
     stream->md_len = 0;
     return -1;
@@ -1860,7 +1856,7 @@ int mad_layer_III(struct mad_stream *stream, struct mad_frame *frame,
   /* check CRC word */
 
   if ((frame->flags & MAD_FLAG_PROTECTION) &&
-      mad_bit_crc(stream->ptr, sideinfo_length * 8, crc[0]) != crc[1]) {
+      mad_bit_crc(stream->ptr, sideinfo_length * CHAR_BIT, crc[0]) != crc[1]) {
     stream->error = MAD_ERR_BADCRC;
     result = -1;
   }
@@ -1880,7 +1876,7 @@ int mad_layer_III(struct mad_stream *stream, struct mad_frame *frame,
   /* find main_data */
 
   frame_space      = stream->next_frame - mad_bit_nextbyte(&stream->ptr);
-  main_data_length = (main_data_bitlen + 7) / 8;
+  main_data_length = (main_data_bitlen + (CHAR_BIT - 1)) / CHAR_BIT;
 
   if (si.main_data_begin == 0) {
     ptr = stream->ptr;

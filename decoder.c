@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: decoder.c,v 1.4 2000/05/09 17:36:27 rob Exp $
+ * $Id: decoder.c,v 1.1 2000/08/02 05:48:51 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
@@ -50,10 +50,7 @@ void mad_decoder_init(struct mad_decoder *decoder)
   decoder->output_func = 0;
   decoder->error_func  = 0;
 
-  decoder->input_data  = 0;
-  decoder->filter_data = 0;
-  decoder->output_data = 0;
-  decoder->error_data  = 0;
+  decoder->cb_data     = 0;
 }
 
 int mad_decoder_finish(struct mad_decoder *decoder)
@@ -78,50 +75,34 @@ int mad_decoder_finish(struct mad_decoder *decoder)
   return 0;
 }
 
-void mad_decoder_input(struct mad_decoder *decoder,
-		       int (*func)(void *, struct mad_stream *), void *data)
+void mad_decoder_funcs(struct mad_decoder *decoder, void *data,
+		       int (*input_func)(void *, struct mad_stream *),
+		       int (*filter_func)(void *, struct mad_frame *),
+		       int (*output_func)(void *, struct mad_frame const *,
+					  struct mad_synth const *),
+		       int (*error_func)(void *, struct mad_stream *,
+					 struct mad_frame *))
 {
-  decoder->input_func = func;
-  decoder->input_data = data;
-}
+  decoder->input_func  = input_func;
+  decoder->filter_func = filter_func;
+  decoder->output_func = output_func;
+  decoder->error_func  = error_func;
 
-void mad_decoder_filter(struct mad_decoder *decoder,
-			int (*func)(void *, struct mad_frame *), void *data)
-{
-  decoder->filter_func = func;
-  decoder->filter_data = data;
-}
-
-void mad_decoder_output(struct mad_decoder *decoder,
-			int (*func)(void *, struct mad_frame const *,
-				    struct mad_synth const *), void *data)
-{
-  decoder->output_func = func;
-  decoder->output_data = data;
-}
-
-void mad_decoder_error(struct mad_decoder *decoder,
-		       int (*func)(void *, struct mad_stream *,
-				   struct mad_frame *),
-		       void *data)
-{
-  decoder->error_func = func;
-  decoder->error_data = data;
+  decoder->cb_data     = data;
 }
 
 static
 int error_default(void *data, struct mad_stream *stream,
 		  struct mad_frame *frame)
 {
-  int bad_last_frame;
+  int *bad_last_frame = data;
 
   switch (stream->error) {
   case MAD_ERR_BADCRC:
-    bad_last_frame = *(int *) data;
-
-    if (bad_last_frame)
+    if (*bad_last_frame)
       mad_frame_mute(frame);
-    /* else keep previous frame's subband samples */
+    else
+      *bad_last_frame = 1;
 
     return MAD_DECODER_IGNORE;
 
@@ -192,7 +173,7 @@ int run_sync(struct mad_decoder *decoder)
 
   if (decoder->error_func) {
     error_func = decoder->error_func;
-    error_data = decoder->error_data;
+    error_data = decoder->cb_data;
   }
   else {
     error_func = error_default;
@@ -207,8 +188,8 @@ int run_sync(struct mad_decoder *decoder)
   mad_frame_init(frame);
   mad_synth_init(synth);
 
-  while (1) {
-    switch (decoder->input_func(decoder->input_data, stream)) {
+  do {
+    switch (decoder->input_func(decoder->cb_data, stream)) {
     case MAD_DECODER_STOP:
       goto done;
     case MAD_DECODER_BREAK:
@@ -234,6 +215,11 @@ int run_sync(struct mad_decoder *decoder)
 	case MAD_DECODER_CONTINUE:
 	  if (send(decoder, &control) == MAD_DECODER_BREAK)
 	    goto fail;
+
+	  switch (control.command) {
+	  case mad_cmd_stop:
+	    goto done;
+	  }
 	  break;
 
 	case MAD_DECODER_IGNORE:
@@ -258,9 +244,11 @@ int run_sync(struct mad_decoder *decoder)
 	  continue;
 	}
       }
+      else
+	bad_last_frame = 0;
 
       if (decoder->filter_func) {
-	switch (decoder->filter_func(decoder->filter_data, frame)) {
+	switch (decoder->filter_func(decoder->cb_data, frame)) {
 	case MAD_DECODER_STOP:
 	  goto done;
 	case MAD_DECODER_BREAK:
@@ -276,7 +264,7 @@ int run_sync(struct mad_decoder *decoder)
       mad_synth_frame(synth, frame);
 
       if (decoder->output_func) {
-	switch (decoder->output_func(decoder->output_data, frame, synth)) {
+	switch (decoder->output_func(decoder->cb_data, frame, synth)) {
 	case MAD_DECODER_STOP:
 	  goto done;
 	case MAD_DECODER_BREAK:
@@ -288,10 +276,8 @@ int run_sync(struct mad_decoder *decoder)
 	}
       }
     }
-
-    if (stream->error != MAD_ERR_BUFLEN)
-      goto fail;
   }
+  while (stream->error == MAD_ERR_BUFLEN);
 
  fail:
   result = -1;
@@ -395,11 +381,10 @@ int mad_decoder_run(struct mad_decoder *decoder, int flags)
 int mad_decoder_command(struct mad_decoder *decoder,
 			union mad_control *control)
 {
-  if (decoder->mode != MAD_DECODER_ASYNC)
-    return MAD_DECODER_BREAK;
+  if (decoder->mode != MAD_DECODER_ASYNC ||
+      send(decoder, control) != MAD_DECODER_CONTINUE ||
+      receive(decoder, control) != MAD_DECODER_CONTINUE)
+    return -1;
 
-  if (send(decoder, control) == MAD_DECODER_BREAK)
-    return MAD_DECODER_BREAK;
-
-  return receive(decoder, control);
+  return 0;
 }

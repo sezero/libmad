@@ -37,7 +37,7 @@ splay-fixpoint	0.81		6%		6%		8%
 
 Supporting data:
 
-========================================
+===========================================
 
 Layer III: 4m9s test stream
 
@@ -51,39 +51,39 @@ StrongARM 1100 220MHz:
 	splay			1m46s	43%
 
 Celeron 500A:
+	mpg123			7s	3%
 	xaudio			8s	3%
 	madplay-0.11.0b		13s	5%
 	madplay-0.10.0b		18s	7%
-	mpg123			7s	3%
 	splay			20s	8%
 
-========================================
+===========================================
 
 Layer II: 4m21s test stream
 
 StrongARM 1100 220MHz:
-	madplay-0.11.0b-sso	45s	17%
 	madplay-0.10.1b-sso	44s	17%
+	madplay-0.11.0b-sso	45s	17%
 	madplay-0.10.0b		58s	22%
 	xaudio			1m4s	25%
 	mpg123			1m10s	27%	SILENCE
 	splay			1m35s	36%
 
 Celeron 500A:
-	xaudio			6s	2%
-	madplay-0.11.0b-sso	9s	3%
-	madplay-0.10.2b-sso	8s	3%
-	madplay-0.10.0b		11s	4%
 	mpg123			6s	2%
+	xaudio			6s	2%
+	madplay-0.10.2b-sso	8s	3%
+	madplay-0.11.0b-sso	9s	3%
+	madplay-0.10.0b		11s	4%
 	splay			15s	6%
 
-========================================
+===========================================
 
 Layer I: 4m34s test stream
 
 StrongARM 1100 220MHz:
-	madplay-0.11.0b-sso	49s	18%
 	madplay-0.10.1b-sso	48s	18%
+	madplay-0.11.0b-sso	49s	18%
 	xaudio			58s	21%
 	madplay-0.10.0b		1m4s	23%
 	splay			1m51s	41%
@@ -97,11 +97,11 @@ Celeron 500A:
 	splay			16s	6%
 	mpg123					FAILED
 
-========================================
+===========================================
 
 Older data:
 
-========================================
+===========================================
 
 Layer II: 4m22s test stream
 
@@ -117,5 +117,5 @@ Celeron 500A:
 	mad macc		15s
 	mad mull/add		11s
 
-========================================
+===========================================
 
