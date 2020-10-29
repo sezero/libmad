@@ -1,6 +1,6 @@
 /*
  * libmad - MPEG audio decoder library
- * Copyright (C) 2000-2001 Robert Leslie
+ * Copyright (C) 2000-2003 Underbit Technologies, Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: frame.h,v 1.16 2001/10/17 19:13:41 rob Exp $
+ * $Id: frame.h,v 1.19 2003/05/27 22:40:36 rob Exp $
  */
 
 # ifndef LIBMAD_FRAME_H
@@ -42,7 +42,8 @@ enum mad_mode {
 enum mad_emphasis {
   MAD_EMPHASIS_NONE	  = 0,		/* no emphasis */
   MAD_EMPHASIS_50_15_US	  = 1,		/* 50/15 microseconds emphasis */
-  MAD_EMPHASIS_CCITT_J_17 = 3		/* CCITT J.17 emphasis */
+  MAD_EMPHASIS_CCITT_J_17 = 3,		/* CCITT J.17 emphasis */
+  MAD_EMPHASIS_RESERVED   = 2		/* unknown emphasis */
 };
 
 struct mad_header {

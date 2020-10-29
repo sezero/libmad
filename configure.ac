@@ -1,7 +1,7 @@
 dnl -*- m4 -*-
 dnl
 dnl libmad - MPEG audio decoder library
-dnl Copyright (C) 2000-2001 Robert Leslie
+dnl Copyright (C) 2000-2003 Underbit Technologies, Inc.
 dnl
 dnl This program is free software; you can redistribute it and/or modify
 dnl it under the terms of the GNU General Public License as published by
@@ -17,14 +17,18 @@ dnl You should have received a copy of the GNU General Public License
 dnl along with this program; if not, write to the Free Software
 dnl Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 dnl
-AC_REVISION([$Id: configure.in,v 1.36 2001/11/03 19:15:07 rob Exp $])dnl
+AC_REVISION([$Id: configure.ac,v 1.7 2003/06/05 02:27:07 rob Exp $])dnl
 
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT(decoder.h)
-AM_INIT_AUTOMAKE(libmad, 0.14.2b)
+AC_INIT([MPEG Audio Decoder], [0.15.0b], [support@underbit.com], [libmad])
+AC_PREREQ(2.53)
 
-AM_CONFIG_HEADER(config.h)
+AC_CONFIG_SRCDIR([decoder.h])
+
+AM_INIT_AUTOMAKE
+
+AM_CONFIG_HEADER([config.h])
 
 dnl System type.
 
@@ -33,12 +37,32 @@ AC_CANONICAL_HOST
 dnl Checks for programs.
 
 AC_PROG_CC
+AM_PROG_AS
+
+if test "$GCC" = yes
+then
+    case "$host" in
+	*-*-mingw*)
+	    case "$build" in
+		*-*-cygwin*)
+		    CPPFLAGS="$CPPFLAGS -mno-cygwin"
+		    LDFLAGS="$LDFLAGS -mno-cygwin"
+		    ;;
+	    esac
+    esac
+
+dnl    case "$host" in
+dnl	*-*-cygwin* | *-*-mingw*)
+dnl	    LDFLAGS="$LDFLAGS -no-undefined -mdll"
+dnl	    ;;
+dnl    esac
+fi
 
 dnl Support for libtool.
 
-AC_DISABLE_SHARED
+dnl AC_DISABLE_SHARED
 dnl AC_LIBTOOL_WIN32_DLL
-AM_PROG_LIBTOOL
+AC_PROG_LIBTOOL
 
 AC_SUBST(LIBTOOL_DEPS)
 
@@ -50,22 +74,23 @@ optimize=""
 profile=""
 
 set -- $CFLAGS
-CFLAGS="-Wall"
+CFLAGS=""
 
 if test "$GCC" = yes
 then
-    case "$host" in
-	*-pc-cygwin)
-	    CPPFLAGS="$CPPFLAGS -mno-cygwin"
-	    LDFLAGS="$LDFLAGS -mno-cygwin"
-	    ;;
-    esac
+    CFLAGS="-Wall"
 fi
 
 while test $# -gt 0
 do
     case "$1" in
 	-Wall)
+	    if test "$GCC" = yes
+	    then
+		:
+	    else
+		CFLAGS="$CFLAGS $1"
+	    fi
 	    shift
 	    ;;
 	-g)
@@ -103,7 +128,7 @@ then
     then
 	case "$host" in
 	    i386-*)           ;;
-	    i?86-*)           arch="-m486" ;;
+	    i?86-*)           arch="-march=i486" ;;
 	    arm*-empeg-*)     arch="-march=armv4 -mtune=strongarm1100" ;;
 	    armv4*-*)         arch="-march=armv4 -mtune=strongarm" ;;
 	    powerpc-*)        ;;
@@ -141,12 +166,7 @@ then
 
 	    case "$host" in
 		arm*-*)
-		    # this may provoke bugs in gcc 2.95.2
 		    optimize="$optimize -fstrength-reduce"
-		    #
-		    # this may actually be slower but it
-		    # triggers bugs if not included
-		    optimize="$optimize -finline-functions"
 		    ;;
 		mips*-*)
 		    optimize="$optimize -fstrength-reduce"
@@ -154,6 +174,13 @@ then
 		    ;;
 		i?86-*)
 		    optimize="$optimize -fstrength-reduce"
+		    ;;
+		powerpc-apple-*)
+		    # this triggers an internal compiler error with gcc2
+		    : #optimize="$optimize -fstrength-reduce"
+
+		    # this is really only beneficial with gcc3
+		    : #optimize="$optimize -finline-functions"
 		    ;;
 		*)
 		    # this sometimes provokes bugs in gcc 2.95.2
@@ -165,8 +192,14 @@ then
 fi
 
 case "$host" in
-    mips*-agenda-*)   AC_DEFINE(HAVE_MADD16_ASM) ;;
-    mips*-luxsonor-*) AC_DEFINE(HAVE_MADD_ASM)   ;;
+    mips*-agenda-*)
+	AC_DEFINE(HAVE_MADD16_ASM, 1,
+	    [Define if your MIPS CPU supports a 2-operand MADD16 instruction.])
+	;;
+    mips*-luxsonor-*)
+	AC_DEFINE(HAVE_MADD_ASM, 1,
+	    [Define if your MIPS CPU supports a 2-operand MADD instruction.])
+	;;
 esac
 
 dnl Checks for header files.
@@ -201,18 +234,21 @@ AC_CACHE_SAVE
 
 AC_MSG_CHECKING(whether to optimize for speed or for accuracy)
 
-AC_ARG_ENABLE(speed,
-    [  --enable-speed          optimize for speed over accuracy], [
+AC_ARG_ENABLE(speed, AC_HELP_STRING([--enable-speed],
+		     [optimize for speed over accuracy]),
+[
     case "$enableval" in
 	yes)
 	    optimize_for="speed"
-	    AC_DEFINE(OPT_SPEED)
+	    AC_DEFINE(OPT_SPEED, 1,
+		[Define to optimize for speed over accuracy.])
 	    ;;
     esac
 ])
 
-AC_ARG_ENABLE(accuracy,
-    [  --enable-accuracy       optimize for accuracy over speed], [
+AC_ARG_ENABLE(accuracy, AC_HELP_STRING([--enable-accuracy],
+			[optimize for accuracy over speed]),
+[
     case "$enableval" in
 	yes)
 	    if test "$optimize_for" = "speed"
@@ -221,7 +257,8 @@ AC_ARG_ENABLE(accuracy,
 	    else
 		optimize_for="accuracy"
 	    fi
-	    AC_DEFINE(OPT_ACCURACY)
+	    AC_DEFINE(OPT_ACCURACY, 1,
+		[Define to optimize for accuracy over speed.])
 	    ;;
     esac
 ])
@@ -234,10 +271,10 @@ then
 fi
 
 AC_MSG_CHECKING(for architecture-specific fixed-point math routines)
-AC_ARG_ENABLE(fpm,
-    [  --enable-fpm=ARCH       use ARCH-specific fixed-point math routines
-                          (one of: intel, arm, mips, sparc, ppc,
-                           64bit, default)], [
+AC_ARG_ENABLE(fpm, AC_HELP_STRING([--enable-fpm=ARCH],
+		   [use ARCH-specific fixed-point math routines
+		    (one of: intel, arm, mips, sparc, ppc, 64bit, default)]),
+[
     case "$enableval" in
 	yes)                             ;;
 	no|default|approx) FPM="DEFAULT" ;;
@@ -276,15 +313,19 @@ fi
 
 FPM="-DFPM_$FPM"
 
-AC_ARG_ENABLE(sso,
-    [  --enable-sso            use subband synthesis optimization], [
+AC_ARG_ENABLE(sso, AC_HELP_STRING([--enable-sso],
+		   [use subband synthesis optimization]),
+[
     case "$enableval" in
-	yes) AC_DEFINE(OPT_SSO) ;;
+	yes)
+	    AC_DEFINE(OPT_SSO, 1,
+    [Define to enable a fast subband synthesis approximation optimization.])
+	    ;;
     esac
 ])
 
-AC_ARG_ENABLE(aso,
-    [  --disable-aso           disable architecture-specific optimizations],
+AC_ARG_ENABLE(aso, AC_HELP_STRING([--disable-aso],
+		   [disable architecture-specific optimizations]),
     [], [enable_aso=yes])
 
 if test "$enable_aso" = yes
@@ -309,11 +350,14 @@ then
 fi
 
 AC_MSG_CHECKING(for ISO/IEC interpretation)
-AC_ARG_ENABLE(strict-iso,
-    [  --enable-strict-iso     use strict ISO/IEC interpretations], [
+AC_ARG_ENABLE(strict-iso, AC_HELP_STRING([--enable-strict-iso],
+			  [use strict ISO/IEC interpretations]),
+[
     case "$enableval" in
 	yes)
-	    AC_DEFINE(OPT_STRICT)
+	    AC_DEFINE(OPT_STRICT, 1,
+    [Define to influence a strict interpretation of the ISO/IEC standards,
+     even if this is in opposition with best accepted practices.])
 	    interpretation="strict"
 	    ;;
     esac
@@ -321,8 +365,9 @@ AC_ARG_ENABLE(strict-iso,
 AC_MSG_RESULT(${interpretation-best accepted practices})
 
 AC_MSG_CHECKING(whether to enable profiling)
-AC_ARG_ENABLE(profiling,
-    [  --enable-profiling      generate profiling code], [
+AC_ARG_ENABLE(profiling, AC_HELP_STRING([--enable-profiling],
+			 [generate profiling code]),
+[
     case "$enableval" in
 	yes) profile="-pg" ;;
     esac
@@ -330,12 +375,15 @@ AC_ARG_ENABLE(profiling,
 AC_MSG_RESULT(${enable_profiling-no})
 
 AC_MSG_CHECKING(whether to enable debugging)
-AC_ARG_ENABLE(debugging,
-    [  --enable-debugging      enable diagnostic debugging support
-  --disable-debugging     do not enable debugging and use more optimization], [
+AC_ARG_ENABLE(debugging, AC_HELP_STRING([--enable-debugging],
+			 [enable diagnostic debugging support])
+AC_HELP_STRING([--disable-debugging],
+	       [do not enable debugging and use more optimization]),
+[
     case "$enableval" in
 	yes)
-	    AC_DEFINE(DEBUG)
+	    AC_DEFINE(DEBUG, 1,
+		[Define to enable diagnostic debugging support.])
 	    optimize=""
 	    ;;
 	no)
@@ -344,7 +392,8 @@ AC_ARG_ENABLE(debugging,
     AC_MSG_ERROR(--enable-profiling and --disable-debugging are incompatible)
 	    fi
 
-	    AC_DEFINE(NDEBUG)
+	    AC_DEFINE(NDEBUG, 1,
+		[Define to disable debugging assertions.])
 	    debug=""
 	    if test "$GCC" = yes
 	    then
@@ -356,10 +405,14 @@ AC_ARG_ENABLE(debugging,
 AC_MSG_RESULT(${enable_debugging-default})
 
 AC_MSG_CHECKING(whether to enable experimental code)
-AC_ARG_ENABLE(experimental,
-    [  --enable-experimental   enable experimental code], [
+AC_ARG_ENABLE(experimental, AC_HELP_STRING([--enable-experimental],
+			    [enable experimental code]),
+[
     case "$enableval" in
-	yes) AC_DEFINE(EXPERIMENTAL) ;;
+	yes)
+	    AC_DEFINE(EXPERIMENTAL, 1,
+		[Define to enable experimental code.])
+	    ;;
     esac
 ])
 AC_MSG_RESULT(${enable_experimental-no})
@@ -371,7 +424,9 @@ test -n "$debug"    && CFLAGS="$CFLAGS $debug"
 test -n "$optimize" && CFLAGS="$CFLAGS $optimize"
 test -n "$profile"  && CFLAGS="$CFLAGS $profile" LDFLAGS="$LDFLAGS $profile"
 
-LTLIBOBJS=`echo "$LIBOBJS" | sed -e 's/\.o/.lo/g'`
-AC_SUBST(LTLIBOBJS)
+dnl LTLIBOBJS=`echo "$LIBOBJS" | sed -e 's/\.o/.lo/g'`
+dnl AC_SUBST(LTLIBOBJS)
 
-AC_OUTPUT(Makefile)
+AC_CONFIG_FILES([Makefile msvc++/Makefile  \
+	libmad.list])
+AC_OUTPUT

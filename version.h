@@ -1,6 +1,6 @@
 /*
  * libmad - MPEG audio decoder library
- * Copyright (C) 2000-2001 Robert Leslie
+ * Copyright (C) 2000-2003 Underbit Technologies, Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,15 +16,15 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: version.h,v 1.20 2001/10/27 22:47:32 rob Exp $
+ * $Id: version.h,v 1.24 2003/05/27 22:40:37 rob Exp $
  */
 
 # ifndef LIBMAD_VERSION_H
 # define LIBMAD_VERSION_H
 
 # define MAD_VERSION_MAJOR	0
-# define MAD_VERSION_MINOR	14
-# define MAD_VERSION_PATCH	2
+# define MAD_VERSION_MINOR	15
+# define MAD_VERSION_PATCH	0
 # define MAD_VERSION_EXTRA	" (beta)"
 
 # define MAD_VERSION_STRINGIZE(str)	#str
@@ -35,9 +35,9 @@
 				MAD_VERSION_STRING(MAD_VERSION_PATCH)  \
 				MAD_VERSION_EXTRA
 
-# define MAD_PUBLISHYEAR	"2000-2001"
-# define MAD_AUTHOR		"Robert Leslie"
-# define MAD_EMAIL		"rob@mars.org"
+# define MAD_PUBLISHYEAR	"2000-2003"
+# define MAD_AUTHOR		"Underbit Technologies, Inc."
+# define MAD_EMAIL		"info@underbit.com"
 
 extern char const mad_version[];
 extern char const mad_copyright[];

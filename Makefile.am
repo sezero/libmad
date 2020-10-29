@@ -1,6 +1,6 @@
 ##
 ## libmad - MPEG audio decoder library
-## Copyright (C) 2000-2001 Robert Leslie
+## Copyright (C) 2000-2003 Underbit Technologies, Inc.
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -16,38 +16,45 @@
 ## along with this program; if not, write to the Free Software
 ## Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ##
-## $Id: Makefile.am,v 1.13 2001/11/09 04:55:25 rob Exp $
+## $Id: Makefile.am,v 1.21 2003/06/01 09:50:32 rob Exp $
 ##
 
 ## Process this file with automake to produce Makefile.in
 
+SUBDIRS =		
+DIST_SUBDIRS =		msvc++
+
 lib_LTLIBRARIES =	libmad.la
 include_HEADERS =	mad.h
 
-EXTRA_DIST =		COPYRIGHT mad.h.sed
+EXTRA_PROGRAMS =	minimad
 
-exported_headers =  \
-	version.h fixed.h bit.h timer.h stream.h frame.h synth.h decoder.h
+minimad_SOURCES =	minimad.c
+minimad_INCLUDES =	
+minimad_LDADD =		libmad.la
 
-headers =  \
-	$(exported_headers) global.h layer12.h layer3.h huffman.h
+EXTRA_DIST =		mad.h.sed  \
+			CHANGES COPYRIGHT CREDITS README TODO VERSION
 
-data_includes =  \
-	D.dat imdct_s.dat qc_table.dat rq_table.dat sf_table.dat
+exported_headers =	version.h fixed.h bit.h timer.h stream.h frame.h  \
+			synth.h decoder.h
 
-libmad_la_SOURCES =  \
-	version.c fixed.c bit.c timer.c stream.c frame.c synth.c decoder.c  \
-	layer12.c layer3.c huffman.c $(headers) $(data_includes)
+headers =		$(exported_headers)  \
+			global.h layer12.h layer3.h huffman.h
+
+data_includes =		D.dat imdct_s.dat qc_table.dat rq_table.dat  \
+			sf_table.dat
+
+libmad_la_SOURCES =	version.c fixed.c bit.c timer.c stream.c frame.c  \
+			synth.c decoder.c layer12.c layer3.c huffman.c  \
+			$(headers) $(data_includes)
 
 EXTRA_libmad_la_SOURCES =	imdct_l_arm.S #synth_mmx.S
 
 libmad_la_DEPENDENCIES =	@ASO_OBJS@
 libmad_la_LIBADD =		@ASO_OBJS@
 
-#CFLAGS =	-Wall @CFLAGS@ $(ARCH) $(DEBUGGER) $(OPTIMIZER) $(PROFILER)
-#LDFLAGS =	@LDFLAGS@ $(PROFILER)
-
-INCLUDES =	$(FPM) $(ASO)
+INCLUDES =		$(FPM) $(ASO)
 
 BUILT_SOURCES =		mad.h
 CLEANFILES =		mad.h
@@ -88,14 +95,13 @@ CLEANFILES =		mad.h
 ##   6. If any interfaces have been removed since the last public release,
 ##      then set AGE to 0.
 
-version_current =	1
+version_current =	2
 version_revision =	0
-version_age =		1
+version_age =		2
 
 version_info =		$(version_current):$(version_revision):$(version_age)
 
-libmad_la_LDFLAGS =		-version-info $(version_info)
-##				-release $(VERSION)
+libmad_la_LDFLAGS =	-version-info $(version_info)
 
 mad.h: config.status config.h Makefile.am  \
 		$(srcdir)/COPYRIGHT $(srcdir)/mad.h.sed $(exported_headers)
@@ -115,11 +121,11 @@ mad.h: config.status config.h Makefile.am  \
 		config.h; echo;  \
 	for header in $(exported_headers); do  \
 		echo;  \
-		sed -n -f $(srcdir)/mad.h.sed $(srcdir)/$$header; echo;  \
-	done;  \
+		sed -n -f $(srcdir)/mad.h.sed $(srcdir)/$$header;  \
+	done; echo;  \
 	echo "# ifdef __cplusplus";  \
 	echo '}';  \
-	echo "# endif") | cat -s >$@
+	echo "# endif") >$@
 
 libtool: $(LIBTOOL_DEPS)
 	$(SHELL) ./config.status --recheck
@@ -127,6 +133,8 @@ libtool: $(LIBTOOL_DEPS)
 .c.s:
 	$(COMPILE) -S $<
 
-again: clean all
+again:
+	$(MAKE) clean
+	$(MAKE)
 
 .PHONY: again
