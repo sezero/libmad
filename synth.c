@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: synth.c,v 1.2 2000/03/05 07:31:55 rob Exp $
+ * $Id: synth.c,v 1.3 2000/03/05 18:11:34 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
@@ -470,8 +470,7 @@ void mad_synthesis(struct mad_frame *frame, struct mad_synth *synth)
   ns  = MAD_NUMSAMPLES(frame);
 
   for (s = 0; s < ns; ++s) {
-    unsigned int slot;
-    unsigned int even, odd;
+    unsigned int slot, even, odd;
     unsigned int even14, even12, even10, even8, even6, even4, even2;
     unsigned int odd14, odd12, odd10, odd8, odd6, odd4, odd2;
 

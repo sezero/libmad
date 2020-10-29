@@ -19,7 +19,7 @@
  * Id: version.h,v 1.8 2000/03/05 07:31:55 rob Exp 
  */
 
-# define MAD_VERSION		"0.9.5 (beta)"
+# define MAD_VERSION		"0.9.6 (beta)"
 # define MAD_PUBLISHYEAR	"2000"
 # define MAD_AUTHOR		"Robert Leslie"
 # define MAD_EMAIL		"rob@mars.org"
@@ -465,10 +465,10 @@ void mad_frame_mute(struct mad_frame *);
 
 struct mad_synth {
   fixed_t filterout[2][2][256];		/* polyphase filterbank outputs */
-  unsigned int slot;			/* current processing slot */
+  unsigned short slot;			/* current processing slot */
 
+  unsigned short pcmlen;		/* number of PCM samples */
   fixed_t pcmout[2][1152];		/* PCM sample outputs */
-  unsigned int pcmlen;			/* number of PCM samples */
 };
 
 void mad_synth_init(struct mad_synth *);

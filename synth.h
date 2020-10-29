@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: synth.h,v 1.2 2000/03/05 07:31:55 rob Exp $
+ * $Id: synth.h,v 1.3 2000/03/05 18:11:34 rob Exp $
  */
 
 # ifndef SYNTH_H
@@ -26,10 +26,10 @@
 
 struct mad_synth {
   fixed_t filterout[2][2][256];		/* polyphase filterbank outputs */
-  unsigned int slot;			/* current processing slot */
+  unsigned short slot;			/* current processing slot */
 
+  unsigned short pcmlen;		/* number of PCM samples */
   fixed_t pcmout[2][1152];		/* PCM sample outputs */
-  unsigned int pcmlen;			/* number of PCM samples */
 };
 
 void mad_synth_init(struct mad_synth *);

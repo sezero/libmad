@@ -16,10 +16,10 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: version.h,v 1.8 2000/03/05 07:31:55 rob Exp $
+ * $Id: version.h,v 1.9 2000/03/05 18:11:34 rob Exp $
  */
 
-# define MAD_VERSION		"0.9.5 (beta)"
+# define MAD_VERSION		"0.9.6 (beta)"
 # define MAD_PUBLISHYEAR	"2000"
 # define MAD_AUTHOR		"Robert Leslie"
 # define MAD_EMAIL		"rob@mars.org"
