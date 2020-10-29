@@ -2,21 +2,35 @@
  mad - MPEG audio decoder
  Copyright (C) 2000 Robert Leslie
 
- $Id: CHANGES,v 1.27 2000/09/14 18:05:29 rob Exp $
+ $Id: CHANGES,v 1.29 2000/09/17 18:49:32 rob Exp $
 
 ===============================================================================
 
+Version 0.11.3 (beta)
+
+  * Added new --enable-speed and --enable-accuracy options for `configure'
+    to automatically select appropriate SSO/ASO options, et al.
+
+  * Modified subband synthesis to use multiply-accumulate optimization
+    (if available) for better speed and/or accuracy.
+
+  * Incorporated Andre McCurdy's changes for further rounding optimizations
+    in the rest of his code.
+
+  * Joint stereo mode now shows LR indicator during playback.
+
 Version 0.11.2 (beta)
 
-  * Incorporated Nicolas Pitre's ARM and parameterized scaling changes.
+  * Incorporated Nicolas Pitre's ARM assembly and parameterized scaling
+    changes.
 
   * Incorporated Andre McCurdy's ARM assembly optimization (used only if
-    --enable-aso is given to configure to enable architecture-specific
+    --enable-aso is given to `configure' to enable architecture-specific
     optimizations.)
 
   * Reduced FPM_INTEL assembly to two instructions.
 
-  * Fixed problems with certain FPM modes in synth.c.
+  * Fixed accuracy problems with certain FPM modes in synth.c.
 
   * Improved the accuracy of FPM_APPROX.
 
@@ -48,7 +62,7 @@ Version 0.11.2 (beta)
 
   * Minor code clean-up.
 
-  * Added experimental rules for generating libmad.so shared library.
+  * Added experimental rules for generating a libmad.so shared library.
 
 Version 0.11.1 (beta)
 

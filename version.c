@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: version.c,v 1.1 2000/08/02 05:48:52 rob Exp $
+ * $Id: version.c,v 1.2 2000/09/17 18:52:18 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
@@ -46,3 +46,41 @@ char const mad_license[] =
 
   "If you would like to negotiate alternate licensing terms, you may do\n"
   "so by contacting the author: " MAD_AUTHOR " <" MAD_EMAIL ">\n";
+
+char const mad_build[] =
+# if defined(FPM_64BIT)
+  "FPM_64BIT "
+# elif defined(FPM_APPROX)
+  "FPM_APPROX "
+# elif defined(FPM_INTEL)
+  "FPM_INTEL "
+# elif defined(FPM_ARM)
+  "FPM_ARM "
+# elif defined(FPM_MIPS)
+  "FPM_MIPS "
+# elif defined(FPM_SPARC)
+  "FPM_SPARC "
+# endif
+# if defined(OPT_SPEED)
+  "OPT_SPEED "
+# elif defined(OPT_ACCURACY)
+  "OPT_ACCURACY "
+# endif
+# if defined(OPT_SSO)
+  "OPT_SSO "
+# endif
+# if defined(OPT_ISKLUGE)
+  "OPT_ISKLUGE "
+# endif
+# if defined(ASO_IMDCT)
+  "ASO_IMDCT "
+# endif
+# if defined(EXPERIMENTAL)
+  "EXPERIMENTAL "
+# endif
+# if defined(DEBUG)
+  "DEBUG "
+# elif defined(NDEBUG)
+  "NDEBUG "
+# endif
+;

@@ -16,13 +16,19 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: acconfig.h,v 1.2 2000/09/13 05:22:24 rob Exp $
+ * $Id: acconfig.h,v 1.3 2000/09/17 18:52:18 rob Exp $
  */
 
 /*****************************************************************************
  * Definitions selected automatically by `configure'                         *
  *****************************************************************************/
 @TOP@
+
+/* Define to optimize for speed over accuracy. */
+#undef OPT_SPEED
+
+/* Define to optimize for accuracy over speed. */
+#undef OPT_ACCURACY
 
 /* Define to enable a Layer III intensity stereo kluge. */
 #undef OPT_ISKLUGE
@@ -33,6 +39,9 @@
 /* Define to enable diagnostic debugging support. */
 #undef DEBUG
 
+/* Define to disable debugging assertions. */
+#undef NDEBUG
+
 /* Define to enable experimental code. */
 #undef EXPERIMENTAL
 
@@ -41,4 +50,16 @@
 /*****************************************************************************
  * End of automatically configured definitions                               *
  *****************************************************************************/
+
+# if defined(OPT_SPEED) && defined(OPT_ACCURACY)
+#  error "cannot optimize for both speed and accuracy"
+# endif
+
+# if defined(OPT_SPEED) && !defined(OPT_SSO) && !defined(FPM_ARM)
+#  define OPT_SSO 1
+# endif
+
+# if defined(DEBUG) && defined(NDEBUG)
+#  error "cannot define both DEBUG and NDEBUG"
+# endif
 

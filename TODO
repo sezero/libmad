@@ -8,6 +8,7 @@ libmad:
   - function documentation, general docs
   - finish async API
   - 64-bit synthesis optimization?
+  - enable creation of shared library
 
 libmad Layer I:
   - check frame length sanity

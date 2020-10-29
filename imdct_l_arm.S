@@ -1,5 +1,5 @@
 /*****************************************************************************
-* Copyright (C) 2000 Andre McCurdy
+* Copyright (C) 2000 Andre McCurdy  <armccurdy@yahoo.co.uk>
 *
 * This program is free software. you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -17,16 +17,24 @@
 *
 *****************************************************************************
 *
-* arm_III_imdct_l.S
-*
 * Notes:
+*
 *
 *****************************************************************************
 *
-* $Id: imdct_l_arm.S,v 1.3 2000/09/14 15:53:52 rob Exp $
+* $Id: imdct_l_arm.S,v 1.5 2000/09/17 18:52:18 rob Exp $
 *
-* 2000/09/09:	Nicolas Pitre <nico@cam.org>
-*	- optimized rounding + scaling operations.
+* 2000/09/15:  Robert Leslie <rob@mars.org>
+*   - Fixed a small bug where flags were changed before a conditional branch.
+*
+* 2000/09/15:  Andre McCurdy <armccurdy@yahoo.co.uk>
+*   - Applied Nicolas Pitre's rounding optimisation in all remaining places.
+*
+* 2000/09/09:  Nicolas Pitre <nico@cam.org>
+*   - Optimized rounding + scaling operations.
+*
+* 2000/08/09:  Andre McCurdy <armccurdy@yahoo.co.uk>
+*   - Original created.
 *
 ****************************************************************************/
 
@@ -188,7 +196,7 @@
 
     .text
     .align
-    
+
     .global III_imdct_l
 
 III_imdct_l:
@@ -443,7 +451,7 @@ III_imdct_l:
     smlal   r2, r3, r11, r8             @ r2..r3 += (X7  *  K02)
     smlal   r2, r3,  lr, r7             @ r2..r3 += (X16 * -K15) = ct02
 
-    rsbs    r6, r4, #0                  @
+    rsbs    r6, r4, #0
     rsc     r7, r5, #0                  @ r6..r7 = -ct07
 
     stmdb   sp!, { r2 - r7 }            @ stack -ct07_h, -ct07_l, ct07_h, ct07_l, ct02_h, ct02_l
@@ -494,7 +502,6 @@ loop:
 
     adds    r3, r3, r6                  @ add low words
     adc     r4, r4, r7                  @ add high words, with carry
-
     movs    r3, r3, lsr #28
     adc     r3, r3, r4, lsl #4          @ r3 = bits[59..28] of r3..r4
 
@@ -527,10 +534,8 @@ loop:
     @ r12    = .
     @ lr     = .
 
-    cmp     r11, #BLOCK_MODE_STOP           @ setup flags
-
-    rsb     r10, r0, #0                     @ r10 = -x0 (DONT change flags !!)
-
+    cmp     r11, #BLOCK_MODE_STOP       @ setup flags
+    rsb     r10, r0, #0                 @ r10 = -x0 (DONT change flags !!)
     beq     stop_block_x0_to_x17
 
 
@@ -538,16 +543,16 @@ loop:
 
 normal_block_x0_to_x17:
 
-    ldr     r12, =WL9                       @ r12 = window_l[9]
+    ldr     r12, =WL9                   @ r12 = window_l[9]
 
-    rsb     r0,  r9, #0                     @ r0  = -x8
-    rsb     r9,  r2, #0                     @ r9  = -x1
-    rsb     r2,  r8, #0                     @ r2  = -x7
-    rsb     r8,  r3, #0                     @ r8  = -x2
-    rsb     r3,  r7, #0                     @ r3  = -x6
-    rsb     r7,  r4, #0                     @ r7  = -x3
-    rsb     r4,  r6, #0                     @ r4  = -x5
-    rsb     r6,  r5, #0                     @ r6  = -x4
+    rsb     r0,  r9, #0                 @ r0  = -x8
+    rsb     r9,  r2, #0                 @ r9  = -x1
+    rsb     r2,  r8, #0                 @ r2  = -x7
+    rsb     r8,  r3, #0                 @ r8  = -x2
+    rsb     r3,  r7, #0                 @ r3  = -x6
+    rsb     r7,  r4, #0                 @ r7  = -x3
+    rsb     r4,  r6, #0                 @ r4  = -x5
+    rsb     r6,  r5, #0                 @ r6  = -x4
 
     @ r0     = -x8
     @ r1     = &x[9]
@@ -566,48 +571,48 @@ normal_block_x0_to_x17:
 
     smull   r5, lr, r12, r0             @ r5..lr = (window_l[9]  * (x[9]  == -x[8]))
     ldr     r12, =WL10                  @ r12 = window_l[10]
-    mov     r5, r5, lsr #28
-    orr     r0,  r5, lr, lsl #4         @ r0 = bits[59..28] of windowed x9
+    movs    r5, r5, lsr #28
+    adc     r0, r5, lr, lsl #4          @ r0 = bits[59..28] of windowed x9
 
     smull   r5, lr, r12, r2             @ r5..lr = (window_l[10] * (x[10] == -x[7]))
     ldr     r12, =WL11                  @ r12 = window_l[11]
-    mov     r5, r5, lsr #28
-    orr     r2,  r5, lr, lsl #4         @ r2 = bits[59..28] of windowed x10
+    movs    r5, r5, lsr #28
+    adc     r2, r5, lr, lsl #4          @ r2 = bits[59..28] of windowed x10
 
     smull   r5, lr, r12, r3             @ r5..lr = (window_l[11] * (x[11] == -x[6]))
     ldr     r12, =WL12                  @ r12 = window_l[12]
-    mov     r5, r5, lsr #28
-    orr     r3,  r5, lr, lsl #4         @ r3 = bits[59..28] of windowed x11
+    movs    r5, r5, lsr #28
+    adc     r3, r5, lr, lsl #4          @ r3 = bits[59..28] of windowed x11
 
     smull   r5, lr, r12, r4             @ r5..lr = (window_l[12] * (x[12] == -x[5]))
     ldr     r12, =WL13                  @ r12 = window_l[13]
-    mov     r5, r5, lsr #28
-    orr     r4,  r5, lr, lsl #4         @ r4 = bits[59..28] of windowed x12
+    movs    r5, r5, lsr #28
+    adc     r4, r5, lr, lsl #4          @ r4 = bits[59..28] of windowed x12
 
     smull   r5, lr, r12, r6             @ r5..lr = (window_l[13] * (x[13] == -x[4]))
     ldr     r12, =WL14                  @ r12 = window_l[14]
-    mov     r5, r5, lsr #28
-    orr     r6,  r5, lr, lsl #4         @ r6 = bits[59..28] of windowed x13
+    movs    r5, r5, lsr #28
+    adc     r6, r5, lr, lsl #4          @ r6 = bits[59..28] of windowed x13
 
     smull   r5, lr, r12, r7             @ r5..lr = (window_l[14] * (x[14] == -x[3]))
     ldr     r12, =WL15                  @ r12 = window_l[15]
-    mov     r5, r5, lsr #28
-    orr     r7,  r5, lr, lsl #4         @ r7 = bits[59..28] of windowed x14
+    movs    r5, r5, lsr #28
+    adc     r7, r5, lr, lsl #4          @ r7 = bits[59..28] of windowed x14
 
     smull   r5, lr, r12, r8             @ r5..lr = (window_l[15] * (x[15] == -x[2]))
     ldr     r12, =WL16                  @ r12 = window_l[16]
-    mov     r5, r5, lsr #28
-    orr     r8,  r5, lr, lsl #4         @ r8 = bits[59..28] of windowed x15
+    movs    r5, r5, lsr #28
+    adc     r8, r5, lr, lsl #4          @ r8 = bits[59..28] of windowed x15
 
     smull   r5, lr, r12, r9             @ r5..lr = (window_l[16] * (x[16] == -x[1]))
     ldr     r12, =WL17                  @ r12 = window_l[17]
-    mov     r5, r5, lsr #28
-    orr     r9,  r5, lr, lsl #4         @ r9 = bits[59..28] of windowed x16
+    movs    r5, r5, lsr #28
+    adc     r9, r5, lr, lsl #4          @ r9 = bits[59..28] of windowed x16
 
     smull   r5, lr, r12, r10            @ r5..lr = (window_l[17] * (x[17] == -x[0]))
     ldr     r12, =WL0                   @ r12 = window_l[0]
-    mov     r5, r5, lsr #28
-    orr     r10,  r5, lr, lsl #4        @ r10 = bits[59..28] of windowed x17
+    movs    r5, r5, lsr #28
+    adc     r10, r5, lr, lsl #4         @ r10 = bits[59..28] of windowed x17
 
 
     stmia   r1,  { r0, r2 - r4, r6 - r10 } @ store windowed x[9] .. x[17]
@@ -616,56 +621,51 @@ normal_block_x0_to_x17:
 
     smull   r10, lr, r12, r0            @ r10..lr = (window_l[0] * x[0])
     ldr     r12, =WL1                   @ r12 = window_l[1]
-    mov     r10, r10, lsr #28
-    orr     r0,  r10, lr, lsl #4        @ r0 = bits[59..28] of windowed x0
+    movs    r10, r10, lsr #28
+    adc     r0, r10, lr, lsl #4         @ r0 = bits[59..28] of windowed x0
 
     smull   r10, lr, r12, r2            @ r10..lr = (window_l[1] * x[1])
     ldr     r12, =WL2                   @ r12 = window_l[2]
-    mov     r10, r10, lsr #28
-    orr     r2,  r10, lr, lsl #4        @ r2 = bits[59..28] of windowed x1
+    movs    r10, r10, lsr #28
+    adc     r2, r10, lr, lsl #4         @ r2 = bits[59..28] of windowed x1
 
     smull   r10, lr, r12, r3            @ r10..lr = (window_l[2] * x[2])
     ldr     r12, =WL3                   @ r12 = window_l[3]
-    mov     r10, r10, lsr #28
-    orr     r3,  r10, lr, lsl #4        @ r3 = bits[59..28] of windowed x2
+    movs    r10, r10, lsr #28
+    adc     r3, r10, lr, lsl #4         @ r3 = bits[59..28] of windowed x2
 
     smull   r10, lr, r12, r4            @ r10..lr = (window_l[3] * x[3])
     ldr     r12, =WL4                   @ r12 = window_l[4]
-    mov     r10, r10, lsr #28
-    orr     r4,  r10, lr, lsl #4        @ r4 = bits[59..28] of windowed x3
+    movs    r10, r10, lsr #28
+    adc     r4, r10, lr, lsl #4         @ r4 = bits[59..28] of windowed x3
 
     smull   r10, lr, r12, r5            @ r10..lr = (window_l[4] * x[4])
     ldr     r12, =WL5                   @ r12 = window_l[5]
-    mov     r10, r10, lsr #28
-    orr     r5,  r10, lr, lsl #4        @ r5 = bits[59..28] of windowed x4
+    movs    r10, r10, lsr #28
+    adc     r5, r10, lr, lsl #4         @ r5 = bits[59..28] of windowed x4
 
     smull   r10, lr, r12, r6            @ r10..lr = (window_l[5] * x[5])
     ldr     r12, =WL6                   @ r12 = window_l[6]
-    mov     r10, r10, lsr #28
-    orr     r6,  r10, lr, lsl #4        @ r6 = bits[59..28] of windowed x5
+    movs    r10, r10, lsr #28
+    adc     r6, r10, lr, lsl #4         @ r6 = bits[59..28] of windowed x5
 
     smull   r10, lr, r12, r7            @ r10..lr = (window_l[6] * x[6])
     ldr     r12, =WL7                   @ r12 = window_l[7]
-    mov     r10, r10, lsr #28
-    orr     r7,  r10, lr, lsl #4        @ r7 = bits[59..28] of windowed x6
+    movs    r10, r10, lsr #28
+    adc     r7, r10, lr, lsl #4         @ r7 = bits[59..28] of windowed x6
 
     smull   r10, lr, r12, r8            @ r10..lr = (window_l[7] * x[7])
     ldr     r12, =WL8                   @ r12 = window_l[8]
-    mov     r10, r10, lsr #28
-    orr     r8,  r10, lr, lsl #4        @ r8 = bits[59..28] of windowed x7
+    movs    r10, r10, lsr #28
+    adc     r8, r10, lr, lsl #4         @ r8 = bits[59..28] of windowed x7
 
     smull   r10, lr, r12, r9            @ r10..lr = (window_l[8] * x[8])
-
-
-    cmp     r11, #BLOCK_MODE_START      @ stick compare in here to fill multiply delay slot
-                                        @ (the next 3 instructions had better not change the flags...)
-
-    mov     r10, r10, lsr #28
-    orr     r9,  r10, lr, lsl #4        @ r9 = bits[59..28] of windowed x8
+    movs    r10, r10, lsr #28
+    adc     r9, r10, lr, lsl #4         @ r9 = bits[59..28] of windowed x8
 
     stmia   r1, { r0, r2 - r9 }         @ store windowed x[0] .. x[8]
 
-
+    cmp     r11, #BLOCK_MODE_START
     beq     start_block_x18_to_x35
 
 
@@ -697,49 +697,49 @@ normal_block_x18_to_x35:
     @ lr     = .
 
     smull   r5, lr, r12, r6             @ r5..lr = (window_l[4] * (x[22] == x[31]))
-    mov     r5, r5, lsr #28
-    orr     r5, r5, lr, lsl #4          @ r5 = bits[59..28] of windowed x31
+    movs    r5, r5, lsr #28
+    adc     r5, r5, lr, lsl #4          @ r5 = bits[59..28] of windowed x31
 
     smull   r6, lr, r11, r4             @ r5..lr = (window_l[3] * (x[21] == x[32]))
     ldr     r12, =WL5                   @ r12    =  window_l[5]
-    mov     r6, r6, lsr #28
-    orr     r6, r6, lr, lsl #4          @ r6 = bits[59..28] of windowed x32
+    movs    r6, r6, lsr #28
+    adc     r6, r6, lr, lsl #4          @ r6 = bits[59..28] of windowed x32
 
     smull   r4, lr, r12, r7             @ r4..lr = (window_l[5] * (x[23] == x[30]))
     ldr     r11, =WL1                   @ r11    =  window_l[1]
     ldr     r12, =WL2                   @ r12    =  window_l[2]
-    mov     r4, r4, lsr #28
-    orr     r4, r4, lr, lsl #4          @ r4 = bits[59..28] of windowed x30
+    movs    r4, r4, lsr #28
+    adc     r4, r4, lr, lsl #4          @ r4 = bits[59..28] of windowed x30
 
     smull   r7, lr, r12, r3             @ r7..lr = (window_l[2] * (x[20] == x[33]))
     ldr     r12, =WL6                   @ r12 = window_l[6]
-    mov     r7, r7, lsr #28
-    orr     r7, r7, lr, lsl #4          @ r7 = bits[59..28] of windowed x33
+    movs    r7, r7, lsr #28
+    adc     r7, r7, lr, lsl #4          @ r7 = bits[59..28] of windowed x33
 
     smull   r3, lr, r12, r8             @ r3..lr = (window_l[6] * (x[24] == x[29]))
-    mov     r3, r3, lsr #28
-    orr     r3, r3, lr, lsl #4          @ r3 = bits[59..28] of windowed x29
+    movs    r3, r3, lsr #28
+    adc     r3, r3, lr, lsl #4          @ r3 = bits[59..28] of windowed x29
 
     smull   r8, lr, r11, r2             @ r7..lr = (window_l[1] * (x[19] == x[34]))
     ldr     r12, =WL7                   @ r12    =  window_l[7]
     ldr     r11, =WL8                   @ r11    =  window_l[8]
-    mov     r8, r8, lsr #28
-    orr     r8, r8, lr, lsl #4          @ r8 = bits[59..28] of windowed x34
+    movs    r8, r8, lsr #28
+    adc     r8, r8, lr, lsl #4          @ r8 = bits[59..28] of windowed x34
 
     smull   r2, lr, r12, r9             @ r7..lr = (window_l[7] * (x[25] == x[28]))
     ldr     r12, =WL0                   @ r12 = window_l[0]
-    mov     r2, r2, lsr #28
-    orr     r2, r2, lr, lsl #4          @ r2 = bits[59..28] of windowed x28
+    movs    r2, r2, lsr #28
+    adc     r2, r2, lr, lsl #4          @ r2 = bits[59..28] of windowed x28
 
     smull   r9, lr, r12, r0             @ r3..lr = (window_l[0] * (x[18] == x[35]))
-    mov     r9, r9, lsr #28
-    orr     r9, r9, lr, lsl #4          @ r9 = bits[59..28] of windowed x35
+    movs    r9, r9, lsr #28
+    adc     r9, r9, lr, lsl #4          @ r9 = bits[59..28] of windowed x35
 
     smull   r0, lr, r11, r10            @ r7..lr = (window_l[8] * (x[26] == x[27]))
     ldr     r11, =WL16                  @ r11    =  window_l[16]
     ldr     r12, =WL17                  @ r12    =  window_l[17]
-    mov     r0, r0, lsr #28
-    orr     r0, r0, lr, lsl #4          @ r0 = bits[59..28] of windowed x27
+    movs    r0, r0, lsr #28
+    adc     r0, r0, lr, lsl #4          @ r0 = bits[59..28] of windowed x27
 
 
     stmia   r1,  { r0, r2 - r9 }        @ store windowed x[27] .. x[35]
@@ -747,48 +747,48 @@ normal_block_x18_to_x35:
 
 
     smull   r10, lr, r12, r0            @ r10..lr = (window_l[17] * x[18])
-    mov     r10, r10, lsr #28
-    orr     r0,  r10, lr, lsl #4        @ r0 = bits[59..28] of windowed x0
+    movs    r10, r10, lsr #28
+    adc     r0,  r10, lr, lsl #4        @ r0 = bits[59..28] of windowed x0
 
     smull   r10, lr, r11, r2            @ r10..lr = (window_l[16] * x[19])
     ldr     r11, =WL14                  @ r11     =  window_l[14]
     ldr     r12, =WL15                  @ r12     =  window_l[15]
-    mov     r10, r10, lsr #28
-    orr     r2,  r10, lr, lsl #4        @ r2 = bits[59..28] of windowed x1
+    movs    r10, r10, lsr #28
+    adc     r2,  r10, lr, lsl #4        @ r2 = bits[59..28] of windowed x1
 
     smull   r10, lr, r12, r3            @ r10..lr = (window_l[15] * x[20])
-    mov     r10, r10, lsr #28
-    orr     r3,  r10, lr, lsl #4        @ r3 = bits[59..28] of windowed x2
+    movs    r10, r10, lsr #28
+    adc     r3,  r10, lr, lsl #4        @ r3 = bits[59..28] of windowed x2
 
     smull   r10, lr, r11, r4            @ r10..lr = (window_l[14] * x[21])
     ldr     r11, =WL12                  @ r11     =  window_l[12]
     ldr     r12, =WL13                  @ r12     =  window_l[13]
-    mov     r10, r10, lsr #28
-    orr     r4,  r10, lr, lsl #4        @ r4 = bits[59..28] of windowed x3
+    movs    r10, r10, lsr #28
+    adc     r4,  r10, lr, lsl #4        @ r4 = bits[59..28] of windowed x3
 
     smull   r10, lr, r12, r5            @ r10..lr = (window_l[13] * x[22])
-    mov     r10, r10, lsr #28
-    orr     r5,  r10, lr, lsl #4        @ r5 = bits[59..28] of windowed x4
+    movs    r10, r10, lsr #28
+    adc     r5,  r10, lr, lsl #4        @ r5 = bits[59..28] of windowed x4
 
     smull   r10, lr, r11, r6            @ r10..lr = (window_l[12] * x[23])
     ldr     r11, =WL10                  @ r12 = window_l[10]
     ldr     r12, =WL11                  @ r12 = window_l[11]
-    mov     r10, r10, lsr #28
-    orr     r6,  r10, lr, lsl #4        @ r6 = bits[59..28] of windowed x5
+    movs    r10, r10, lsr #28
+    adc     r6,  r10, lr, lsl #4        @ r6 = bits[59..28] of windowed x5
 
     smull   r10, lr, r12, r7            @ r10..lr = (window_l[11] * x[24])
-    mov     r10, r10, lsr #28
-    orr     r7,  r10, lr, lsl #4        @ r7 = bits[59..28] of windowed x6
+    movs    r10, r10, lsr #28
+    adc     r7,  r10, lr, lsl #4        @ r7 = bits[59..28] of windowed x6
 
     smull   r10, lr, r11, r8            @ r10..lr = (window_l[10] * x[25])
     ldr     r12, =WL9                   @ r12 = window_l[9]
-    mov     r10, r10, lsr #28
-    orr     r8,  r10, lr, lsl #4        @ r8 = bits[59..28] of windowed x7
+    movs    r10, r10, lsr #28
+    adc     r8,  r10, lr, lsl #4        @ r8 = bits[59..28] of windowed x7
 
     smull   r10, lr, r12, r9            @ r10..lr = (window_l[9] * x[26])
 
-    mov     r10, r10, lsr #28
-    orr     r9,  r10, lr, lsl #4        @ r9 = bits[59..28] of windowed x8
+    movs    r10, r10, lsr #28
+    adc     r9,  r10, lr, lsl #4        @ r9 = bits[59..28] of windowed x8
 
     stmia   r1, { r0, r2 - r9 }         @ store windowed x[18] .. x[26]
 
@@ -818,21 +818,21 @@ stop_block_x0_to_x17:
     @ r11    =  window mode: (0 == normal), (1 == start block), (3 == stop block)
     @ r12    =  .
     @ lr     =  .
-    
-    rsb     r0, r6, #0                      @ r0 = -x5
-    rsb     r6, r2, #0                      @ r6 = -x1
-    rsb     r2, r5, #0                      @ r2 = -x4
-    rsb     r5, r3, #0                      @ r5 = -x2
-    rsb     r3, r4, #0                      @ r3 = -x3
 
-    add     r1, r1, #(3*4)                  @ r1 = &x[12]
-    stmia   r1, { r0, r2, r3, r5, r6, r10 } @ store unchanged x[12] .. x[17]
-        
-    ldr     r0, =WL1                        @ r0 = window_l[1]  == window_s[0]
+    rsb     r0, r6, #0                  @ r0 = -x5
+    rsb     r6, r2, #0                  @ r6 = -x1
+    rsb     r2, r5, #0                  @ r2 = -x4
+    rsb     r5, r3, #0                  @ r5 = -x2
+    rsb     r3, r4, #0                  @ r3 = -x3
 
-    rsb     r10, r9, #0                     @ r10 = -x8
-    rsb     r12, r8, #0                     @ r12 = -x7
-    rsb     lr,  r7, #0                     @ lr  = -x6
+    add     r1, r1, #(3*4)                      @ r1 = &x[12]
+    stmia   r1, { r0, r2, r3, r5, r6, r10 }     @ store unchanged x[12] .. x[17]
+
+    ldr     r0, =WL1                    @ r0 = window_l[1]  == window_s[0]
+
+    rsb     r10, r9, #0                 @ r10 = -x8
+    rsb     r12, r8, #0                 @ r12 = -x7
+    rsb     lr,  r7, #0                 @ lr  = -x6
 
     @ r0     =  WL1
     @ r1     = &x[12]
@@ -849,48 +849,48 @@ stop_block_x0_to_x17:
     @ r12    = -x7
     @ lr     = -x6
 
-    smull   r5, r6, r0, r7                  @ r5..r6 = (window_l[1] * x[6])
-    ldr     r2, =WL4                        @ r2     =  window_l[4] == window_s[1]
-    mov     r5, r5, lsr #28                 @
-    orr     r7, r5, r6, lsl #4              @ r7 = bits[59..28] of windowed x6
+    smull   r5, r6, r0, r7              @ r5..r6 = (window_l[1] * x[6])
+    ldr     r2, =WL4                    @ r2     =  window_l[4] == window_s[1]
+    movs    r5, r5, lsr #28
+    adc     r7, r5, r6, lsl #4          @ r7 = bits[59..28] of windowed x6
 
-    smull   r5, r6, r2, r8                  @ r5..r6 = (window_l[4] * x[7])
-    ldr     r3, =WL7                        @ r3     =  window_l[7] == window_s[2]
-    mov     r5, r5, lsr #28                 @
-    orr     r8, r5, r6, lsl #4              @ r8 = bits[59..28] of windowed x7
+    smull   r5, r6, r2, r8              @ r5..r6 = (window_l[4] * x[7])
+    ldr     r3, =WL7                    @ r3     =  window_l[7] == window_s[2]
+    movs    r5, r5, lsr #28
+    adc     r8, r5, r6, lsl #4          @ r8 = bits[59..28] of windowed x7
 
-    smull   r5, r6, r3, r9                  @ r5..r6 = (window_l[7] * x[8])
-    ldr     r4, =WL10                       @ r4     =  window_l[10] == window_s[3]
-    mov     r5, r5, lsr #28                 @
-    orr     r9, r5, r6, lsl #4              @ r9 = bits[59..28] of windowed x8
+    smull   r5, r6, r3, r9              @ r5..r6 = (window_l[7] * x[8])
+    ldr     r4, =WL10                   @ r4     =  window_l[10] == window_s[3]
+    movs    r5, r5, lsr #28
+    adc     r9, r5, r6, lsl #4          @ r9 = bits[59..28] of windowed x8
 
-    smull   r5, r6, r4, r10                 @ r5..r6 = (window_l[10] * (x[9] == -x[8]))
-    ldr     r0, =WL13                       @ r0     =  window_l[13] == window_s[4]
-    mov     r5, r5, lsr #28                 @
-    orr     r10, r5, r6, lsl #4             @ r10 = bits[59..28] of windowed x9
+    smull   r5, r6, r4, r10             @ r5..r6 = (window_l[10] * (x[9] == -x[8]))
+    ldr     r0, =WL13                   @ r0     =  window_l[13] == window_s[4]
+    movs    r5, r5, lsr #28
+    adc     r10, r5, r6, lsl #4         @ r10 = bits[59..28] of windowed x9
 
-    smull   r5, r6, r0, r12                 @ r5..r6 = (window_l[13] * (x[10] == -x[7]))
-    ldr     r2, =WL16                       @ r2     =  window_l[16] == window_s[5]
-    mov     r5, r5, lsr #28                 @
-    orr     r12, r5, r6, lsl #4             @ r10 = bits[59..28] of windowed x9
+    smull   r5, r6, r0, r12             @ r5..r6 = (window_l[13] * (x[10] == -x[7]))
+    ldr     r2, =WL16                   @ r2     =  window_l[16] == window_s[5]
+    movs    r5, r5, lsr #28
+    adc     r12, r5, r6, lsl #4         @ r10 = bits[59..28] of windowed x9
 
-    smull   r5, r6, r2, lr                  @ r5..r6 = (window_l[16] * (x[11] == -x[6]))
+    smull   r5, r6, r2, lr              @ r5..r6 = (window_l[16] * (x[11] == -x[6]))
 
     ldr     r0, =0x00
 
-    mov     r5, r5, lsr #28                 @
-    orr     lr, r5, r6, lsl #4              @ r10 = bits[59..28] of windowed x9
+    movs    r5, r5, lsr #28
+    adc     lr, r5, r6, lsl #4          @ r10 = bits[59..28] of windowed x9
 
-    stmdb   r1!, { r7 - r10, r12, lr }      @ store windowed x[6] .. x[11]
-    
+    stmdb   r1!, { r7 - r10, r12, lr }  @ store windowed x[6] .. x[11]
+
     ldr     r5, =0x00
     ldr     r6, =0x00
     ldr     r2, =0x00
     ldr     r3, =0x00
     ldr     r4, =0x00
-    
-    stmdb   r1!, { r0, r2 - r6 }            @ store windowed x[0] .. x[5]
-    
+
+    stmdb   r1!, { r0, r2 - r6 }        @ store windowed x[0] .. x[5]
+
     b       normal_block_x18_to_x35
 
 
@@ -899,12 +899,12 @@ stop_block_x0_to_x17:
 
 start_block_x18_to_x35:
 
-    ldr     r4, =WL1                        @ r0 = window_l[1]  == window_s[0]
+    ldr     r4, =WL1                    @ r0 = window_l[1]  == window_s[0]
 
-    add     r1, r1, #(24*4)                 @ r1 = &x[24]
+    add     r1, r1, #(24*4)             @ r1 = &x[24]
 
-    ldmia   r1, { r0, r2, r3 }              @ load 3 words from x24, dont update pointer
-    
+    ldmia   r1, { r0, r2, r3 }          @ load 3 words from x24, dont update pointer
+
     @ r0     = x24
     @ r1     = &x[24]
     @ r2     = x25
@@ -920,37 +920,37 @@ start_block_x18_to_x35:
     @ r12    = .
     @ lr     = .
 
-    ldr     r5, =WL4                        @ r5 = window_l[4] == window_s[1]
-    
-    smull   r10, r11, r4, r0                @ r10..r11 = (window_l[1] * (x[24] == x[29]))
-    ldr     r6, =WL7                        @ r6       =  window_l[7]  == window_s[2]
-    mov     r10, r10, lsr #28               @
-    orr     lr, r10, r11, lsl #4            @ lr = bits[59..28] of windowed x29
+    ldr     r5, =WL4                    @ r5 = window_l[4] == window_s[1]
 
-    smull   r10, r11, r5, r2                @ r10..r11 = (window_l[4] * (x[25] == x[28]))
-    ldr     r7, =WL10                       @ r7       =  window_l[10] == window_s[3]
-    mov     r10, r10, lsr #28               @
-    orr     r12, r10, r11, lsl #4           @ r12 = bits[59..28] of windowed x28
+    smull   r10, r11, r4, r0            @ r10..r11 = (window_l[1] * (x[24] == x[29]))
+    ldr     r6, =WL7                    @ r6       =  window_l[7]  == window_s[2]
+    movs    r10, r10, lsr #28
+    adc     lr, r10, r11, lsl #4        @ lr = bits[59..28] of windowed x29
 
-    smull   r10, r11, r6, r3                @ r10..r11 = (window_l[7] * (x[26] == x[27]))
-    ldr     r8, =WL13                       @ r8       =  window_l[13] == window_s[4]
-    mov     r10, r10, lsr #28               @
-    orr     r4, r10, r11, lsl #4            @ r4 = bits[59..28] of windowed x27
+    smull   r10, r11, r5, r2            @ r10..r11 = (window_l[4] * (x[25] == x[28]))
+    ldr     r7, =WL10                   @ r7       =  window_l[10] == window_s[3]
+    movs    r10, r10, lsr #28
+    adc     r12, r10, r11, lsl #4       @ r12 = bits[59..28] of windowed x28
 
-    smull   r10, r11, r7, r3                @ r10..r11 = (window_l[10] * x[26])
-    ldr     r9, =WL16                       @ r9       =  window_l[16] == window_s[5]
-    mov     r10, r10, lsr #28               @
-    orr     r3, r10, r11, lsl #4            @ r3 = bits[59..28] of windowed x26
+    smull   r10, r11, r6, r3            @ r10..r11 = (window_l[7] * (x[26] == x[27]))
+    ldr     r8, =WL13                   @ r8       =  window_l[13] == window_s[4]
+    movs    r10, r10, lsr #28
+    adc     r4, r10, r11, lsl #4        @ r4 = bits[59..28] of windowed x27
 
-    smull   r10, r11, r8, r2                @ r10..r11 = (window_l[13] * x[25])
+    smull   r10, r11, r7, r3            @ r10..r11 = (window_l[10] * x[26])
+    ldr     r9, =WL16                   @ r9       =  window_l[16] == window_s[5]
+    movs    r10, r10, lsr #28
+    adc     r3, r10, r11, lsl #4        @ r3 = bits[59..28] of windowed x26
+
+    smull   r10, r11, r8, r2            @ r10..r11 = (window_l[13] * x[25])
     ldr     r5, =0x00
-    mov     r10, r10, lsr #28               @
-    orr     r2, r10, r11, lsl #4            @ r2 = bits[59..28] of windowed x25
+    movs    r10, r10, lsr #28
+    adc     r2, r10, r11, lsl #4        @ r2 = bits[59..28] of windowed x25
 
-    smull   r10, r11, r9, r0                @ r10..r11 = (window_l[16] * x[24])
+    smull   r10, r11, r9, r0            @ r10..r11 = (window_l[16] * x[24])
     ldr     r6, =0x00
-    mov     r10, r10, lsr #28               @
-    orr     r0, r10, r11, lsl #4            @ r0 = bits[59..28] of windowed x24
+    movs    r10, r10, lsr #28
+    adc     r0, r10, r11, lsl #4        @ r0 = bits[59..28] of windowed x24
 
     stmia   r1!, { r0, r2, r3, r4, r12, lr }    @ store windowed x[24] .. x[29]
 
@@ -958,8 +958,8 @@ start_block_x18_to_x35:
     ldr     r8, =0x00
     ldr     r9, =0x00
     ldr     r10, =0x00
-    
-    stmia   r1!, { r5 - r10 }               @ store windowed x[30] .. x[35]
+
+    stmia   r1!, { r5 - r10 }           @ store windowed x[30] .. x[35]
 
     @----
     @ NB there are 2 possible exits from this function - this is only one of them
@@ -989,5 +989,4 @@ imdct36_long_karray:
     @----
     @END
     @----
-
 

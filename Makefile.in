@@ -16,7 +16,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
-# $Id: Makefile.in,v 1.7 2000/09/14 19:05:22 rob Exp $
+# $Id: Makefile.in,v 1.9 2000/09/17 22:43:58 rob Exp $
 #
 
 ## OPTIONS ####################################################################
@@ -97,7 +97,7 @@ INCMAD =	mad.h
 
 LIBMADSO =	libmad.so
 SOMAJOR =	0.11
-SOMINOR =	2b
+SOMINOR =	3b
 
 MISCOBJS =	@MISCOBJS@
 
@@ -169,13 +169,15 @@ $(LIBMAD): $(MADOBJS)
 
 $(INCMAD): Makefile mad.h.sed ../COPYRIGHT $(MADINCLUDES)
 	(sed -e '1s|.*|/*|' -e '1b' -e '$$s|.*| */|' -e '$$b'  \
-		-e 's/^.*/ *&/' ../COPYRIGHT;  \
-	echo;  \
+		-e 's/^.*/ *&/' ../COPYRIGHT; echo;  \
 	if [ ".$(FPM)" != "." ]; then  \
 		echo ".$(FPM)" | sed -e 's|^\.-D|# define |'; echo;  \
 	fi;  \
-	grep SIZEOF config.h | sed -e 's/^#d/# d/'; echo;  \
-	sed -n -f mad.h.sed $(MADINCLUDES)) >$@
+	sed -ne 's/^# *define  *OPT_\(SPEED\|ACCURACY\).*/# define OPT_\1/p'  \
+		config.h; echo;  \
+	sed -ne 's/^# *define  *\(SIZEOF_.*\)/# define \1/p'  \
+		config.h; echo;  \
+	sed -n -f mad.h.sed $(MADINCLUDES)) | cat -s >$@
 
 $(LIBMADSO): $(LIBMADSO).$(SOMAJOR)
 	rm -f $(LIBMADSO)

@@ -16,11 +16,11 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: stream.h,v 1.2 2000/09/11 05:29:31 rob Exp $
+ * $Id: stream.h,v 1.3 2000/09/17 18:52:18 rob Exp $
  */
 
-# ifndef STREAM_H
-# define STREAM_H
+# ifndef MAD_STREAM_H
+# define MAD_STREAM_H
 
 # include "bit.h"
 

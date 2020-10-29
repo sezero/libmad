@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: layer3.c,v 1.7 2000/09/14 17:33:47 rob Exp $
+ * $Id: layer3.c,v 1.9 2000/09/17 03:21:12 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
@@ -229,6 +229,7 @@ mad_fixed_t const imdct_s[12][6] = {
 # include "imdct_s.dat"
 };
 
+# if !defined(ASO_IMDCT)
 /*
  * windowing coefficients for long blocks
  * derived from section 2.4.3.4.10.3 of ISO/IEC 11172-3
@@ -258,6 +259,7 @@ mad_fixed_t const window_l[36] = {
   0x04cfb0e2L /* 0.300705800 */, 0x03768962L /* 0.216439614 */,
   0x0216a2a2L /* 0.130526192 */, 0x00b2aa3eL /* 0.043619387 */,
 };
+# endif  /* ASO_IMDCT */
 
 /*
  * windowing coefficients for short blocks
@@ -1152,7 +1154,7 @@ int III_stereo(mad_fixed_t xr[2][576], struct granule *granule,
 	  xr[1][i] = mad_f_mul(left, is_table[6 - is_pos]);
 	}
       }
-# ifdef OPT_ISKLUGE
+# if defined(OPT_ISKLUGE)
       else if (ms_stereo) {
 	mad_fixed_t m, s;
 
@@ -1190,7 +1192,7 @@ int III_stereo(mad_fixed_t xr[2][576], struct granule *granule,
 	xr[0][i] = mad_f_mul(m + s, root_table[1]); /* l = (m + s) / sqrt(2) */
 	xr[1][i] = mad_f_mul(m - s, root_table[1]); /* r = (m - s) / sqrt(2) */
       }
-# endif
+# endif  /* OPT_ISKLUGE */
     }
   }
 
@@ -1694,35 +1696,19 @@ int III_decode(struct mad_bitptr *ptr, struct mad_frame *frame,
       /* subbands 2-31 */
 
       if (channel->block_type != 2) {
-	/* long blocks sfb 8-20 (6-20 LSF) */
-	for (sfb = sfbcut; sfb < 21; ++sfb) {
+	/* long blocks sfb 8-21 (6-21 LSF) */
+	for (sfb = sfbcut; sfb < 22; ++sfb) {
 	  for (f = sfwidth_l[sfreqi][sfb]; f--; ++i)
 	    xr[ch][i] = is[i] ? III_requantize_l(is[i], sfb, channel) : 0;
 	}
-
-	/* long block sfb 21 */
-	while (i < 576) {
-	  xr[ch][i] = is[i] ? III_requantize_l(is[i], 21, channel) : 0;
-	  ++i;
-	}
       }
       else {  /* channel->block_type == 2 */
-	unsigned int n;
-
-	/* short blocks sfb 3-11 */
-	for (sfb = 3; sfb < 12; ++sfb) {
+	/* short blocks sfb 3-12 */
+	for (sfb = 3; sfb < 13; ++sfb) {
 	  for (w = 0; w < 3; ++w) {
 	    for (f = sfwidth_s[sfreqi][sfb]; f--; ++i)
 	      xr[ch][i] = is[i] ? III_requantize_s(is[i], sfb, w, channel) : 0;
 	  }
-	}
-
-	n = (576 - i) / 3;
-
-	/* short block sfb 12 */
-	for (w = 0; w < 3; ++w) {
-	  for (f = n; f--; ++i)
-	    xr[ch][i] = is[i] ? III_requantize_s(is[i], 12, w, channel) : 0;
 	}
       }
     }
@@ -1769,7 +1755,7 @@ int III_decode(struct mad_bitptr *ptr, struct mad_frame *frame,
 
       III_freqinver(sample, 1);
 
-      /* subbands 2-31 */
+      /* (nonzero) subbands 2-31 */
 
       i = 576;
       while (i > 36 && xr[ch][i - 1] == 0)
@@ -1798,7 +1784,7 @@ int III_decode(struct mad_bitptr *ptr, struct mad_frame *frame,
 	}
       }
 
-      /* (zero subbands) */
+      /* (zero) remaining subbands */
 
       for (sb = sblimit; sb < 32; ++sb) {
 	III_overlap_z((*frame->overlap)[ch][sb], sample, sb);

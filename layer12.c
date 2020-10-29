@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: layer12.c,v 1.2 2000/09/11 03:52:19 rob Exp $
+ * $Id: layer12.c,v 1.3 2000/09/17 18:52:18 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
@@ -306,7 +306,7 @@ void II_samples(struct mad_bitptr *ptr,
 
     /* s'' = C * (s''' + D) */
 
-    output[s] = mad_f_mul(quantclass->C, requantized + quantclass->D);
+    output[s] = mad_f_mul(requantized + quantclass->D, quantclass->C);
 
     /* s' = factor * s'' */
     /* (to be performed by caller) */

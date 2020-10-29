@@ -2,15 +2,16 @@
  mad - MPEG audio decoder
  Copyright (C) 2000 Robert Leslie
 
- $Id: README,v 1.30 2000/09/14 17:33:27 rob Exp $
+ $Id: README,v 1.32 2000/09/17 18:49:32 rob Exp $
 
 ===============================================================================
 
 INTRODUCTION
 
-  MAD is an MPEG audio decoder. It currently supports MPEG 1 as well as the
-  MPEG 2 extension to Lower Sampling Frequencies. All three audio layers
-  (Layer I, Layer II, and Layer III aka MP3) are fully implemented.
+  MAD is a high-quality MPEG audio decoder. It currently supports MPEG 1 as
+  well as the MPEG 2 extension to Lower Sampling Frequencies. All three
+  audio layers (Layer I, Layer II, and Layer III aka MP3) are fully
+  implemented.
 
   MAD does not yet support MPEG 2 multichannel audio (although it should be
   backward compatible with such streams), nor does it support the so-called
@@ -140,9 +141,12 @@ Audio Quality
   defined by the standard.
 
   The special and optional configuration called the Subband Synthesis
-  Optimization (SSO) improves the performance of MAD at the cost of some
+  Optimization (SSO) may improve the performance of MAD at the cost of some
   accuracy. Using SSO, MAD becomes a limited accuracy ISO/IEC 11172-3 audio
   decoder as defined by the standard.
+
+  MAD can alternatively be configured to produce output with greater
+  accuracy than the default, at the expense of performance.
 
   MAD produces output samples with a precision greater than 24 bits. Because
   most output formats use fewer bits, typically 16, `madplay' implements a
@@ -173,21 +177,14 @@ INSTALLATION
   you a `Makefile' and a `config.h' in the both the `libmad' and top-level
   subdirectories. See the file `INSTALL' for generic instructions.
 
-  The specific options you may want to give configure are:
+  The specific options you may want to give `configure' are:
 
-      --enable-fpm=<arch>       use the <arch>-specific version of the
-                                fixed-point math assembly routines
-                                (current options are: intel, arm, mips,
-                                sparc; also allowed are: 64bit, approx)
+      --enable-speed            optimize for speed over accuracy
+
+      --enable-accuracy         optimize for accuracy over speed
 
       --disable-is-kluge        don't use the intensity stereo kluge
                                 described above
-
-      --enable-sso              use the subband synthesis optimization for
-                                better speed, despite reduced accuracy
-
-      --enable-aso              use architecture-specific optimizations,
-                                if available
 
       --disable-debugging       do not compile with debugging support, and
                                 use more optimizations
@@ -196,6 +193,24 @@ INSTALLATION
                                 `mad.h' header file in addition to the
                                 user programs
 
+  Note that you need not specify one of --enable-speed or --enable-accuracy;
+  in its default configuration, MAD is optimized for both. You should only
+  use one of these options to compromise speed or accuracy for the other.
+
+  It is not normally necessary to use the following options, but you may
+  fine-tune the configuration with them if desired:
+
+      --enable-fpm=<arch>       use the <arch>-specific version of the
+                                fixed-point math assembly routines
+                                (current options are: intel, arm, mips,
+                                sparc; also allowed are: 64bit, approx)
+
+      --enable-sso              use the subband synthesis optimization,
+                                despite reduced accuracy
+
+      --enable-aso              use architecture-specific optimizations,
+                                if available
+
   By default an appropriate fixed-point assembly routine will be selected
   for the configured host type, if it can be determined. Thus if you are
   cross-compiling for another architecture, you should be sure either to
@@ -203,7 +218,7 @@ INSTALLATION
 
   If an appropriate assembly routine cannot be determined, the fast
   approximation version will be used. In this case, use of an alternate
-  --enable-fpm is highly recommended.
+  --enable-fpm is recommended.
 
 ==============================================================================
 

@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: frame.c,v 1.4 2000/09/10 22:04:44 rob Exp $
+ * $Id: frame.c,v 1.5 2000/09/15 22:45:20 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
@@ -310,7 +310,6 @@ int mad_frame_header(struct mad_frame *frame, struct mad_stream *stream,
       /* check that a valid frame header follows this frame */
 
       ptr = stream->next_frame;
-
       if (!(ptr[0] == 0xff && (ptr[1] & 0xf0) == 0xf0)) {
 	ptr = stream->next_frame = stream->this_frame + 1;
 	goto sync;

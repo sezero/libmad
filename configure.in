@@ -17,7 +17,7 @@ dnl You should have received a copy of the GNU General Public License
 dnl along with this program; if not, write to the Free Software
 dnl Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 dnl
-AC_REVISION([$Id: configure.in,v 1.5 2000/09/14 17:33:47 rob Exp $])dnl
+AC_REVISION([$Id: configure.in,v 1.6 2000/09/17 18:52:18 rob Exp $])dnl
 
 dnl Process this file with autoconf to produce a configure script.
 
@@ -97,15 +97,45 @@ dnl Other options.
 
 FPM=""
 ASO=""
-OPT=""
-
 MISCOBJS=""
 
 AC_SUBST(FPM)
 AC_SUBST(ASO)
-AC_SUBST(OPT)
-
 AC_SUBST(MISCOBJS)
+
+dnl handle --enable and --disable options
+
+opt=""
+
+AC_ARG_ENABLE(speed,
+    [  --enable-speed          optimize for speed over accuracy], [
+    case "$enableval" in
+	yes)
+	    AC_DEFINE(OPT_SPEED)
+	    opt="speed"
+	    ;;
+    esac
+])
+
+AC_ARG_ENABLE(accuracy,
+    [  --enable-accuracy       optimize for accuracy over speed], [
+    case "$enableval" in
+	yes)
+	    if test "$opt" = "speed"
+	    then
+		AC_MSG_ERROR(cannot optimize for both speed and accuracy)
+	    fi
+
+	    AC_DEFINE(OPT_ACCURACY)
+	    opt="accuracy"
+	    ;;
+    esac
+])
+
+if test "$opt" = "speed"
+then
+    AC_MSG_WARN(optimizing for speed over accuracy)
+fi
 
 AC_ARG_ENABLE(fpm,
     [  --enable-fpm=<arch>     use <arch>-specific fixed-point math routines
@@ -157,8 +187,6 @@ then
     FPM="-DFPM_$FPM"
 fi
 
-dnl handle --enable and --disable options
-
 AC_ARG_ENABLE(is-kluge,
     [  --disable-is-kluge      do not use Layer III intensity stereo kluge], [
     case "$enableval" in
@@ -184,8 +212,15 @@ AC_ARG_ENABLE(aso,
 		arm-*)
 		    ASO="-DASO_IMDCT"
 		    MISCOBJS="imdct_l_arm.o"
-		;;
+		    ;;
 	    esac
+	    ;;
+    esac
+], [
+    case "$host" in
+	arm-*)
+	    ASO="-DASO_IMDCT"
+	    MISCOBJS="imdct_l_arm.o"
 	    ;;
     esac
 ])
@@ -210,6 +245,7 @@ AC_ARG_ENABLE(debugging,
     AC_MSG_ERROR(--enable-profiling and --disable-debugging are incompatible)
 	    fi
 
+	    AC_DEFINE(NDEBUG)
 	    DEBUGGER=""
 	    if test "$GCC" = yes
 	    then

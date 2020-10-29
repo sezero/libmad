@@ -16,11 +16,11 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: bit.h,v 1.1 2000/08/02 05:48:51 rob Exp $
+ * $Id: bit.h,v 1.2 2000/09/17 18:52:18 rob Exp $
  */
 
-# ifndef BIT_H
-# define BIT_H
+# ifndef MAD_BIT_H
+# define MAD_BIT_H
 
 struct mad_bitptr {
   unsigned char const *byte;

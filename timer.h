@@ -16,11 +16,11 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: timer.h,v 1.2 2000/09/07 22:29:39 rob Exp $
+ * $Id: timer.h,v 1.3 2000/09/17 18:52:18 rob Exp $
  */
 
-# ifndef TIMER_H
-# define TIMER_H
+# ifndef MAD_TIMER_H
+# define MAD_TIMER_H
 
 struct mad_timer {
   unsigned long seconds;		/* whole seconds */

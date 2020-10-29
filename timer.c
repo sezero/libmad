@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: timer.c,v 1.2 2000/09/07 22:29:38 rob Exp $
+ * $Id: timer.c,v 1.3 2000/09/15 22:45:20 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
@@ -80,6 +80,10 @@ void mad_timer_str(struct mad_timer const *timer,
   case MAD_TIMER_SECONDS:
     sprintf(dest, format, seconds, tenths);
     break;
+
+  default:
+    /* unsupported resolution */
+    *dest = 0;
   }
 }
 
@@ -104,5 +108,6 @@ unsigned long mad_timer_count(struct mad_timer const *timer, int units)
     return timer->seconds * 1000 + timer->parts36750 /   37;
   }
 
+  /* unsupported units */
   return 0;
 }

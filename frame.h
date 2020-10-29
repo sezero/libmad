@@ -16,11 +16,11 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: frame.h,v 1.2 2000/09/11 03:52:19 rob Exp $
+ * $Id: frame.h,v 1.3 2000/09/17 18:52:18 rob Exp $
  */
 
-# ifndef FRAME_H
-# define FRAME_H
+# ifndef MAD_FRAME_H
+# define MAD_FRAME_H
 
 # include "fixed.h"
 # include "timer.h"

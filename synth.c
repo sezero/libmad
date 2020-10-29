@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: synth.c,v 1.5 2000/09/14 15:53:52 rob Exp $
+ * $Id: synth.c,v 1.7 2000/09/17 18:52:18 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
@@ -424,25 +424,29 @@ void dct32(mad_fixed_t const in[32], mad_fixed_t lo[16], mad_fixed_t hi[16])
    */
 }
 
+# undef SHIFT
+
 /* third and fourth SSO shift (or 12-bit D[] shift compensation without SSO) */
 
-# undef SHIFT
 # if defined(OPT_SSO)
+#  undef  MAD_F_HAVEMLA
 #  define MUL(x, y)		((x) * ((y) >> 2))
 #  define SHIFT(x)		((x) >> 2)
 # elif defined(MAD_F_SCALEBITS)
 #  undef  MAD_F_SCALEBITS
 #  define MAD_F_SCALEBITS	(MAD_F_FRACBITS - 12)
+#  define MLA(hi, lo, x, y)	mad_f_mla(&(hi), &(lo), (x), (y))
 #  define MUL(x, y)		mad_f_mul((x), (y))
 #  define SHIFT(x)		(x)
 # else
+#  define MLA(hi, lo, x, y)	mad_f_mla(&(hi), &(lo), (x), (y) << 12)
 #  define MUL(x, y)		mad_f_mul((x), (y) << 12)
 #  define SHIFT(x)		(x)
 # endif
 
 /*
  * NAME:	synth->frame()
- * DESCRIPTION:	perform synthesis of frame subband samples
+ * DESCRIPTION:	perform PCM synthesis of frame subband samples
  */
 void mad_synth_frame(struct mad_synth *synth, struct mad_frame const *frame)
 {
@@ -504,6 +508,38 @@ void mad_synth_frame(struct mad_synth *synth, struct mad_frame const *frame)
 
       Dptr = D[0];
 
+# if defined(MAD_F_HAVEMLA)
+      {
+	mad_fixed64hi_t hi;
+	mad_fixed64lo_t lo;
+
+	hi = lo = 0;
+
+	MLA(hi, lo, evenp[0],    Dptr[even]);
+	MLA(hi, lo, evenp[32],   Dptr[even14]);
+	MLA(hi, lo, evenp[64],   Dptr[even12]);
+	MLA(hi, lo, evenp[96],   Dptr[even10]);
+	MLA(hi, lo, evenp[128],  Dptr[even8]);
+	MLA(hi, lo, evenp[160],  Dptr[even6]);
+	MLA(hi, lo, evenp[192],  Dptr[even4]);
+	MLA(hi, lo, evenp[224],  Dptr[even2]);
+
+	sum1 = mad_f_scale64(hi, lo);
+
+	hi = lo = 0;
+
+	MLA(hi, lo, even2p[0],   Dptr[odd]);
+	MLA(hi, lo, even2p[32],  Dptr[odd14]);
+	MLA(hi, lo, even2p[64],  Dptr[odd12]);
+	MLA(hi, lo, even2p[96],  Dptr[odd10]);
+	MLA(hi, lo, even2p[128], Dptr[odd8]);
+	MLA(hi, lo, even2p[160], Dptr[odd6]);
+	MLA(hi, lo, even2p[192], Dptr[odd4]);
+	MLA(hi, lo, even2p[224], Dptr[odd2]);
+
+	sum1 -= mad_f_scale64(hi, lo);
+      }
+# else
       sum1  = MUL(evenp[0],    Dptr[even]);
       sum1 += MUL(evenp[32],   Dptr[even14]);
       sum1 += MUL(evenp[64],   Dptr[even12]);
@@ -521,6 +557,7 @@ void mad_synth_frame(struct mad_synth *synth, struct mad_frame const *frame)
       sum1 -= MUL(even2p[160], Dptr[odd6]);
       sum1 -= MUL(even2p[192], Dptr[odd4]);
       sum1 -= MUL(even2p[224], Dptr[odd2]);
+# endif
 
       pcmptr[0] = SHIFT(sum1);
       ++evenp;
@@ -530,6 +567,55 @@ void mad_synth_frame(struct mad_synth *synth, struct mad_frame const *frame)
 
 	/* D[32 - sb][i] == -D[sb][15 - i] */
 
+# if defined(MAD_F_HAVEMLA)
+	{
+	  mad_fixed64hi_t hi1, hi2;
+	  mad_fixed64lo_t lo1, lo2;
+
+	  hi1 = lo1 = hi2 = lo2 = 0;
+
+	  MLA(hi1, lo1, evenp[0],   Dptr[     even]);
+	  MLA(hi2, lo2, evenp[0],   Dptr[15 - even]);
+	  MLA(hi1, lo1, evenp[32],  Dptr[     even14]);
+	  MLA(hi2, lo2, evenp[32],  Dptr[15 - even14]);
+	  MLA(hi1, lo1, evenp[64],  Dptr[     even12]);
+	  MLA(hi2, lo2, evenp[64],  Dptr[15 - even12]);
+	  MLA(hi1, lo1, evenp[96],  Dptr[     even10]);
+	  MLA(hi2, lo2, evenp[96],  Dptr[15 - even10]);
+	  MLA(hi1, lo1, evenp[128], Dptr[     even8]);
+	  MLA(hi2, lo2, evenp[128], Dptr[15 - even8]);
+	  MLA(hi1, lo1, evenp[160], Dptr[     even6]);
+	  MLA(hi2, lo2, evenp[160], Dptr[15 - even6]);
+	  MLA(hi1, lo1, evenp[192], Dptr[     even4]);
+	  MLA(hi2, lo2, evenp[192], Dptr[15 - even4]);
+	  MLA(hi1, lo1, evenp[224], Dptr[     even2]);
+	  MLA(hi2, lo2, evenp[224], Dptr[15 - even2]);
+
+	  sum1 = mad_f_scale64(hi1, lo1);
+
+	  hi1 = lo1 = 0;
+
+	  MLA(hi1, lo1, oddp[0],    Dptr[     odd]);
+	  MLA(hi2, lo2, oddp[0],    Dptr[15 - odd]);
+	  MLA(hi1, lo1, oddp[32],   Dptr[     odd14]);
+	  MLA(hi2, lo2, oddp[32],   Dptr[15 - odd14]);
+	  MLA(hi1, lo1, oddp[64],   Dptr[     odd12]);
+	  MLA(hi2, lo2, oddp[64],   Dptr[15 - odd12]);
+	  MLA(hi1, lo1, oddp[96],   Dptr[     odd10]);
+	  MLA(hi2, lo2, oddp[96],   Dptr[15 - odd10]);
+	  MLA(hi1, lo1, oddp[128],  Dptr[     odd8]);
+	  MLA(hi2, lo2, oddp[128],  Dptr[15 - odd8]);
+	  MLA(hi1, lo1, oddp[160],  Dptr[     odd6]);
+	  MLA(hi2, lo2, oddp[160],  Dptr[15 - odd6]);
+	  MLA(hi1, lo1, oddp[192],  Dptr[     odd4]);
+	  MLA(hi2, lo2, oddp[192],  Dptr[15 - odd4]);
+	  MLA(hi1, lo1, oddp[224],  Dptr[     odd2]);
+	  MLA(hi2, lo2, oddp[224],  Dptr[15 - odd2]);
+
+	  sum1 -= mad_f_scale64(hi1, lo1);
+	  sum2  = mad_f_scale64(hi2, lo2);
+	}
+# else
 	sum1  = MUL(evenp[0],   Dptr[     even]);
 	sum2  = MUL(evenp[0],   Dptr[15 - even]);
 	sum1 += MUL(evenp[32],  Dptr[     even14]);
@@ -563,6 +649,7 @@ void mad_synth_frame(struct mad_synth *synth, struct mad_frame const *frame)
 	sum2 += MUL(oddp[192],  Dptr[15 - odd4]);
 	sum1 -= MUL(oddp[224],  Dptr[     odd2]);
 	sum2 += MUL(oddp[224],  Dptr[15 - odd2]);
+# endif
 
 	pcmptr[     sb] = SHIFT(sum1);
 	pcmptr[32 - sb] = SHIFT(sum2);
@@ -572,6 +659,25 @@ void mad_synth_frame(struct mad_synth *synth, struct mad_frame const *frame)
 
       Dptr = D[16];
 
+# if defined(MAD_F_HAVEMLA)
+      {
+	mad_fixed64hi_t hi;
+	mad_fixed64lo_t lo;
+
+	hi = lo = 0;
+
+	MLA(hi, lo, oddp[0],   Dptr[odd]);
+	MLA(hi, lo, oddp[32],  Dptr[odd14]);
+	MLA(hi, lo, oddp[64],  Dptr[odd12]);
+	MLA(hi, lo, oddp[96],  Dptr[odd10]);
+	MLA(hi, lo, oddp[128], Dptr[odd8]);
+	MLA(hi, lo, oddp[160], Dptr[odd6]);
+	MLA(hi, lo, oddp[192], Dptr[odd4]);
+	MLA(hi, lo, oddp[224], Dptr[odd2]);
+
+	sum1 = mad_f_scale64(hi, lo);
+      }
+# else
       sum1  = MUL(oddp[0],   Dptr[odd]);
       sum1 += MUL(oddp[32],  Dptr[odd14]);
       sum1 += MUL(oddp[64],  Dptr[odd12]);
@@ -580,6 +686,7 @@ void mad_synth_frame(struct mad_synth *synth, struct mad_frame const *frame)
       sum1 += MUL(oddp[160], Dptr[odd6]);
       sum1 += MUL(oddp[192], Dptr[odd4]);
       sum1 += MUL(oddp[224], Dptr[odd2]);
+# endif
 
       pcmptr[16] = SHIFT(-sum1);
     }
