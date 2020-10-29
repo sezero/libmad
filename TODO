@@ -1,6 +1,6 @@
 
 libmad:
-  - more API layers (buffering, PCM samples, etc.)
+  - more API layers (buffering, PCM samples, dithering, etc.)
   - x86 performance optimization compiler flags
   - function documentation, general docs
   - finish async API
@@ -32,20 +32,20 @@ libid3tag:
 madplay:
   - auto attenuation?
   - ALSA output module
-  - 24-bit output under Win32
   - fade-out support
   - customizable gap support
   - fix start/stop time granularity
   - resampling with bandlimited interpolation
-  - output sampling rate/resolution selection
+  - output sampling rate selection
   - byte position reporting
   - better bitstream error recovery
-  - move static vars from audio_* to audio control union
   - handle emphasis
   - equalizer support
   - dynamically loaded filters
   - automatic volume adjustment filter
-  - GUI
+  - Replay Gain support
+  - handle SIGPIPE? (audio_esd)
+  - pass ID3 tag data to output modules
 
 madtime:
   - recurse directories
@@ -57,7 +57,6 @@ mad123:
 
 Winamp plug-in:
   - disable building when --enable-debugging
-  - optional error messages
   - dithering options
   - CBR length calculation optimization
   - better streaming support
@@ -68,6 +67,9 @@ Winamp plug-in:
   - better VBR seek
   - equalizer
   - estimate length/bitrate in File Info before scan
+  - optional error messages
+  - optional ignore CRC
+  - Replay Gain support
 
 General:
   - Windows ACM codec?

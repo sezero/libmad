@@ -2,7 +2,7 @@
  mad - MPEG audio decoder
  Copyright (C) 2000-2001 Robert Leslie
 
- $Id: CREDITS,v 1.23 2001/10/23 03:26:12 rob Exp $
+ $Id: CREDITS,v 1.30 2001/11/09 04:54:34 rob Exp $
 
 ===============================================================================
 
@@ -89,17 +89,33 @@ CONTRIBUTORS
         2001/01/28: libmad/layer3.c
           - Reported discrepancy in alias reduction for mixed short blocks.
 
+      Matt Parnell <mail@weatherstamp.com>
+        2001/10/28: winamp/in_mad.c
+          - Reported Winamp crash due to bad Xing VBR header.
+
+      Brett Paterson <brett@fmod.org>
+        2001/10/28: global.h, libmad/global.h, libid3tag/global.h
+          - Reported missing <assert.h> et al. under MS Embedded Visual C
+
       Sean 'Shaleh' Perry <shaleh@via.net>
         2000/04/04: libmad/fixed.h
           - Suggested use of size-dependent typedefs.
         2001/10/22: config.guess, config.sub
           - Keep up to date for proper Debian packaging.
 
-      Bertrand Petit <elrond@phoe.frmug.org>
+      Bertrand Petit <eemad@phoe.frmug.org>
         2001/10/22: player.c
           - Suggested avoidance of log10(0).
         2001/10/22: configure.in, audio_oss.c
           - Compatibility fix for FreeBSD versions 0-3.
+        2001/10/23: player.c
+          - Noted my bad fix for avoiding log10(0).
+        2001/11/05: libmad/synth.h
+          - Suggested PCM channel enumeration constants.
+        2001/11/05: libmad/stream.h
+          - Suggested MAD_ERROR_NONE enumeration constant.
+        2001/11/05: libmad/stream.c
+          - Suggested mad_stream_errorstr() function.
 
       Nicolas Pitre <nico@cam.org>
         2000/09/09: libmad/fixed.h
@@ -122,6 +138,15 @@ CONTRIBUTORS
         2001/03/15: winamp/in_mad.c
           - Suggested fix to correctly display visuals for 24- and 32-bit
             output.
+
+      Felix von Leitner <leitner@fefe.de>
+        2001/10/24: madplay.c, player.c
+          - Suggested -i (--ignore-crc) option.
+        2001/10/24: madplay.c, player.c, madtime.c
+          - Suggested conditional use of localeconv() based on results from
+            `configure'.
+        2001/10/29: audio_oss.c
+          - Suggested trying /dev/sound/dsp before /dev/dsp.
 
 ===============================================================================
 

@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: decoder.h,v 1.12 2001/10/22 19:53:16 rob Exp $
+ * $Id: decoder.h,v 1.13 2001/11/03 03:57:11 rob Exp $
  */
 
 # ifndef LIBMAD_DECODER_H
@@ -82,7 +82,8 @@ void mad_decoder_init(struct mad_decoder *, void *,
 		      enum mad_flow (*)(void *, void *, unsigned int *));
 int mad_decoder_finish(struct mad_decoder *);
 
-# define mad_decoder_options(decoder, opts)  ((decoder)->options = (opts))
+# define mad_decoder_options(decoder, opts)  \
+    ((void) ((decoder)->options = (opts)))
 
 int mad_decoder_run(struct mad_decoder *, enum mad_decoder_mode);
 int mad_decoder_message(struct mad_decoder *, void *, unsigned int *);

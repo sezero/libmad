@@ -2,9 +2,46 @@
  mad - MPEG audio decoder
  Copyright (C) 2000-2001 Robert Leslie
 
- $Id: CHANGES,v 1.61 2001/10/23 03:26:12 rob Exp $
+ $Id: CHANGES,v 1.70 2001/11/09 00:58:44 rob Exp $
 
 ===============================================================================
+
+Version 0.14.2 (beta)
+
+  * Added a new output module, audio_esd, for EsounD (Enlightened Sound
+    Daemon) support. You must have EsounD already installed before running
+    `configure'. Use -o esd:[HOSTNAME] as args to `madplay'. If --with-esd
+    is given to `configure', EsounD will be used for native audio output.
+
+  * Added a new output module, audio_cdda, for creating CD audio images.
+    Output is forced to 16-bit 44100 Hz stereo.
+
+  * Added a new output module, audio_aiff, for Audio IFF (AIFF) format
+    files.
+
+  * Changed the audio_wave module to initially write ~0 length rather than
+    0, for better compatibility when output is piped to another program.
+
+  * Changed audio_oss module to try /dev/sound/dsp before /dev/dsp.
+
+  * Added new -b (--bit-depth) option to `madplay'. Most output modules now
+    support configurable bit depths.
+
+  * Added new -i (--ignore-crc) option to `madplay'.
+
+  * Changed Cygwin builds to use MinGW; resulting Win32 executables no
+    longer have a dependency on Cygwin DLLs.
+
+  * `madplay' now supports keyboard controls under Win32.
+
+  * Made use of localeconv() conditional based on results from `configure'.
+
+  * Made use of assert() portable to systems without <assert.h>.
+
+  * Fixed my bad fix for avoiding log10(0).
+
+  * Added a new mad_stream_errorstr() API function to libmad for retrieving
+    a string description of the current error condition.
 
 Version 0.14.1 (beta)
 

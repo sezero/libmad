@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: timer.c,v 1.12 2001/10/17 19:12:21 rob Exp $
+ * $Id: timer.c,v 1.13 2001/11/01 20:27:41 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
@@ -26,7 +26,10 @@
 # include "global.h"
 
 # include <stdio.h>
-# include <assert.h>
+
+# ifdef HAVE_ASSERT_H
+#  include <assert.h>
+# endif
 
 # include "timer.h"
 

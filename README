@@ -2,7 +2,7 @@
  mad - MPEG audio decoder
  Copyright (C) 2000-2001 Robert Leslie
 
- $Id: README,v 1.46 2001/10/18 08:34:41 rob Exp $
+ $Id: README,v 1.50 2001/11/09 07:02:01 rob Exp $
 
 ===============================================================================
 
@@ -34,10 +34,10 @@ INTRODUCTION
   representation.
 
   Because MAD is a new implementation of the ISO/IEC standards, it is
-  unencumbered by the errors and copyrights of other implementations. MAD is
-  NOT a derivation of the ISO reference source or any other code.
-  Considerable effort has been expended to ensure a correct implementation,
-  even in cases where the standards are ambiguous or misleading.
+  unencumbered by the errors of other implementations. MAD is NOT a
+  derivation of the ISO reference source or any other code. Considerable
+  effort has been expended to ensure a correct implementation, even in cases
+  where the standards are ambiguous or misleading.
 
   Because MAD is distributed under the terms of the GPL, its redistribution
   is not generally restricted, so long as the terms of the GPL are followed.
@@ -56,10 +56,13 @@ ABOUT THE CODE
     - an Open Sound System interface module (for Linux, et al.)
     - a Sun audio interface module (for Solaris, NetBSD, et al.)
     - a Win32 audio interface module (for Windows 95/98/NT, et al.)
-    - a raw PCM output module
+    - a CD audio output module (*.cdr, *.cda)
+    - an Audio IFF output module (*.aif, *.aiff)
     - a WAVE file output module (*.wav)
     - a Sun/NeXT audio file output module (*.au, *.snd)
+    - a raw PCM output module
     - a hex output module (for debugging and compliance testing)
+    - an EsounD interface module
     - a null module (for timing the decoder)
 
   The code is optimized and performs very well, although specific
@@ -167,10 +170,9 @@ BUILDING AND INSTALLING
 
 Windows Platforms
 
-  The MAD library can be built under Windows using either MSVC++ or Cygwin.
-  A MSVC++ project file can be found under `msvc++/libmad'. In addition, a
-  demo project (based on madplay and complete with ID3 support) can be found
-  under `msvc++/demo'.
+  Both the MAD library and `madplay' can be built under Windows using either
+  MSVC++ or Cygwin. MSVC++ project files can be found under the `msvc++'
+  subdirectory.
 
   To build MAD or the MAD plug-in for Winamp using Cygwin, you will first
   need to install the Cygwin tools:
@@ -195,17 +197,25 @@ POSIX Platforms (including Cygwin)
       --disable-debugging       do not compile with debugging support, and
                                 use more optimizations
 
-      --enable-shared		build a shared library if possible
+      --enable-shared           build a shared library if possible
+
+      --with-esd                use EsounD (Enlightened Sound Daemon) for
+                                default `madplay' output
 
   Note that you need not specify one of --enable-speed or --enable-accuracy;
   in its default configuration, MAD is optimized for both. You should only
   use one of these options if you wish to compromise speed or accuracy for
   the other.
 
+  Support for the EsounD `madplay' output format type (esd) is enabled
+  automatically if the EsounD library (libesd) is installed, however it is
+  not made the default output format unless --with-esd is given. To disable
+  EsounD support completely, use --without-esd.
+
   It is not normally necessary to use the following options, but you may
   fine-tune the configuration with them if desired:
 
-      --enable-fpm=<arch>       use the <arch>-specific version of the
+      --enable-fpm=ARCH         use the ARCH-specific version of the
                                 fixed-point math assembly routines
                                 (current options are: intel, arm, mips,
                                 sparc, ppc; also allowed are: 64bit, approx)
@@ -222,9 +232,9 @@ POSIX Platforms (including Cygwin)
   give `configure' a host type argument or to use an explicit --enable-fpm
   option.
 
-  If an appropriate assembly routine cannot be determined, the fast
+  If an appropriate assembly routine cannot be determined, the default
   approximation version will be used. In this case, use of an alternate
-  --enable-fpm is recommended.
+  --enable-fpm is highly recommended.
 
 Experimenting and Developing
 

@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: layer3.c,v 1.34 2001/10/17 19:17:43 rob Exp $
+ * $Id: layer3.c,v 1.36 2001/11/08 23:28:02 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
@@ -27,7 +27,10 @@
 
 # include <stdlib.h>
 # include <string.h>
-# include <assert.h>
+
+# ifdef HAVE_ASSERT_H
+#  include <assert.h>
+# endif
 
 # ifdef HAVE_LIMITS_H
 #  include <limits.h>
@@ -508,7 +511,7 @@ enum mad_error III_sideinfo(struct mad_bitptr *ptr, unsigned int nch,
 			    unsigned int *priv_bitlen)
 {
   unsigned int ngr, gr, ch, i;
-  enum mad_error result = 0;
+  enum mad_error result = MAD_ERROR_NONE;
 
   *data_bitlen = 0;
   *priv_bitlen = lsf ? ((nch == 1) ? 1 : 2) : ((nch == 1) ? 5 : 3);
@@ -1264,7 +1267,7 @@ enum mad_error III_huffdecode(struct mad_bitptr *ptr, mad_fixed_t xr[576],
     xrptr += 2;
   }
 
-  return 0;
+  return MAD_ERROR_NONE;
 }
 
 # undef MASK
@@ -1527,7 +1530,7 @@ enum mad_error III_stereo(mad_fixed_t xr[2][576],
     }
   }
 
-  return 0;
+  return MAD_ERROR_NONE;
 }
 
 /*
@@ -2148,8 +2151,8 @@ void III_freqinver(mad_fixed_t sample[18][32], unsigned int sb)
  * DESCRIPTION:	decode frame main_data
  */
 static
-int III_decode(struct mad_bitptr *ptr, struct mad_frame *frame,
-		struct sideinfo *si, unsigned int nch)
+enum mad_error III_decode(struct mad_bitptr *ptr, struct mad_frame *frame,
+			  struct sideinfo *si, unsigned int nch)
 {
   struct mad_header *header = &frame->header;
   unsigned int sfreqi, ngr, gr;
@@ -2307,7 +2310,7 @@ int III_decode(struct mad_bitptr *ptr, struct mad_frame *frame,
     }
   }
 
-  return 0;
+  return MAD_ERROR_NONE;
 }
 
 /*

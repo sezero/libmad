@@ -17,12 +17,12 @@ dnl You should have received a copy of the GNU General Public License
 dnl along with this program; if not, write to the Free Software
 dnl Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 dnl
-AC_REVISION([$Id: configure.in,v 1.27 2001/10/19 23:20:56 rob Exp $])dnl
+AC_REVISION([$Id: configure.in,v 1.36 2001/11/03 19:15:07 rob Exp $])dnl
 
 dnl Process this file with autoconf to produce a configure script.
 
 AC_INIT(decoder.h)
-AM_INIT_AUTOMAKE(libmad, 0.14.1b)
+AM_INIT_AUTOMAKE(libmad, 0.14.2b)
 
 AM_CONFIG_HEADER(config.h)
 
@@ -52,6 +52,16 @@ profile=""
 set -- $CFLAGS
 CFLAGS="-Wall"
 
+if test "$GCC" = yes
+then
+    case "$host" in
+	*-pc-cygwin)
+	    CPPFLAGS="$CPPFLAGS -mno-cygwin"
+	    LDFLAGS="$LDFLAGS -mno-cygwin"
+	    ;;
+    esac
+fi
+
 while test $# -gt 0
 do
     case "$1" in
@@ -60,6 +70,9 @@ do
 	    ;;
 	-g)
 	    debug="-g"
+	    shift
+	    ;;
+	-mno-cygwin)
 	    shift
 	    ;;
 	-m*)
@@ -160,7 +173,7 @@ dnl Checks for header files.
 
 AC_HEADER_STDC
 AC_HEADER_SYS_WAIT
-AC_CHECK_HEADERS(limits.h unistd.h)
+AC_CHECK_HEADERS(assert.h limits.h unistd.h sys/types.h fcntl.h errno.h)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 
@@ -172,6 +185,10 @@ AC_CHECK_SIZEOF(int, 2)
 AC_CHECK_SIZEOF(long, 4)
 AC_CHECK_SIZEOF(long long, 8)
 
+dnl Checks for library functions.
+
+AC_CHECK_FUNCS(waitpid fcntl pipe fork)
+
 dnl Other options.
 
 AC_SUBST(FPM)
@@ -179,6 +196,8 @@ AC_SUBST(ASO)
 AC_SUBST(ASO_OBJS)
 
 dnl handle --enable and --disable options
+
+AC_CACHE_SAVE
 
 AC_MSG_CHECKING(whether to optimize for speed or for accuracy)
 
@@ -216,7 +235,7 @@ fi
 
 AC_MSG_CHECKING(for architecture-specific fixed-point math routines)
 AC_ARG_ENABLE(fpm,
-    [  --enable-fpm=<arch>     use <arch>-specific fixed-point math routines
+    [  --enable-fpm=ARCH       use ARCH-specific fixed-point math routines
                           (one of: intel, arm, mips, sparc, ppc,
                            64bit, default)], [
     case "$enableval" in

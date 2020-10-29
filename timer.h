@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: timer.h,v 1.11 2001/10/17 19:12:21 rob Exp $
+ * $Id: timer.h,v 1.12 2001/11/03 03:57:11 rob Exp $
  */
 
 # ifndef LIBMAD_TIMER_H
@@ -79,7 +79,7 @@ enum mad_units {
   MAD_UNITS_59_94_FPS	 =   -60
 };
 
-# define mad_timer_reset(timer)	(*(timer) = mad_timer_zero)
+# define mad_timer_reset(timer)	((void) (*(timer) = mad_timer_zero))
 
 int mad_timer_compare(mad_timer_t, mad_timer_t);
 

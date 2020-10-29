@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: decoder.c,v 1.15 2001/10/20 22:16:22 rob Exp $
+ * $Id: decoder.c,v 1.17 2001/11/02 09:51:06 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
@@ -25,7 +25,9 @@
 
 # include "global.h"
 
-# include <sys/types.h>
+# ifdef HAVE_SYS_TYPES_H
+#  include <sys/types.h>
+# endif
 
 # ifdef HAVE_SYS_WAIT_H
 #  include <sys/wait.h>
@@ -35,9 +37,15 @@
 #  include <unistd.h>
 # endif
 
-# include <fcntl.h>
+# ifdef HAVE_FCNTL_H
+#  include <fcntl.h>
+# endif
+
 # include <stdlib.h>
-# include <errno.h>
+
+# ifdef HAVE_ERRNO_H
+#  include <errno.h>
+# endif
 
 # include "stream.h"
 # include "frame.h"
@@ -83,7 +91,7 @@ void mad_decoder_init(struct mad_decoder *decoder, void *data,
 
 int mad_decoder_finish(struct mad_decoder *decoder)
 {
-# if defined(HAVE_UNISTD_H)
+# if defined(USE_ASYNC)
   if (decoder->mode == MAD_DECODER_MODE_ASYNC && decoder->async.pid) {
     pid_t pid;
     int status;
@@ -112,7 +120,7 @@ int mad_decoder_finish(struct mad_decoder *decoder)
   return 0;
 }
 
-# if defined(HAVE_UNISTD_H)
+# if defined(USE_ASYNC)
 static
 enum mad_flow send_io(int fd, void const *data, size_t len)
 {
@@ -346,7 +354,7 @@ int run_sync(struct mad_decoder *decoder)
     }
 
     while (1) {
-# if defined(HAVE_UNISTD_H)
+# if defined(USE_ASYNC)
       if (decoder->mode == MAD_DECODER_MODE_ASYNC) {
 	switch (check_message(decoder)) {
 	case MAD_FLOW_IGNORE:
@@ -450,7 +458,7 @@ int run_sync(struct mad_decoder *decoder)
   return result;
 }
 
-# if defined(HAVE_UNISTD_H)
+# if defined(USE_ASYNC)
 static
 int run_async(struct mad_decoder *decoder)
 {
@@ -524,11 +532,11 @@ int mad_decoder_run(struct mad_decoder *decoder, enum mad_decoder_mode mode)
     run = run_sync;
     break;
 
-# if defined(HAVE_UNISTD_H)
   case MAD_DECODER_MODE_ASYNC:
+# if defined(USE_ASYNC)
     run = run_async;
-    break;
 # endif
+    break;
   }
 
   if (run == 0)
@@ -549,7 +557,7 @@ int mad_decoder_run(struct mad_decoder *decoder, enum mad_decoder_mode mode)
 int mad_decoder_message(struct mad_decoder *decoder,
 			void *message, unsigned int *len)
 {
-# if defined(HAVE_UNISTD_H)
+# if defined(USE_ASYNC)
   if (decoder->mode != MAD_DECODER_MODE_ASYNC ||
       send(decoder->async.out, message, *len) != MAD_FLOW_CONTINUE ||
       receive(decoder->async.in, &message, len) != MAD_FLOW_CONTINUE)

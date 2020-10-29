@@ -16,10 +16,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
-# If you would like to negotiate alternate licensing terms, you may do
-# so by contacting the author: Robert Leslie <rob@mars.org>
-#
-# $Id: mad.h.sed,v 1.4 2001/10/17 19:13:09 rob Exp $
+# $Id: mad.h.sed,v 1.5 2001/11/03 03:57:11 rob Exp $
 #
 
 /^\/\*$/{

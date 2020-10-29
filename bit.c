@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: bit.c,v 1.7 2001/10/18 08:11:43 rob Exp $
+ * $Id: bit.c,v 1.8 2001/10/27 22:47:32 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
@@ -197,9 +197,9 @@ void mad_bit_write(struct mad_bitptr *bitptr, unsigned int len,
 unsigned short mad_bit_crc(struct mad_bitptr bitptr, unsigned int len,
 			   unsigned short init)
 {
-  register unsigned int crc = init;
+  register unsigned int crc;
 
-  while (len >= 32) {
+  for (crc = init; len >= 32; len -= 32) {
     register unsigned long data;
 
     data = mad_bit_read(&bitptr, 32);
@@ -208,24 +208,19 @@ unsigned short mad_bit_crc(struct mad_bitptr bitptr, unsigned int len,
     crc = (crc << 8) ^ crc_table[((crc >> 8) ^ (data >> 16)) & 0xff];
     crc = (crc << 8) ^ crc_table[((crc >> 8) ^ (data >>  8)) & 0xff];
     crc = (crc << 8) ^ crc_table[((crc >> 8) ^ (data >>  0)) & 0xff];
-
-    len -= 32;
   }
 
   switch (len / 8) {
-  case 3:
-    crc = (crc << 8) ^
-      crc_table[((crc >> 8) ^ mad_bit_read(&bitptr, 8)) & 0xff];
-  case 2:
-    crc = (crc << 8) ^
-      crc_table[((crc >> 8) ^ mad_bit_read(&bitptr, 8)) & 0xff];
-  case 1:
-    crc = (crc << 8) ^
-      crc_table[((crc >> 8) ^ mad_bit_read(&bitptr, 8)) & 0xff];
+  case 3: crc = (crc << 8) ^
+	    crc_table[((crc >> 8) ^ mad_bit_read(&bitptr, 8)) & 0xff];
+  case 2: crc = (crc << 8) ^
+	    crc_table[((crc >> 8) ^ mad_bit_read(&bitptr, 8)) & 0xff];
+  case 1: crc = (crc << 8) ^
+	    crc_table[((crc >> 8) ^ mad_bit_read(&bitptr, 8)) & 0xff];
 
-    len %= 8;
-  case 0:
-    break;
+  len %= 8;
+
+  case 0: break;
   }
 
   while (len--) {

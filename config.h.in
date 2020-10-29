@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: config.h.in,v 1.34 2001/10/19 23:57:42 rob Exp $
+ * $Id: config.h.in,v 1.49 2001/11/03 21:07:49 rob Exp $
  */
 
 # ifndef LIBMAD_CONFIG_H
@@ -79,8 +79,32 @@
 /* The number of bytes in a long long.  */
 #undef SIZEOF_LONG_LONG
 
+/* Define if you have the fcntl function.  */
+#undef HAVE_FCNTL
+
+/* Define if you have the fork function.  */
+#undef HAVE_FORK
+
+/* Define if you have the pipe function.  */
+#undef HAVE_PIPE
+
+/* Define if you have the waitpid function.  */
+#undef HAVE_WAITPID
+
+/* Define if you have the <assert.h> header file.  */
+#undef HAVE_ASSERT_H
+
+/* Define if you have the <errno.h> header file.  */
+#undef HAVE_ERRNO_H
+
+/* Define if you have the <fcntl.h> header file.  */
+#undef HAVE_FCNTL_H
+
 /* Define if you have the <limits.h> header file.  */
 #undef HAVE_LIMITS_H
+
+/* Define if you have the <sys/types.h> header file.  */
+#undef HAVE_SYS_TYPES_H
 
 /* Define if you have the <unistd.h> header file.  */
 #undef HAVE_UNISTD_H

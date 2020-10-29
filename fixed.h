@@ -16,34 +16,34 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: fixed.h,v 1.29 2001/10/18 08:11:43 rob Exp $
+ * $Id: fixed.h,v 1.30 2001/11/02 09:51:06 rob Exp $
  */
 
 # ifndef LIBMAD_FIXED_H
 # define LIBMAD_FIXED_H
 
-# if defined(FPM_FLOAT)
-typedef double mad_fixed_t;
-typedef double mad_fixed64hi_t;
-typedef double mad_fixed64lo_t;
-# else
-#  if SIZEOF_INT >= 4
+# if SIZEOF_INT >= 4
 typedef   signed int mad_fixed_t;
 
 typedef   signed int mad_fixed64hi_t;
 typedef unsigned int mad_fixed64lo_t;
-#  else
+# else
 typedef   signed long mad_fixed_t;
 
 typedef   signed long mad_fixed64hi_t;
 typedef unsigned long mad_fixed64lo_t;
-#  endif
 # endif
 
 # if defined(_MSC_VER)
 #  define mad_fixed64_t  signed __int64
 # elif 1 || defined(__GNUC__)
 #  define mad_fixed64_t  signed long long
+# endif
+
+# if defined(FPM_FLOAT)
+typedef double mad_sample_t;
+# else
+typedef mad_fixed_t mad_sample_t;
 # endif
 
 /*
