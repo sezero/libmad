@@ -16,7 +16,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
-# $Id: Makefile.in,v 1.10 2000/03/05 07:39:41 rob Exp $
+# $Id: Makefile.in,v 1.12 2000/03/06 15:20:43 rob Exp $
 #
 
 ## OPTIONS ####################################################################
@@ -140,7 +140,7 @@ distclean :: clean
 maintainer-clean :: distclean
 	rm -f config.h.in configure
 
-dist ::
+dist :: $(INCMAD)
 	$(MAKE) config.h.in configure
 	$(MAKE) distclean
 

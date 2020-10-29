@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: timer.h,v 1.4 2000/03/05 07:31:55 rob Exp $
+ * $Id: timer.h,v 1.5 2000/03/07 07:59:25 rob Exp $
  */
 
 # ifndef TIMER_H
@@ -36,6 +36,9 @@ struct mad_timer {
 void mad_timer_init(struct mad_timer *);
 void mad_timer_add(struct mad_timer *, struct mad_timer const *);
 void mad_timer_str(struct mad_timer const *, char *, char const *, int);
+
+# define mad_timer_seconds(timer)	((timer)->seconds)
+# define mad_timer_tenths(timer)	((timer)->parts36750 / 3675)
 
 # endif
 

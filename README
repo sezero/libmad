@@ -2,7 +2,7 @@
  mad - MPEG audio decoder
  Copyright (C) 2000 Robert Leslie
 
- $Id: README,v 1.9 2000/03/05 07:43:53 rob Exp $
+ $Id: README,v 1.10 2000/03/06 15:20:43 rob Exp $
 
 ===============================================================================
 
@@ -44,8 +44,6 @@ ABOUT THE CODE
     - a Sun audio interface module
     - a WAV file output module
     - a null module (for timing the decoder)
-
-  (The Sun audio interface module has not yet been fully tested.)
 
   The API for libmad is likely to change soon, so it is not yet documented.
   However, the header file `libmad.h' may be informative.

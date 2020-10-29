@@ -1,0 +1,27 @@
+
+ mad - MPEG audio decoder
+ Copyright (C) 2000 Robert Leslie
+
+ $Id: CHANGES,v 1.2 2000/03/07 07:59:25 rob Exp $
+
+===============================================================================
+
+Version 0.9.7 (beta)
+
+  * Added audio_hex module (--enable-debugging) for PCM-level debugging.
+
+  * Fixed bug in audio_sun module; should work correctly now.
+
+  * Added -Q (very quiet) option to omit bitstream error messages.
+
+  * Reduced -v output by eliminating timing tenths.
+
+  * Fixed problem configuring unsupported sample frequencies, and added
+    user feedback.
+
+  * Enhanced final frame count reporting to include playing time.
+
+  * Cleaned up madplay.c somewhat.
+
+===============================================================================
+
