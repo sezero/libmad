@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: layer12.c,v 1.11 2000/04/22 04:36:50 rob Exp $
+ * $Id: layer12.c,v 1.12 2000/06/03 23:07:41 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
@@ -80,21 +80,20 @@ mad_fixed_t I_sample(struct mad_bitptr *ptr, unsigned int nb)
   /* invert most significant bit, then scale sample to fixed format */
 
   /* FIXME: depends on sign-extending right shift */
-  requantized = ((mad_fixed_t)
-		 (((mad_fixed_t) 1 << (CHAR_BIT * sizeof(mad_fixed_t) - 1)) ^
-		  (sample << (CHAR_BIT * sizeof(mad_fixed_t) - nb)))) >> 3;
+  requantized = (((mad_fixed_t) 1 << (CHAR_BIT * sizeof(mad_fixed_t) - 1)) ^
+		 ((mad_fixed_t) sample <<
+		  (CHAR_BIT * sizeof(mad_fixed_t) - nb))) >> 3;
 
   /* requantize the sample */
 
   /* s'' = (2^nb / (2^nb - 1)) * (s''' + 2^(-nb + 1)) */
 
   requantized += 0x10000000L >> (nb - 1);
-  requantized  = mad_f_mul(requantized, linear_table[nb - 2]);
+
+  return mad_f_mul(requantized, linear_table[nb - 2]);
 
   /* s' = factor * s'' */
   /* (to be performed by caller) */
-
-  return requantized;
 }
 
 /*
@@ -204,146 +203,52 @@ int mad_layer_I(struct mad_stream *stream, struct mad_frame *frame,
 
 /* --- Layer II ------------------------------------------------------------ */
 
+/* possible quantization per subband table */
+static
+struct {
+  unsigned int sblimit;
+  unsigned char const offsets[30];
+} const sbquant_table[5] = {
+  /* ISO/IEC 11172-3 Table B.2a */
+  { 27, { 7, 7, 7, 6, 6, 6, 6, 6, 6, 6, 6, 3, 3, 3, 3, 3,	/* 0 */
+	  3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0 } },
+  /* ISO/IEC 11172-3 Table B.2b */
+  { 30, { 7, 7, 7, 6, 6, 6, 6, 6, 6, 6, 6, 3, 3, 3, 3, 3,	/* 1 */
+	  3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0 } },
+  /* ISO/IEC 11172-3 Table B.2c */
+  {  8, { 5, 5, 2, 2, 2, 2, 2, 2 } },				/* 2 */
+  /* ISO/IEC 11172-3 Table B.2d */
+  { 12, { 5, 5, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2 } },		/* 3 */
+  /* ISO/IEC 13818-3 Table B.1 */
+  { 30, { 4, 4, 4, 4, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1,	/* 4 */
+	  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 } }
+};
+
 /* bit allocation table */
 static
-unsigned char const bitalloc_table[4][32][16] = {
-  {
-    /* table 0 */
-    { 4, 0, 2,  4, 5, 6, 7,  8, 9, 10, 11, 12, 13, 14, 15, 16 },  /* 0 */
-    { 4, 0, 2,  4, 5, 6, 7,  8, 9, 10, 11, 12, 13, 14, 15, 16 },  /* 1 */
-    { 4, 0, 2,  4, 5, 6, 7,  8, 9, 10, 11, 12, 13, 14, 15, 16 },  /* 2 */
-    { 4, 0, 1,  2, 3, 4, 5,  6, 7,  8,  9, 10, 11, 12, 13, 16 },  /* 3 */
-    { 4, 0, 1,  2, 3, 4, 5,  6, 7,  8,  9, 10, 11, 12, 13, 16 },  /* 4 */
-    { 4, 0, 1,  2, 3, 4, 5,  6, 7,  8,  9, 10, 11, 12, 13, 16 },  /* 5 */
-    { 4, 0, 1,  2, 3, 4, 5,  6, 7,  8,  9, 10, 11, 12, 13, 16 },  /* 6 */
-    { 4, 0, 1,  2, 3, 4, 5,  6, 7,  8,  9, 10, 11, 12, 13, 16 },  /* 7 */
-    { 4, 0, 1,  2, 3, 4, 5,  6, 7,  8,  9, 10, 11, 12, 13, 16 },  /* 8 */
-    { 4, 0, 1,  2, 3, 4, 5,  6, 7,  8,  9, 10, 11, 12, 13, 16 },  /* 9 */
-    { 4, 0, 1,  2, 3, 4, 5,  6, 7,  8,  9, 10, 11, 12, 13, 16 },  /* 10 */
-    { 3, 0, 1,  2, 3, 4, 5, 16                                },  /* 11 */
-    { 3, 0, 1,  2, 3, 4, 5, 16                                },  /* 12 */
-    { 3, 0, 1,  2, 3, 4, 5, 16                                },  /* 13 */
-    { 3, 0, 1,  2, 3, 4, 5, 16                                },  /* 14 */
-    { 3, 0, 1,  2, 3, 4, 5, 16                                },  /* 15 */
-    { 3, 0, 1,  2, 3, 4, 5, 16                                },  /* 16 */
-    { 3, 0, 1,  2, 3, 4, 5, 16                                },  /* 17 */
-    { 3, 0, 1,  2, 3, 4, 5, 16                                },  /* 18 */
-    { 3, 0, 1,  2, 3, 4, 5, 16                                },  /* 19 */
-    { 3, 0, 1,  2, 3, 4, 5, 16                                },  /* 20 */
-    { 3, 0, 1,  2, 3, 4, 5, 16                                },  /* 21 */
-    { 3, 0, 1,  2, 3, 4, 5, 16                                },  /* 22 */
-    { 2, 0, 1, 16                                             },  /* 23 */
-    { 2, 0, 1, 16                                             },  /* 24 */
-    { 2, 0, 1, 16                                             },  /* 25 */
-    { 2, 0, 1, 16                                             },  /* 26 */
-    { 0                                   /* sblimit = 27 */  },  /* 27 */
-    { 0                                                       },  /* 28 */
-    { 0                                                       },  /* 29 */
-    { 0                                                       },  /* 30 */
-    { 0                                                       }   /* 31 */
-  }, {
-    /* table 1 */
-    { 4, 0, 2,  4, 5, 6, 7,  8, 9, 10, 11, 12, 13, 14, 15, 16 },  /* 0 */
-    { 4, 0, 2,  4, 5, 6, 7,  8, 9, 10, 11, 12, 13, 14, 15, 16 },  /* 1 */
-    { 4, 0, 2,  4, 5, 6, 7,  8, 9, 10, 11, 12, 13, 14, 15, 16 },  /* 2 */
-    { 4, 0, 1,  2, 3, 4, 5,  6, 7,  8,  9, 10, 11, 12, 13, 16 },  /* 3 */
-    { 4, 0, 1,  2, 3, 4, 5,  6, 7,  8,  9, 10, 11, 12, 13, 16 },  /* 4 */
-    { 4, 0, 1,  2, 3, 4, 5,  6, 7,  8,  9, 10, 11, 12, 13, 16 },  /* 5 */
-    { 4, 0, 1,  2, 3, 4, 5,  6, 7,  8,  9, 10, 11, 12, 13, 16 },  /* 6 */
-    { 4, 0, 1,  2, 3, 4, 5,  6, 7,  8,  9, 10, 11, 12, 13, 16 },  /* 7 */
-    { 4, 0, 1,  2, 3, 4, 5,  6, 7,  8,  9, 10, 11, 12, 13, 16 },  /* 8 */
-    { 4, 0, 1,  2, 3, 4, 5,  6, 7,  8,  9, 10, 11, 12, 13, 16 },  /* 9 */
-    { 4, 0, 1,  2, 3, 4, 5,  6, 7,  8,  9, 10, 11, 12, 13, 16 },  /* 10 */
-    { 3, 0, 1,  2, 3, 4, 5, 16                                },  /* 11 */
-    { 3, 0, 1,  2, 3, 4, 5, 16                                },  /* 12 */
-    { 3, 0, 1,  2, 3, 4, 5, 16                                },  /* 13 */
-    { 3, 0, 1,  2, 3, 4, 5, 16                                },  /* 14 */
-    { 3, 0, 1,  2, 3, 4, 5, 16                                },  /* 15 */
-    { 3, 0, 1,  2, 3, 4, 5, 16                                },  /* 16 */
-    { 3, 0, 1,  2, 3, 4, 5, 16                                },  /* 17 */
-    { 3, 0, 1,  2, 3, 4, 5, 16                                },  /* 18 */
-    { 3, 0, 1,  2, 3, 4, 5, 16                                },  /* 19 */
-    { 3, 0, 1,  2, 3, 4, 5, 16                                },  /* 20 */
-    { 3, 0, 1,  2, 3, 4, 5, 16                                },  /* 21 */
-    { 3, 0, 1,  2, 3, 4, 5, 16                                },  /* 22 */
-    { 2, 0, 1, 16                                             },  /* 23 */
-    { 2, 0, 1, 16                                             },  /* 24 */
-    { 2, 0, 1, 16                                             },  /* 25 */
-    { 2, 0, 1, 16                                             },  /* 26 */
-    { 2, 0, 1, 16                                             },  /* 27 */
-    { 2, 0, 1, 16                                             },  /* 28 */
-    { 2, 0, 1, 16                                             },  /* 29 */
-    { 0                                   /* sblimit = 30 */  },  /* 30 */
-    { 0                                                       }   /* 31 */
-  }, {
-    /* table 2 */
-    { 4, 0, 1,  3, 4, 5, 6,  7, 8,  9, 10, 11, 12, 13, 14, 15 },  /* 0 */
-    { 4, 0, 1,  3, 4, 5, 6,  7, 8,  9, 10, 11, 12, 13, 14, 15 },  /* 1 */
-    { 3, 0, 1,  3, 4, 5, 6,  7                                },  /* 2 */
-    { 3, 0, 1,  3, 4, 5, 6,  7                                },  /* 3 */
-    { 3, 0, 1,  3, 4, 5, 6,  7                                },  /* 4 */
-    { 3, 0, 1,  3, 4, 5, 6,  7                                },  /* 5 */
-    { 3, 0, 1,  3, 4, 5, 6,  7                                },  /* 6 */
-    { 3, 0, 1,  3, 4, 5, 6,  7                                },  /* 7 */
-    { 0                                    /* sblimit = 8 */  },  /* 8 */
-    { 0                                                       },  /* 9 */
-    { 0                                                       },  /* 10 */
-    { 0                                                       },  /* 11 */
-    { 0                                                       },  /* 12 */
-    { 0                                                       },  /* 13 */
-    { 0                                                       },  /* 14 */
-    { 0                                                       },  /* 15 */
-    { 0                                                       },  /* 16 */
-    { 0                                                       },  /* 17 */
-    { 0                                                       },  /* 18 */
-    { 0                                                       },  /* 19 */
-    { 0                                                       },  /* 20 */
-    { 0                                                       },  /* 21 */
-    { 0                                                       },  /* 22 */
-    { 0                                                       },  /* 23 */
-    { 0                                                       },  /* 24 */
-    { 0                                                       },  /* 25 */
-    { 0                                                       },  /* 26 */
-    { 0                                                       },  /* 27 */
-    { 0                                                       },  /* 28 */
-    { 0                                                       },  /* 29 */
-    { 0                                                       },  /* 30 */
-    { 0                                                       }   /* 31 */
-  }, {
-    /* table 3 */
-    { 4, 0, 1,  3, 4, 5, 6,  7, 8,  9, 10, 11, 12, 13, 14, 15 },  /* 0 */
-    { 4, 0, 1,  3, 4, 5, 6,  7, 8,  9, 10, 11, 12, 13, 14, 15 },  /* 1 */
-    { 3, 0, 1,  3, 4, 5, 6,  7                                },  /* 2 */
-    { 3, 0, 1,  3, 4, 5, 6,  7                                },  /* 3 */
-    { 3, 0, 1,  3, 4, 5, 6,  7                                },  /* 4 */
-    { 3, 0, 1,  3, 4, 5, 6,  7                                },  /* 5 */
-    { 3, 0, 1,  3, 4, 5, 6,  7                                },  /* 6 */
-    { 3, 0, 1,  3, 4, 5, 6,  7                                },  /* 7 */
-    { 3, 0, 1,  3, 4, 5, 6,  7                                },  /* 8 */
-    { 3, 0, 1,  3, 4, 5, 6,  7                                },  /* 9 */
-    { 3, 0, 1,  3, 4, 5, 6,  7                                },  /* 10 */
-    { 3, 0, 1,  3, 4, 5, 6,  7                                },  /* 11 */
-    { 0                                   /* sblimit = 12 */  },  /* 12 */
-    { 0                                                       },  /* 13 */
-    { 0                                                       },  /* 14 */
-    { 0                                                       },  /* 15 */
-    { 0                                                       },  /* 16 */
-    { 0                                                       },  /* 17 */
-    { 0                                                       },  /* 18 */
-    { 0                                                       },  /* 19 */
-    { 0                                                       },  /* 20 */
-    { 0                                                       },  /* 21 */
-    { 0                                                       },  /* 22 */
-    { 0                                                       },  /* 23 */
-    { 0                                                       },  /* 24 */
-    { 0                                                       },  /* 25 */
-    { 0                                                       },  /* 26 */
-    { 0                                                       },  /* 27 */
-    { 0                                                       },  /* 28 */
-    { 0                                                       },  /* 29 */
-    { 0                                                       },  /* 30 */
-    { 0                                                       }   /* 31 */
-  }
+struct {
+  unsigned short nbal;
+  unsigned short offset;
+} const bitalloc_table[8] = {
+  { 2, 0 },  /* 0 */
+  { 2, 3 },  /* 1 */
+  { 3, 3 },  /* 2 */
+  { 3, 1 },  /* 3 */
+  { 4, 2 },  /* 4 */
+  { 4, 3 },  /* 5 */
+  { 4, 4 },  /* 6 */
+  { 4, 5 }   /* 7 */
+};
+
+/* offsets into quantization class table */
+static
+unsigned char const offset_table[6][15] = {
+  { 0, 1, 16                                             },  /* 0 */
+  { 0, 1,  2, 3, 4, 5, 16                                },  /* 1 */
+  { 0, 1,  2, 3, 4, 5,  6, 7,  8,  9, 10, 11, 12, 13, 14 },  /* 2 */
+  { 0, 1,  3, 4, 5, 6,  7, 8,  9, 10, 11, 12, 13, 14, 15 },  /* 3 */
+  { 0, 1,  2, 3, 4, 5,  6, 7,  8,  9, 10, 11, 12, 13, 16 },  /* 4 */
+  { 0, 2,  4, 5, 6, 7,  8, 9, 10, 11, 12, 13, 14, 15, 16 }   /* 5 */
 };
 
 /* quantization class table */
@@ -364,10 +269,9 @@ struct quantclass {
 static
 void II_samples(struct mad_bitptr *ptr,
 		struct quantclass const *quantclass,
-		mad_fixed_t *output)
+		mad_fixed_t output[3])
 {
   unsigned int nb, s, sample[3];
-  mad_fixed_t requantized;
 
   if ((nb = quantclass->group)) {
     unsigned int c, nlevels;
@@ -389,24 +293,23 @@ void II_samples(struct mad_bitptr *ptr,
   }
 
   for (s = 0; s < 3; ++s) {
+    mad_fixed_t requantized;
+
     /* invert most significant bit, then scale sample to fixed format */
 
     /* FIXME: depends on sign-extending right shift */
-    requantized = ((mad_fixed_t)
-		   (((mad_fixed_t) 1 << (CHAR_BIT * sizeof(mad_fixed_t) - 1)) ^
-		    (sample[s] <<
-		     (CHAR_BIT * sizeof(mad_fixed_t) - nb)))) >> 3;
+    requantized = (((mad_fixed_t) 1 << (CHAR_BIT * sizeof(mad_fixed_t) - 1)) ^
+		   ((mad_fixed_t) sample[s] <<
+		    (CHAR_BIT * sizeof(mad_fixed_t) - nb))) >> 3;
 
     /* requantize the sample */
 
     /* s'' = C * (s''' + D) */
 
-    requantized = mad_f_mul(quantclass->C, requantized + quantclass->D);
+    output[s] = mad_f_mul(quantclass->C, requantized + quantclass->D);
 
     /* s' = factor * s'' */
     /* (to be performed by caller) */
-
-    output[s] = requantized;
   }
 }
 
@@ -418,42 +321,35 @@ int mad_layer_II(struct mad_stream *stream, struct mad_frame *frame,
 		 unsigned short const crc[2])
 {
   struct mad_bitptr start;
-  unsigned int table, sblimit, nbal, nch, bound, gr, ch, s, sb, index;
+  unsigned int index, sblimit, nbal, nch, bound, gr, ch, s, sb;
+  unsigned char const *offsets;
   unsigned char allocation[2][32], scfsi[2][32], scalefactor[2][32][3];
   mad_fixed_t samples[3];
 
   nch = MAD_NUMCHANNELS(frame);
 
-  switch (nch == 2 ? frame->bitrate / 2 : frame->bitrate) {
-  case 32000:
-  case 48000:
-    if (frame->sfreq == 32000) {
-      table   = 3;
-      sblimit = 12;
-    }
-    else {
-      table   = 2;
-      sblimit = 8;
-    }
-    break;
+  if (frame->flags & MAD_FLAG_LSF_EXT)
+    index = 4;
+  else {
+    switch (nch == 2 ? frame->bitrate / 2 : frame->bitrate) {
+    case 32000:
+    case 48000:
+      index = (frame->sfreq == 32000) ? 3 : 2;
+      break;
 
-  case 56000:
-  case 64000:
-  case 80000:
-    table   = 0;
-    sblimit = 27;
-    break;
+    case 56000:
+    case 64000:
+    case 80000:
+      index = 0;
+      break;
 
-  default:
-    if (frame->sfreq == 48000) {
-      table   = 0;
-      sblimit = 27;
-    }
-    else {
-      table   = 1;
-      sblimit = 30;
+    default:
+      index = (frame->sfreq == 48000) ? 0 : 1;
     }
   }
+
+  sblimit = sbquant_table[index].sblimit;
+  offsets = sbquant_table[index].offsets;
 
   if (frame->mode == MAD_MODE_JOINT_STEREO) {
     frame->flags |= MAD_FLAG_I_STEREO;
@@ -470,14 +366,14 @@ int mad_layer_II(struct mad_stream *stream, struct mad_frame *frame,
   /* decode bit allocations */
 
   for (sb = 0; sb < bound; ++sb) {
-    nbal = bitalloc_table[table][sb][0];
+    nbal = bitalloc_table[offsets[sb]].nbal;
 
     for (ch = 0; ch < nch; ++ch)
       allocation[ch][sb] = mad_bit_read(&stream->ptr, nbal);
   }
 
   for (sb = bound; sb < sblimit; ++sb) {
-    nbal = bitalloc_table[table][sb][0];
+    nbal = bitalloc_table[offsets[sb]].nbal;
 
     allocation[0][sb] = allocation[1][sb] = mad_bit_read(&stream->ptr, nbal);
   }
@@ -542,7 +438,7 @@ int mad_layer_II(struct mad_stream *stream, struct mad_frame *frame,
     for (sb = 0; sb < bound; ++sb) {
       for (ch = 0; ch < nch; ++ch) {
 	if ((index = allocation[ch][sb])) {
-	  index = bitalloc_table[table][sb][index];
+	  index = offset_table[bitalloc_table[offsets[sb]].offset][index - 1];
 
 	  II_samples(&stream->ptr, &qc_table[index], samples);
 
@@ -560,7 +456,7 @@ int mad_layer_II(struct mad_stream *stream, struct mad_frame *frame,
 
     for (sb = bound; sb < sblimit; ++sb) {
       if ((index = allocation[0][sb])) {
-	index = bitalloc_table[table][sb][index];
+	index = offset_table[bitalloc_table[offsets[sb]].offset][index - 1];
 
 	II_samples(&stream->ptr, &qc_table[index], samples);
 

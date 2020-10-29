@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: layer3.c,v 1.23 2000/05/06 22:31:23 rob Exp $
+ * $Id: layer3.c,v 1.25 2000/06/03 23:07:41 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
@@ -54,6 +54,9 @@ enum {
 };
 
 struct sideinfo {
+  unsigned int main_data_begin;
+  unsigned int private_bits;
+
   unsigned char scfsi[2];
 
   struct granule {
@@ -61,9 +64,9 @@ struct sideinfo {
       /* from side info */
       unsigned short part2_3_length;
       unsigned short big_values;
+      unsigned short global_gain;
+      unsigned short scalefac_compress;
 
-      unsigned char global_gain;
-      unsigned char scalefac_compress;
       unsigned char flags;
       unsigned char block_type;
       unsigned char table_select[3];
@@ -97,28 +100,65 @@ struct {
 };
 
 /*
- * scalefactor band widths for long blocks
- * derived from Table B.8 of ISO/IEC 11172-3
+ * number of LSF scalefactor band values
+ * derived from section 2.4.3.2 of ISO/IEC 13818-3
  */
 static
-unsigned short const sfwidth_l[3][22] = {
-  /*   48 kHz */ {  4,  4,  4,  4,  4,  4,  6,  6,  6,   8,  10,
-		   12, 16, 18, 22, 28, 34, 40, 46, 54,  54, 192 },
-  /* 44.1 kHz */ {  4,  4,  4,  4,  4,  4,  6,  6,  8,   8,  10,
-		   12, 16, 20, 24, 28, 34, 42, 50, 54,  76, 158 },
-  /*   32 kHz */ {  4,  4,  4,  4,  4,  4,  6,  6,  8,  10,  12,
-		   16, 20, 24, 30, 38, 46, 56, 68, 84, 102,  26 }
+unsigned short const nsfb_table[6][3][4] = {
+  { {  6,  5,  5, 5 },
+    {  9,  9,  9, 9 },
+    {  6,  9,  9, 9 } },
+  { {  6,  5,  7, 3 },
+    {  9,  9, 12, 6 },
+    {  6,  9, 12, 6 } },
+  { { 11, 10,  0, 0 },
+    { 18, 18,  0, 0 },
+    { 15, 18,  0, 0 } },
+  { {  7,  7,  7, 0 },
+    { 12, 12, 12, 0 },
+    {  6, 15, 12, 0 } },
+  { {  6,  6,  6, 3 },
+    { 12,  9,  9, 6 },
+    {  6, 12,  9, 6 } },
+  { {  8,  8,  5, 0 },
+    { 15, 12,  9, 0 },
+    {  6, 18,  9, 0 } }
+};
+
+/*
+ * scalefactor band widths for long blocks
+ * derived from Table B.8 of ISO/IEC 11172-3 and Table B.2 of ISO/IEC 13838-3
+ */
+static
+unsigned short const sfwidth_l[6][22] = {
+  /*    48 kHz */ {  4,  4,  4,  4,  4,  4,  6,  6,  6,   8,  10,
+		    12, 16, 18, 22, 28, 34, 40, 46, 54,  54, 192 },
+  /*  44.1 kHz */ {  4,  4,  4,  4,  4,  4,  6,  6,  8,   8,  10,
+		    12, 16, 20, 24, 28, 34, 42, 50, 54,  76, 158 },
+  /*    32 kHz */ {  4,  4,  4,  4,  4,  4,  6,  6,  8,  10,  12,
+		    16, 20, 24, 30, 38, 46, 56, 68, 84, 102,  26 },
+
+  /*    24 kHz */ {  6,  6,  6,  6,  6,  6,  8, 10, 12,  14,  16,
+		    18, 22, 26, 32, 38, 46, 54, 62, 70,  76,  36 },
+  /* 22.05 kHz */ {  6,  6,  6,  6,  6,  6,  8, 10, 12,  14,  16,
+		    20, 24, 28, 32, 38, 46, 52, 60, 68,  58,  54 },
+  /*    16 kHz */ {  6,  6,  6,  6,  6,  6,  8, 10, 12,  14,  16,
+		    20, 24, 28, 32, 38, 46, 52, 60, 68,  58,  54 }
 };
 
 /*
  * scalefactor band widths for short blocks
- * derived from Table B.8 of ISO/IEC 11172-3
+ * derived from Table B.8 of ISO/IEC 11172-3 and Table B.2 of ISO/IEC 13838-3
  */
 static
-unsigned short const sfwidth_s[3][13] = {
-  /*   48 kHz */ { 4, 4, 4, 4, 6, 6, 10, 12, 14, 16, 20, 26, 66 },
-  /* 44.1 kHz */ { 4, 4, 4, 4, 6, 8, 10, 12, 14, 18, 22, 30, 56 },
-  /*   32 kHz */ { 4, 4, 4, 4, 6, 8, 12, 16, 20, 26, 34, 42, 12 }
+unsigned short const sfwidth_s[6][13] = {
+  /*    48 kHz */ { 4, 4, 4, 4, 6,  6, 10, 12, 14, 16, 20, 26, 66 },
+  /*  44.1 kHz */ { 4, 4, 4, 4, 6,  8, 10, 12, 14, 18, 22, 30, 56 },
+  /*    32 kHz */ { 4, 4, 4, 4, 6,  8, 12, 16, 20, 26, 34, 42, 12 },
+
+  /*    24 kHz */ { 4, 4, 4, 6, 8, 10, 12, 14, 18, 24, 32, 44, 12 },
+  /* 22.05 kHz */ { 4, 4, 4, 6, 6,  8, 10, 14, 18, 26, 32, 42, 18 },
+  /*    16 kHz */ { 4, 4, 4, 6, 8, 10, 12, 14, 18, 24, 30, 40, 18 }
 };
 
 /*
@@ -145,13 +185,13 @@ struct fixedfloat {
 /* fractional powers of two used during requantization */
 static
 mad_fixed_t const root_table[7] = {
-  0x09837f05L,  /* 2^(-3/4) == 0.59460355750136 */
-  0x0b504f33L,  /* 2^(-2/4) == 0.70710678118655 */
-  0x0d744fcdL,  /* 2^(-1/4) == 0.84089641525371 */
-  0x10000000L,  /* 2^( 0/4) == 1.00000000000000 */
-  0x1306fe0aL,  /* 2^(+1/4) == 1.18920711500272 */
-  0x16a09e66L,  /* 2^(+2/4) == 1.41421356237310 */
-  0x1ae89f99L   /* 2^(+3/4) == 1.68179283050743 */
+  0x09837f05L /* 2^(-3/4) == 0.59460355750136 */,
+  0x0b504f33L /* 2^(-2/4) == 0.70710678118655 */,
+  0x0d744fcdL /* 2^(-1/4) == 0.84089641525371 */,
+  0x10000000L /* 2^( 0/4) == 1.00000000000000 */,
+  0x1306fe0aL /* 2^(+1/4) == 1.18920711500272 */,
+  0x16a09e66L /* 2^(+2/4) == 1.41421356237310 */,
+  0x1ae89f99L /* 2^(+3/4) == 1.68179283050743 */
 };
 
 /*
@@ -254,22 +294,53 @@ mad_fixed_t const is_table[7] = {
 };
 
 /*
+ * coefficients for LSF intensity stereo processing
+ * derived from section 2.4.3.2 of ISO/IEC 13838-3
+ *
+ * lsf_is_table[0][i] = (1 / sqrt(sqrt(2)))^(i + 1)
+ * lsf_is_table[1][i] = (1 / sqrt(2))^(i + 1)
+ */
+static
+mad_fixed_t const lsf_is_table[2][3] = {
+  {
+    0x0d744fcdL /* 0.840896415 */,
+    0x0b504f33L /* 0.707106781 */,
+    0x09837f05L /* 0.594603558 */
+  }, {
+    0x0b504f33L /* 0.707106781 */,
+    0x08000000L /* 0.500000000 */,
+    0x05a8279aL /* 0.353553391 */
+  }
+};
+
+/*
  * NAME:	III_sideinfo()
  * DESCRIPTION:	decode frame side information from a bitstream
  */
 static
-int III_sideinfo(struct mad_bitptr *ptr, struct sideinfo *si,
-		 unsigned int *md_bitlen, unsigned int nch)
+int III_sideinfo(struct mad_bitptr *ptr, unsigned int nch,
+		 int lsf, struct sideinfo *si,
+		 unsigned int *md_bitlen, unsigned int *priv_bitlen)
 {
-  unsigned int gr, ch, i;
+  unsigned int ngr, gr, ch, i;
   int result = 0;
 
-  *md_bitlen = 0;
+  *md_bitlen   = 0;
+  *priv_bitlen = lsf ? ((nch == 1) ? 1 : 2) : ((nch == 1) ? 5 : 3);
 
-  for (ch = 0; ch < nch; ++ch)
-    si->scfsi[ch] = mad_bit_read(ptr, 4);
+  si->main_data_begin = mad_bit_read(ptr, lsf ? 8 : 9);
+  si->private_bits    = mad_bit_read(ptr, *priv_bitlen);
 
-  for (gr = 0; gr < 2; ++gr) {
+  if (lsf)
+    ngr = 1;
+  else {
+    ngr = 2;
+
+    for (ch = 0; ch < nch; ++ch)
+      si->scfsi[ch] = mad_bit_read(ptr, 4);
+  }
+
+  for (gr = 0; gr < ngr; ++gr) {
     struct granule *granule = &si->gr[gr];
 
     for (ch = 0; ch < nch; ++ch) {
@@ -278,7 +349,7 @@ int III_sideinfo(struct mad_bitptr *ptr, struct sideinfo *si,
       channel->part2_3_length    = mad_bit_read(ptr, 12);
       channel->big_values        = mad_bit_read(ptr, 9);
       channel->global_gain       = mad_bit_read(ptr, 8);
-      channel->scalefac_compress = mad_bit_read(ptr, 4);
+      channel->scalefac_compress = mad_bit_read(ptr, lsf ? 9 : 4);
 
       *md_bitlen += channel->part2_3_length;
 
@@ -320,12 +391,133 @@ int III_sideinfo(struct mad_bitptr *ptr, struct sideinfo *si,
 	channel->region1_count = mad_bit_read(ptr, 3);
       }
 
-      /* preflag, scalefac_scale, count1table_select */
-      channel->flags |= mad_bit_read(ptr, 3);
+      /* [preflag,] scalefac_scale, count1table_select */
+      channel->flags |= mad_bit_read(ptr, lsf ? 2 : 3);
     }
   }
 
   return result;
+}
+
+/*
+ * NAME:	III_lsf_scalefactors()
+ * DESCRIPTION:	decode channel scalefactors for LSF from a bitstream
+ */
+static
+unsigned int III_lsf_scalefactors(struct mad_bitptr *ptr, int mode_extension,
+				  unsigned int ch, struct channel *channel)
+{
+  struct mad_bitptr start;
+  unsigned int scalefac_compress, index, slen[4], part, n, sfb, w;
+  unsigned short const *nsfb;
+  unsigned short scalefac[36];
+
+  start = *ptr;
+
+  scalefac_compress = channel->scalefac_compress;
+  index = (channel->block_type == 2) ?
+    ((channel->flags & mixed_block_flag) ? 2 : 1) : 0;
+
+  if (!((mode_extension & 0x1) && ch == 1)) {
+    if (scalefac_compress < 400) {
+      slen[0] = (scalefac_compress >> 4) / 5;
+      slen[1] = (scalefac_compress >> 4) % 5;
+      slen[2] = (scalefac_compress % 16) >> 2;
+      slen[3] =  scalefac_compress %  4;
+
+      nsfb = nsfb_table[0][index];
+    }
+    else if (scalefac_compress < 500) {
+      scalefac_compress -= 400;
+
+      slen[0] = (scalefac_compress >> 2) / 5;
+      slen[1] = (scalefac_compress >> 2) % 5;
+      slen[2] =  scalefac_compress %  4;
+      slen[3] = 0;
+
+      nsfb = nsfb_table[1][index];
+    }
+    else {
+      scalefac_compress -= 500;
+
+      slen[0] = scalefac_compress / 3;
+      slen[1] = scalefac_compress % 3;
+      slen[2] = 0;
+      slen[3] = 0;
+
+      channel->flags |= preflag;
+
+      nsfb = nsfb_table[2][index];
+    }
+  }
+  else {  /* (mode_extension & 0x1) && ch == 1 */
+    scalefac_compress >>= 1;
+
+    if (scalefac_compress < 180) {
+      slen[0] =  scalefac_compress / 36;
+      slen[1] = (scalefac_compress % 36) / 6;
+      slen[2] = (scalefac_compress % 36) % 6;
+      slen[3] = 0;
+
+      nsfb = nsfb_table[3][index];
+    }
+    else if (scalefac_compress < 244) {
+      scalefac_compress -= 180;
+
+      slen[0] = (scalefac_compress % 64) >> 4;
+      slen[1] = (scalefac_compress % 16) >> 2;
+      slen[2] =  scalefac_compress %  4;
+      slen[3] = 0;
+
+      nsfb = nsfb_table[4][index];
+    }
+    else {
+      scalefac_compress -= 244;
+
+      slen[0] = scalefac_compress / 3;
+      slen[1] = scalefac_compress % 3;
+      slen[2] = 0;
+      slen[3] = 0;
+
+      nsfb = nsfb_table[5][index];
+    }
+  }
+
+  n = 0;
+  for (part = 0; part < 4; ++part) {
+    for (sfb = 0; sfb < nsfb[part]; ++sfb)
+      scalefac[n++] = mad_bit_read(ptr, slen[part]);
+  }
+
+  n = 0;
+  if (channel->block_type == 2) {
+    if (channel->flags & mixed_block_flag) {
+      for (sfb = 0; sfb < 6; ++sfb)
+	channel->scalefac_l[sfb] = scalefac[n++];
+
+      for (sfb = 3; sfb < 12; ++sfb) {
+	for (w = 0; w < 3; ++w)
+	  channel->scalefac_s[sfb][w] = scalefac[n++];
+      }
+    }
+    else {  /* !(channel->flags & mixed_block_flag) */
+      for (sfb = 0; sfb < 12; ++sfb) {
+	for (w = 0; w < 3; ++w)
+	  channel->scalefac_s[sfb][w] = scalefac[n++];
+      }
+    }
+
+    for (w = 0; w < 3; ++w)
+      channel->scalefac_s[12][w] = 0;
+  }
+  else {  /* channel->block_type != 2 */
+    for (sfb = 0; sfb < 21; ++sfb)
+      channel->scalefac_l[sfb] = scalefac[n++];
+
+    channel->scalefac_l[21] = 0;
+  }
+
+  return mad_bit_length(&start, ptr);
 }
 
 /*
@@ -467,7 +659,7 @@ mad_fixed_t III_requantize(signed int value, signed int exp, unsigned int scf,
       requantized >>= -exp;
   }
   else {
-    if (exp >= sizeof(mad_fixed_t) * CHAR_BIT) {
+    if (exp >= 5) {
       /* overflow */
 # ifdef DEBUG
       fprintf(stderr, "requantize overflow (%f * 2^%d)\n",
@@ -517,7 +709,7 @@ mad_fixed_t III_requantize_s(signed int value, unsigned int sfb,
   /* channel->block_type == 2 &&
      (l >= 36 || !(channel->flags & mixed_block_flag)) */
 
-  exp = (signed) channel->subblock_gain[window] << 3;
+  exp = (signed) channel->subblock_gain[window] * 8;
   scf = channel->scalefac_s[sfb][window];
 
   return III_requantize(value, -exp, scf, channel);
@@ -568,19 +760,16 @@ int III_huffdecode(struct mad_bitptr *ptr, signed short is[576],
     union huffpair const *table;
     unsigned int linbits, startbits, big_values;
 
-    if (channel->flags & window_switching_flag) {
-      if (channel->block_type == 2)
-	fwidth = &sfwidth_s[sfreqi][3];
-      else
-	fwidth = &sfwidth_l[sfreqi][8];
+    if (channel->block_type == 2) {
+      fwidth = &sfwidth_s[sfreqi][3];
 
-      pcount = 1 + (36 >> 1);
+      pcount = 1 + (36 / 2);
       rcount = 1;
     }
     else {
       fwidth = &sfwidth_l[sfreqi][0];
 
-      pcount = 1 + (*fwidth++ >> 1);
+      pcount = 1 + (*fwidth++ / 2);
       rcount = channel->region0_count + 1;
     }
 
@@ -604,11 +793,11 @@ int III_huffdecode(struct mad_bitptr *ptr, signed short is[576],
       if (--pcount == 0) {
 	if (--rcount == 0) {
 	  if (region == 0 && !(channel->flags & window_switching_flag)) {
-	    pcount = *fwidth++ >> 1;
+	    pcount = *fwidth++ / 2;
 	    rcount = channel->region1_count + 1;
 	  }
 	  else
-	    pcount = 576 >> 1;  /* all remaining */
+	    pcount = 576 / 2;  /* all remaining */
 
 	  entry     = &mad_huff_pair_table[channel->table_select[++region]];
 	  table     = entry->table;
@@ -619,7 +808,7 @@ int III_huffdecode(struct mad_bitptr *ptr, signed short is[576],
 	    return MAD_ERR_BADHUFFTABLE;
 	}
 	else {
-	  pcount = *fwidth++ >> 1;
+	  pcount = *fwidth++ / 2;
 	  if (channel->block_type == 2)
 	    pcount *= 3;
 	}
@@ -870,9 +1059,12 @@ int III_stereo(mad_fixed_t xr[2][576], struct granule *granule,
 
   bound = 576;
 
+  /* intensity stereo */
+
   if (i_stereo) {
     struct channel const *right_ch = &granule->ch[1];
     unsigned int zero_part, i, sfb_l, sfb_s, f, w, n;
+    mad_fixed_t const *lsf_scale;
 
     frame->flags |= MAD_FLAG_I_STEREO;
 
@@ -883,7 +1075,8 @@ int III_stereo(mad_fixed_t xr[2][576], struct granule *granule,
 	    zero_part, right_ch->block_type);
 # endif
 
-    sfb_l = (right_ch->block_type == 2) ? 8 : 22;
+    sfb_l = (right_ch->block_type == 2) ?
+      ((frame->flags & MAD_FLAG_LSF_EXT) ? 6 : 8) : 22;
     sfb_s = 13;
 
     while (bound > 0) {
@@ -918,6 +1111,9 @@ int III_stereo(mad_fixed_t xr[2][576], struct granule *granule,
     w = 0;
     n = 0;
 
+    /* intensity_scale */
+    lsf_scale = lsf_is_table[right_ch->scalefac_compress & 0x1];
+
     for (i = bound; i < 576; ++i) {
       unsigned int is_pos = 7;
 
@@ -946,8 +1142,20 @@ int III_stereo(mad_fixed_t xr[2][576], struct granule *granule,
 
 	left = xr[0][i];
 
-	xr[0][i] = mad_f_mul(left, is_table[is_pos]);
-	xr[1][i] = mad_f_mul(left, is_table[6 - is_pos]);
+	if (frame->flags & MAD_FLAG_LSF_EXT) {
+	  if (is_pos == 0)
+	    xr[1][i] = left;
+	  else if (is_pos & 0x1) {
+	    xr[0][i] = mad_f_mul(left, lsf_scale[(is_pos - 1) / 2]);
+	    xr[1][i] = left;
+	  }
+	  else
+	    xr[1][i] = mad_f_mul(left, lsf_scale[(is_pos - 1) / 2]);
+	}
+	else {
+	  xr[0][i] = mad_f_mul(left, is_table[is_pos]);
+	  xr[1][i] = mad_f_mul(left, is_table[6 - is_pos]);
+	}
       }
 # ifdef OPT_ISKLUGE
       else if (ms_stereo) {
@@ -955,23 +1163,30 @@ int III_stereo(mad_fixed_t xr[2][576], struct granule *granule,
 
 	/*
 	 * There seems to be some discrepancy with respect to simultaneous
-	 * M/S and intensity stereo encoding. The ISO/IEC standard clearly
-	 * states that "...the scalefactor band in which the last non-zero
-	 * (right channel) frequency line occurs is the last scalefactor
-	 * band to which the MS_stereo equations apply" when intensity
-	 * stereo is also enabled.
+	 * M/S and intensity stereo encoding. The ISO/IEC 11172-3 standard
+	 * clearly states that "...the scalefactor band in which the last
+	 * non-zero (right channel) frequency line occurs is the last
+	 * scalefactor band to which the MS_stereo equations apply" when
+	 * intensity stereo is also enabled. "Above this bound intensity
+	 * stereo may be applied if enabled in the header."
 	 *
-	 * However, the ISO reference source (and many other decoders) are
-	 * apparently doing something different, with mixed results. It's
-	 * possible many encoders have a questionable implementation of
-	 * this as well, but it happens to go unnoticed with said decoders.
+	 * However, the ISO/IEC 13818-3 standard states, "As in ISO/IEC
+	 * 11172-3 scalefactor bands with an illegal intensity position
+	 * have to be decoded according to the MS equations as defined in
+	 * ISO/IEC 11172-3 if MS stereo is enabled, or both channels
+	 * independently if MS stereo is not enabled."
+	 *
+	 * The ISO reference source and many other decoders are apparently
+	 * interpreting this with mixed results. It's possible many
+	 * encoders have a questionable implementation as well, but it
+	 * happens to go unnoticed with the same decoders.
 	 *
 	 * It's not clear what the right answer is. For now, the intensity
-	 * stereo bands can also optionally be processed with M/S for is_pos
-	 * values outside the intensity stereo range, which seems to be
-	 * what at least one other decoder implementation is doing. This
-	 * does not produce optimal results, but it is better than no
-	 * processing for many bitstreams.
+	 * stereo bands can also optionally be processed with M/S for
+	 * is_pos values outside the intensity stereo range, which seems
+	 * to be what at least one other decoder implementation is doing.
+	 * This does not necessarily produce optimal results, but it is
+	 * better than no processing for many bitstreams.
 	 */
 
 	m = xr[0][i];
@@ -983,6 +1198,8 @@ int III_stereo(mad_fixed_t xr[2][576], struct granule *granule,
 # endif
     }
   }
+
+  /* middle/side stereo */
 
   if (ms_stereo) {
     unsigned int i;
@@ -1011,7 +1228,7 @@ int III_stereo(mad_fixed_t xr[2][576], struct granule *granule,
  * NAME:	III_aliasreduce()
  * DESCRIPTION:	perform frequency line alias reduction
  */
-static
+static inline
 void III_aliasreduce(mad_fixed_t xr[576])
 {
   unsigned int l, i;
@@ -1369,7 +1586,7 @@ void III_imdct_s(mad_fixed_t const X[18], mad_fixed_t z[36])
  * NAME:	III_overlap()
  * DESCRIPTION:	perform overlap-add of windowed IMDCT outputs
  */
-static
+static inline
 void III_overlap(mad_fixed_t const output[36], mad_fixed_t overlap[18],
 		 mad_fixed_t sample[18][32], unsigned int sb)
 {
@@ -1382,10 +1599,26 @@ void III_overlap(mad_fixed_t const output[36], mad_fixed_t overlap[18],
 }
 
 /*
+ * NAME:	III_overlap_z()
+ * DESCRIPTION:	perform "overlap-add" of zero IMDCT outputs
+ */
+static inline
+void III_overlap_z(mad_fixed_t overlap[18],
+		   mad_fixed_t sample[18][32], unsigned int sb)
+{
+  unsigned int i;
+
+  for (i = 0; i < 18; ++i) {
+    sample[i][sb] = overlap[i];
+    overlap[i]    = 0;
+  }
+}
+
+/*
  * NAME:	III_freqinver()
  * DESCRIPTION:	perform subband frequency inversion for odd sample lines
  */
-static
+static inline
 void III_freqinver(mad_fixed_t sample[18][32], unsigned int sb)
 {
   unsigned int i;
@@ -1402,14 +1635,21 @@ static
 int III_decode(struct mad_bitptr *ptr, struct mad_frame *frame,
 		struct sideinfo *si, unsigned int nch)
 {
-  unsigned int sfreqi, gr;
+  unsigned int sfreqi, ngr, gr, sfbcut;
 
-  /* 48000 => 0, 44100 => 1, 32000 => 2 */
-  sfreqi = ((frame->sfreq & 0x0700) >> 8) - 3;
+  /* 48000 => 0, 44100 => 1, 32000 => 2,
+     24000 => 3, 22050 => 4, 16000 => 5 */
+  sfreqi = ((frame->sfreq >>  7) & 0x000f) +
+           ((frame->sfreq >> 15) & 0x0001) - 8;
 
   /* scalefactors, Huffman decoding, requantization */
 
-  for (gr = 0; gr < 2; ++gr) {
+  if (frame->flags & MAD_FLAG_LSF_EXT)
+    ngr = 1, sfbcut = 6;
+  else
+    ngr = 2, sfbcut = 8;
+
+  for (gr = 0; gr < ngr; ++gr) {
     struct granule *granule = &si->gr[gr];
     static mad_fixed_t xr[2][576];
     unsigned int ch;
@@ -1420,8 +1660,12 @@ int III_decode(struct mad_bitptr *ptr, struct mad_frame *frame,
       static signed short is[576];
       unsigned int part2_length, sfb, i, f, w;
 
-      part2_length = III_scalefactors(ptr, channel, &si->gr[0].ch[ch],
-				      gr == 0 ? 0 : si->scfsi[ch]);
+      if (frame->flags & MAD_FLAG_LSF_EXT)
+	part2_length = III_lsf_scalefactors(ptr, frame->mode_ext, ch, channel);
+      else {
+	part2_length = III_scalefactors(ptr, channel, &si->gr[0].ch[ch],
+					gr == 0 ? 0 : si->scfsi[ch]);
+      }
 
       error = III_huffdecode(ptr, is, channel, sfreqi, part2_length);
       if (error)
@@ -1432,8 +1676,8 @@ int III_decode(struct mad_bitptr *ptr, struct mad_frame *frame,
       /* subbands 0-1 */
 
       if (channel->block_type != 2 || (channel->flags & mixed_block_flag)) {
-	/* long blocks sfb 0-7 */
-	for (sfb = 0; sfb < 8; ++sfb) {
+	/* long blocks sfb 0-7 (0-5 LSF) */
+	for (sfb = 0; sfb < sfbcut; ++sfb) {
 	  for (f = sfwidth_l[sfreqi][sfb]; f--; ++i)
 	    xr[ch][i] = is[i] ? III_requantize_l(is[i], sfb, channel) : 0;
 	}
@@ -1451,18 +1695,19 @@ int III_decode(struct mad_bitptr *ptr, struct mad_frame *frame,
       /* subbands 2-31 */
 
       if (channel->block_type != 2) {
-	/* long blocks sfb 8-20 */
-	for (sfb = 8; sfb < 21; ++sfb) {
+	/* long blocks sfb 8-20 (6-20 LSF) */
+	for (sfb = sfbcut; sfb < 21; ++sfb) {
 	  for (f = sfwidth_l[sfreqi][sfb]; f--; ++i)
 	    xr[ch][i] = is[i] ? III_requantize_l(is[i], sfb, channel) : 0;
 	}
 
+	/* long block sfb 21 */
 	while (i < 576) {
 	  xr[ch][i] = is[i] ? III_requantize_l(is[i], 21, channel) : 0;
 	  ++i;
 	}
       }
-      else {
+      else {  /* channel->block_type == 2 */
 	unsigned int n;
 
 	/* short blocks sfb 3-11 */
@@ -1475,6 +1720,7 @@ int III_decode(struct mad_bitptr *ptr, struct mad_frame *frame,
 
 	n = (576 - i) / 3;
 
+	/* short block sfb 12 */
 	for (w = 0; w < 3; ++w) {
 	  for (f = n; f--; ++i)
 	    xr[ch][i] = is[i] ? III_requantize_s(is[i], 12, w, channel) : 0;
@@ -1495,7 +1741,7 @@ int III_decode(struct mad_bitptr *ptr, struct mad_frame *frame,
     for (ch = 0; ch < nch; ++ch) {
       struct channel const *channel = &granule->ch[ch];
       mad_fixed_t (*sample)[32] = &frame->sbsample[ch][18 * gr];
-      unsigned int sb, l;
+      unsigned int sb, l, i, sblimit;
       mad_fixed_t output[36];
 
       if (channel->block_type == 2)
@@ -1526,9 +1772,15 @@ int III_decode(struct mad_bitptr *ptr, struct mad_frame *frame,
 
       /* subbands 2-31 */
 
+      i = 576;
+      while (i > 36 && xr[ch][i - 1] == 0)
+	--i;
+
+      sblimit = 32 - (576 - i) / 18;
+
       if (channel->block_type != 2) {
 	/* long blocks */
-	for (sb = 2; sb < 32; ++sb, l += 18) {
+	for (sb = 2; sb < sblimit; ++sb, l += 18) {
 	  III_imdct_l(&xr[ch][l], output, channel->block_type);
 	  III_overlap(output, (*frame->overlap)[ch][sb], sample, sb);
 
@@ -1538,13 +1790,22 @@ int III_decode(struct mad_bitptr *ptr, struct mad_frame *frame,
       }
       else {
 	/* short blocks */
-	for (sb = 2; sb < 32; ++sb, l += 18) {
+	for (sb = 2; sb < sblimit; ++sb, l += 18) {
 	  III_imdct_s(&xr[ch][l], output);
 	  III_overlap(output, (*frame->overlap)[ch][sb], sample, sb);
 
 	  if (sb & 1)
 	    III_freqinver(sample, sb);
 	}
+      }
+
+      /* (zero subbands) */
+
+      for (sb = sblimit; sb < 32; ++sb) {
+	III_overlap_z((*frame->overlap)[ch][sb], sample, sb);
+
+	if (sb & 1)
+	  III_freqinver(sample, sb);
       }
     }
   }
@@ -1559,8 +1820,8 @@ int III_decode(struct mad_bitptr *ptr, struct mad_frame *frame,
 int mad_layer_III(struct mad_stream *stream, struct mad_frame *frame,
 		  unsigned short const crc[2])
 {
-  unsigned int nch;
-  unsigned int main_data_begin, main_data_bitlen, main_data_length;
+  unsigned int nch, private_bitlen;
+  unsigned int main_data_bitlen, main_data_length, sideinfo_length;
   unsigned int frame_space, frame_used, frame_free;
   struct mad_bitptr ptr;
   struct sideinfo si;
@@ -1585,11 +1846,12 @@ int mad_layer_III(struct mad_stream *stream, struct mad_frame *frame,
   }
 
   nch = MAD_NUMCHANNELS(frame);
+  sideinfo_length = (frame->flags & MAD_FLAG_LSF_EXT) ?
+    (nch == 1 ? 9 : 17) : (nch == 1 ? 17 : 32);
 
   /* check frame sanity */
 
-  if (stream->next_frame - mad_bit_nextbyte(&stream->ptr) <
-      (nch == 1 ? 17 : 32)) {
+  if (stream->next_frame - mad_bit_nextbyte(&stream->ptr) < sideinfo_length) {
     stream->error = MAD_ERR_BADFRAMELEN;
     stream->md_len = 0;
     return -1;
@@ -1598,41 +1860,36 @@ int mad_layer_III(struct mad_stream *stream, struct mad_frame *frame,
   /* check CRC word */
 
   if ((frame->flags & MAD_FLAG_PROTECTION) &&
-      mad_bit_crc(stream->ptr, nch == 1 ? 136 : 256, crc[0]) != crc[1]) {
+      mad_bit_crc(stream->ptr, sideinfo_length * 8, crc[0]) != crc[1]) {
     stream->error = MAD_ERR_BADCRC;
     result = -1;
   }
 
-  /* main_data_begin */
-  main_data_begin = mad_bit_read(&stream->ptr, 9);
-
-  /* private_bits */
-  if (nch == 1)
-    frame->flags |= mad_bit_read(&stream->ptr, 5) | MAD_FLAG_III_5BITPRIV;
-  else
-    frame->flags |= mad_bit_read(&stream->ptr, 3);
-
   /* decode frame side information */
 
-  error = III_sideinfo(&stream->ptr, &si, &main_data_bitlen, nch);
+  error = III_sideinfo(&stream->ptr, nch, frame->flags & MAD_FLAG_LSF_EXT,
+		       &si, &main_data_bitlen, &private_bitlen);
   if (error && result == 0) {
     stream->error = error;
     result = -1;
   }
+
+  frame->flags   |= private_bitlen;
+  frame->private |= si.private_bits;
 
   /* find main_data */
 
   frame_space      = stream->next_frame - mad_bit_nextbyte(&stream->ptr);
   main_data_length = (main_data_bitlen + 7) / 8;
 
-  if (main_data_begin == 0) {
+  if (si.main_data_begin == 0) {
     ptr = stream->ptr;
     stream->md_len = 0;
 
     frame_used = main_data_length;
   }
   else {
-    if (main_data_begin > stream->md_len) {
+    if (si.main_data_begin > stream->md_len) {
       if (result == 0) {
 	stream->error = MAD_ERR_BADDATAPTR;
 	result = -1;
@@ -1642,10 +1899,10 @@ int mad_layer_III(struct mad_stream *stream, struct mad_frame *frame,
     }
     else {
       mad_bit_init(&ptr,
-		   &(*stream->main_data)[stream->md_len] - main_data_begin);
+		   &(*stream->main_data)[stream->md_len] - si.main_data_begin);
 
-      if (main_data_length > main_data_begin) {
-	if (main_data_length - main_data_begin > frame_space) {
+      if (main_data_length > si.main_data_begin) {
+	if (main_data_length - si.main_data_begin > frame_space) {
 	  if (result == 0) {
 	    stream->error = MAD_ERR_BADDATALEN;
 	    result = -1;
@@ -1656,10 +1913,10 @@ int mad_layer_III(struct mad_stream *stream, struct mad_frame *frame,
 	else {
 	  memcpy(&(*stream->main_data)[stream->md_len],
 		 mad_bit_nextbyte(&stream->ptr),
-		 main_data_length - main_data_begin);
-	  stream->md_len += main_data_length - main_data_begin;
+		 main_data_length - si.main_data_begin);
+	  stream->md_len += main_data_length - si.main_data_begin;
 
-	  frame_used = main_data_length - main_data_begin;
+	  frame_used = main_data_length - si.main_data_begin;
 	}
       }
       else
@@ -1676,7 +1933,7 @@ int mad_layer_III(struct mad_stream *stream, struct mad_frame *frame,
 # if 0 && defined(DEBUG)
   fprintf(stderr, "main_data_begin:%u, main_data_length:%u, "
 	  "frame_space:%u, md_len:%u      \n",
-	  main_data_begin, main_data_length, frame_space, stream->md_len);
+	  si.main_data_begin, main_data_length, frame_space, stream->md_len);
 # endif
 
   /* decode main_data */
@@ -1696,10 +1953,10 @@ int mad_layer_III(struct mad_stream *stream, struct mad_frame *frame,
     stream->md_len = 511;
   }
   else {
-    if (main_data_length < main_data_begin) {
+    if (main_data_length < si.main_data_begin) {
       unsigned int extra;
 
-      extra = main_data_begin - main_data_length;
+      extra = si.main_data_begin - main_data_length;
       if (extra + frame_free > 511)
 	extra = 511 - frame_free;
 

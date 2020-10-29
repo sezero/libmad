@@ -2,27 +2,31 @@
  mad - MPEG audio decoder
  Copyright (C) 2000 Robert Leslie
 
- $Id: README,v 1.19 2000/05/13 02:38:51 rob Exp $
+ $Id: README,v 1.20 2000/06/03 23:07:41 rob Exp $
 
 ===============================================================================
 
 INTRODUCTION
 
-  MAD is an MPEG audio decoder. It currently only supports the MPEG 1
-  standard, but fully implements all three audio layers (Layer I, Layer II,
-  and Layer III, the latter often colloquially known as MP3.)
+  MAD is an MPEG audio decoder. It currently supports MPEG 1 as well as the
+  MPEG 2 extension to Lower Sampling Frequencies. All three audio layers
+  (Layer I, Layer II, and Layer III aka MP3) are fully implemented.
+
+  MAD does not yet support MPEG 2 multichannel audio (although it should be
+  backward compatible with such streams), nor does it support the so-called
+  MPEG 2.5 format.
 
   MAD has the following special features:
 
     - 100% fixed-point (integer) computation
-    - completely new implementation based on the ISO/IEC 11172-3 standard
+    - completely new implementation based on the ISO/IEC standards
     - distributed under the terms of the GNU General Public License (GPL)
 
   Because MAD uses integer computation rather than floating point, it is
   well suited for architectures without a floating point unit. All
   operations are performed with a 32-bit fixed-point integer representation.
 
-  Because MAD is a new implementation of the ISO/IEC standard, it is
+  Because MAD is a new implementation of the ISO/IEC standards, it is
   unencumbered by other copyrights. MAD is NOT a derivation of the ISO
   reference source or any other code.
 

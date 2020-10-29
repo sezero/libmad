@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: stream.h,v 1.6 2000/04/22 04:36:51 rob Exp $
+ * $Id: stream.h,v 1.7 2000/06/03 23:07:41 rob Exp $
  */
 
 # ifndef STREAM_H
@@ -47,14 +47,14 @@ struct mad_stream {
 
 # define MAD_ERR_BUFLEN		0x0001	/* input buffer too small (or EOF) */
 # define MAD_ERR_BUFPTR		0x0002	/* invalid (null) buffer pointer */
+
 # define MAD_ERR_NOMEM		0x0031	/* not enough memory */
 
 # define MAD_ERR_LOSTSYNC	0x0101	/* lost synchronization */
-# define MAD_ERR_BADID		0x0102	/* bad header ID field */
-# define MAD_ERR_BADLAYER	0x0103	/* reserved header layer value */
-# define MAD_ERR_BADBITRATE	0x0104	/* forbidden bitrate value */
-# define MAD_ERR_BADSAMPLEFREQ	0x0105	/* reserved sample frequency value */
-# define MAD_ERR_BADEMPHASIS	0x0106	/* reserved emphasis value */
+# define MAD_ERR_BADLAYER	0x0102	/* reserved header layer value */
+# define MAD_ERR_BADBITRATE	0x0103	/* forbidden bitrate value */
+# define MAD_ERR_BADSAMPLEFREQ	0x0104	/* reserved sample frequency value */
+# define MAD_ERR_BADEMPHASIS	0x0105	/* reserved emphasis value */
 
 # define MAD_ERR_BADCRC		0x0201	/* CRC check failed */
 # define MAD_ERR_BADBITALLOC	0x0211	/* forbidden bit allocation value */

@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: synth.c,v 1.10 2000/05/09 13:02:53 rob Exp $
+ * $Id: synth.c,v 1.11 2000/05/27 20:28:43 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
@@ -26,13 +26,6 @@
 # include "fixed.h"
 # include "frame.h"
 # include "synth.h"
-
-# if !defined(DCT_FAST)
-static
-mad_fixed_t const N[31][32] = {
-# include "N.dat"
-};
-# endif
 
 static
 mad_fixed_t const D[17][16] = {
@@ -61,7 +54,6 @@ void mad_synth_init(struct mad_synth *synth)
 #  define shift(x)  (x)
 # endif
 
-# if defined(DCT_FAST)
 /*
  * NAME:	dct32()
  * DESCRIPTION:	perform fast in[32]->out[32] DCT
@@ -395,92 +387,6 @@ void dct32(mad_fixed_t const in[32], mad_fixed_t lo[16], mad_fixed_t hi[16])
    *  49 shifts
    */
 }
-# endif
-
-/*
- * NAME:	matrixing()
- * DESCRIPTION:	perform subband synthesis matrixing operation
- */
-static
-void matrixing(mad_fixed_t lo[16], mad_fixed_t hi[16],
-	       mad_fixed_t const filter[32])
-{
-# if defined(DCT_FAST)
-
-  dct32(filter, lo, hi);
-
-  /*
-    x[i]      =  x'[i + 16]  i = 0..15
-    x[i + 17] = -x'[31 - i]  i = 0..15
-    x[i + 32] = -x'[16 - i]  i = 0..15
-    x[i + 48] = -x'[i]       i = 0..15
-    x[16]     = 0
-   */
-
-# else
-
-  /* generic matrix multiply */
-  /* currently broken */
-
-  register unsigned int i, k;
-  register mad_fixed_t *Vptr;
-  register mad_fixed_t const *fptr, *Nptr, *Vrefl;
-  register mad_fixed_t sum;
-
-  Vptr = lo;
-  Nptr = N[0];
-
-  /* 0 <= i <= 15 */
-  for (i = 0; i <= 15; ++i) {
-    fptr = filter;
-
-    sum = 0;
-    for (k = 0; k < 32; ++k)
-      sum += mad_f_mul(*Nptr++, *fptr++);
-
-    *Vptr++ = sum;
-  }
-
-# if 0
-  /* i = 16 */
-  ++Vptr;  /* = 0 */
-
-  /* 17 <= i <= 32 */
-  Vrefl = &V[15];
-  for (i = 17; i <= 32; ++i)
-    *Vptr++ = -*Vrefl--;
-# endif
-
-  Vptr = hi;
-
-  /* 33 <= i <= 47 */
-  for (i = 33; i <= 47; ++i) {
-    fptr = filter;
-
-    sum = 0;
-    for (k = 0; k < 32; ++k)
-      sum -= mad_f_mul(*Nptr++, *fptr++);
-
-    *Vptr++ = sum;
-  }
-
-  /* i = 48 */
-  fptr = filter;
-  sum = 0;
-  for (k = 0; k < 32; ++k)
-    sum += *fptr++;
-
-  *Vptr++ = sum;
-
-# if 0
-  /* 49 <= i <= 63 */
-  Vrefl = &V[47];
-  for (i = 49; i <= 63; ++i)
-    *Vptr++ = *Vrefl--;
-# endif
-
-# endif
-}
 
 # undef shift
 # ifdef SSO_FAST
@@ -545,7 +451,7 @@ void mad_synth_frame(struct mad_synth *synth, struct mad_frame const *frame)
       evenp = synth->filterout[ch][0];
       oddp  = synth->filterout[ch][1];
 
-      matrixing(&evenp[16 * slot], &oddp[16 * slot], frame->sbsample[ch][s]);
+      dct32(frame->sbsample[ch][s], &evenp[16 * slot], &oddp[16 * slot]);
 
       pcmptr = &synth->pcmout[ch][s * 32];
 

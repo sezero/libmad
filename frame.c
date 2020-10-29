@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: frame.c,v 1.5 2000/04/22 04:36:50 rob Exp $
+ * $Id: frame.c,v 1.6 2000/06/03 23:07:41 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
@@ -37,7 +37,7 @@
 # include "layer3.h"
 
 static
-unsigned int const bitrate_table[3][15] = {
+unsigned long const bitrate_table[3][15] = {
   { 0,  32000,  64000,  96000, 128000, 160000, 192000, 224000,
        256000, 288000, 320000, 352000, 384000, 416000, 448000 },
   { 0,  32000,  48000,  56000,  64000,  80000,  96000, 112000,
@@ -47,7 +47,15 @@ unsigned int const bitrate_table[3][15] = {
 };
 
 static
-unsigned int const sfreq_table[4] = { 44100, 48000, 32000 };
+unsigned long const lsf_bitrate_table[2][15] = {
+  { 0,  32000,  48000,  56000,  64000,  80000,  96000, 112000,
+       128000, 144000, 160000, 176000, 192000, 224000, 256000 },
+  { 0,   8000,  16000,  24000,  32000,  40000,  48000,  56000,
+        64000,  80000,  96000, 112000, 128000, 144000, 160000 }
+};
+
+static
+unsigned int const sfreq_table[3] = { 44100, 48000, 32000 };
 
 static
 unsigned int const time_table[3] = { 320, 294, 441 };
@@ -74,12 +82,12 @@ void mad_frame_init(struct mad_frame *frame)
   frame->bitrate = 0;
   frame->sfreq   = 0;
 
+  frame->flags   = 0;
+  frame->private = 0;
+
   mad_timer_init(&frame->duration);
 
-  frame->flags = 0;
-
   mad_frame_mute(frame);
-
   frame->overlap = 0;
 }
 
@@ -190,10 +198,8 @@ int mad_frame_header(struct mad_frame *frame, struct mad_stream *stream,
   frame->flags = 0;
 
   /* ID */
-  if (mad_bit_read(&header, 1) != 1) {
-    stream->error = MAD_ERR_BADID;
-    goto fail;
-  }
+  if (mad_bit_read(&header, 1) == 0)
+    frame->flags |= MAD_FLAG_LSF_EXT;
 
   /* layer */
   frame->layer = (4 - mad_bit_read(&header, 2)) & 3;
@@ -218,7 +224,10 @@ int mad_frame_header(struct mad_frame *frame, struct mad_stream *stream,
     goto fail;
   }
 
-  frame->bitrate = bitrate_table[frame->layer - 1][index];
+  if (frame->flags & MAD_FLAG_LSF_EXT)
+    frame->bitrate = lsf_bitrate_table[(frame->layer & 0x2) >> 1][index];
+  else
+    frame->bitrate = bitrate_table[frame->layer - 1][index];
 
   /* sampling_frequency */
   index = mad_bit_read(&header, 2);
@@ -229,6 +238,9 @@ int mad_frame_header(struct mad_frame *frame, struct mad_stream *stream,
 
   frame->sfreq = sfreq_table[index];
 
+  if (frame->flags & MAD_FLAG_LSF_EXT)
+    frame->sfreq /= 2;
+
   /* padding_bit */
   pad_slot = mad_bit_read(&header, 1);
   if (pad_slot)
@@ -236,7 +248,7 @@ int mad_frame_header(struct mad_frame *frame, struct mad_stream *stream,
 
   /* private_bit */
   if (mad_bit_read(&header, 1))
-    frame->flags |= MAD_FLAG_PRIVATE;
+    frame->private |= MAD_PRIV_HEADER;
 
   /* mode */
   frame->mode = 3 - mad_bit_read(&header, 2);
@@ -272,8 +284,14 @@ int mad_frame_header(struct mad_frame *frame, struct mad_stream *stream,
 
     if (frame->layer == 1)
       N = ((12 * frame->bitrate / frame->sfreq) + pad_slot) * 4;
-    else
-      N = (144 * frame->bitrate / frame->sfreq) + pad_slot;
+    else {
+      unsigned int slots_per_frame;
+
+      slots_per_frame =
+	(frame->layer == 3 && (frame->flags & MAD_FLAG_LSF_EXT)) ? 72 : 144;
+
+      N = (slots_per_frame * frame->bitrate / frame->sfreq) + pad_slot;
+    }
 
     /* verify there is enough data left in buffer to decode this frame */
     if (N + 4 > end - stream->this_frame) {
@@ -297,8 +315,13 @@ int mad_frame_header(struct mad_frame *frame, struct mad_stream *stream,
 
     time = time_table[index];
 
+    if (frame->layer != 1)
+      time *= 3;
+    if (frame->layer != 3 && (frame->flags & MAD_FLAG_LSF_EXT))
+      time *= 2;
+
     frame->duration.seconds    = 0;
-    frame->duration.parts36750 = (frame->layer == 1) ? time : 3 * time;
+    frame->duration.parts36750 = time;
   }
 
   return 0;
@@ -318,12 +341,14 @@ static
 int free_bitrate(struct mad_stream *stream, struct mad_frame *frame)
 {
   unsigned char const *ptr;
-  unsigned int rate, pad_slot;
+  unsigned int rate, pad_slot, slots_per_frame;
 
   ptr  = mad_bit_nextbyte(&stream->ptr);
   rate = 0;
 
   pad_slot = (frame->flags & MAD_FLAG_PADDING) ? 1 : 0;
+  slots_per_frame =
+    (frame->layer == 3 && (frame->flags & MAD_FLAG_LSF_EXT)) ? 72 : 144;
 
   while (rate == 0 && (ptr = mad_stream_sync(ptr, stream->bufend))) {
     unsigned int N, num;
@@ -335,21 +360,21 @@ int free_bitrate(struct mad_stream *stream, struct mad_frame *frame)
       if (num % (4 * 12 * 1000) < 4800) {
 	rate = num / (4 * 12 * 1000);
 
-	if (rate > 448)
+	if (rate > 448 || (rate > 256 && (frame->flags & MAD_FLAG_LSF_EXT)))
 	  rate = 0;
       }
     }
     else {
       num = (frame->sfreq * (N - pad_slot + 1));
-      if (num % (144 * 1000) < 14400) {
-	rate = num / (144 * 1000);
+      if (num % (slots_per_frame * 1000) < slots_per_frame * 100) {
+	rate = num / (slots_per_frame * 1000);
 
 	if (frame->layer == 2) {
-	  if (rate > 384)
+	  if (rate > 384 || (rate > 160 && (frame->flags & MAD_FLAG_LSF_EXT)))
 	    rate = 0;
 	}
 	else {  /* frame->layer == 3 */
-	  if (rate > 320)
+	  if (rate > 320 || (rate > 160 && (frame->flags & MAD_FLAG_LSF_EXT)))
 	    rate = 0;
 	}
       }

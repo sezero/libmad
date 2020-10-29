@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: frame.h,v 1.5 2000/04/22 04:36:50 rob Exp $
+ * $Id: frame.h,v 1.6 2000/06/03 23:07:41 rob Exp $
  */
 
 # ifndef FRAME_H
@@ -32,19 +32,22 @@ struct mad_frame {
   int mode_ext;				/* additional mode info */
   int emphasis;				/* de-emphasis to use (see below) */
 
-  unsigned int bitrate;			/* stream bitrate (bps) */
+  unsigned long bitrate;		/* stream bitrate (bps) */
   unsigned int sfreq;			/* sampling frequency (Hz) */
 
-  struct mad_timer duration;		/* audio playing time of frame */
+  int flags;				/* flags (below) */
+  int private;				/* private bits (below) */
 
-  int flags;				/* flags and private bits (below) */
+  struct mad_timer duration;		/* audio playing time of frame */
 
   mad_fixed_t sbsample[2][36][32];	/* synthesis subband filter samples */
   mad_fixed_t (*overlap)[2][32][18];	/* Layer III block overlap data */
 };
 
 # define MAD_NUMCHANNELS(frame)		((frame)->mode ? 2 : 1)
-# define MAD_NUMSBSAMPLES(frame)	((frame)->layer == 1 ? 12 : 36)
+# define MAD_NUMSBSAMPLES(frame)  \
+  ((frame)->layer == 1 ? 12 :  \
+   (((frame)->layer == 3 && ((frame)->flags & MAD_FLAG_LSF_EXT)) ? 18 : 36))
 
 # define MAD_MODE_SINGLE_CHANNEL	0
 # define MAD_MODE_DUAL_CHANNEL		1
@@ -55,17 +58,21 @@ struct mad_frame {
 # define MAD_EMPH_50_15_MS	1	/* 50/15 microseconds */
 # define MAD_EMPH_CCITT_J_17	3	/* CCITT J.17 */
 
-# define MAD_FLAG_PROTECTION	0x0100	/* frame has CRC protection */
-# define MAD_FLAG_COPYRIGHT	0x0200	/* frame is copyright */
-# define MAD_FLAG_ORIGINAL	0x0400	/* frame is original (else copy) */
-# define MAD_FLAG_PADDING	0x0800	/* frame has additional slot */
+# define MAD_FLAG_III_NPRIVATE	0x0007	/* number of Layer III private bits */
 
-# define MAD_FLAG_I_STEREO	0x1000	/* uses intensity joint stereo */
-# define MAD_FLAG_MS_STEREO	0x2000	/* uses middle/side joint stereo */
+# define MAD_FLAG_PROTECTION	0x0010	/* frame has CRC protection */
+# define MAD_FLAG_COPYRIGHT	0x0020	/* frame is copyright */
+# define MAD_FLAG_ORIGINAL	0x0040	/* frame is original (else copy) */
+# define MAD_FLAG_PADDING	0x0080	/* frame has additional slot */
 
-# define MAD_FLAG_PRIVATE	0x0040	/* header private bit */
-# define MAD_FLAG_III_PRIVATE	0x001f	/* Layer III private bits */
-# define MAD_FLAG_III_5BITPRIV	0x0020	/* 5 bits in III private (else 3) */
+# define MAD_FLAG_I_STEREO	0x0100	/* uses intensity joint stereo */
+# define MAD_FLAG_MS_STEREO	0x0200	/* uses middle/side joint stereo */
+
+# define MAD_FLAG_LSF_EXT	0x1000	/* lower sampling freq. extension */
+# define MAD_FLAG_MC_EXT	0x2000	/* multichannel audio extension */
+
+# define MAD_PRIV_HEADER	0x0100	/* header private bit */
+# define MAD_PRIV_III		0x001f	/* Layer III private bits (up to 5) */
 
 void mad_frame_init(struct mad_frame *);
 void mad_frame_finish(struct mad_frame *);
