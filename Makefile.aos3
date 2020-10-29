@@ -1,0 +1,27 @@
+CFLAGS  = -m68020-60 -Wall -DWORDS_BIGENDIAN=1
+CFLAGS += -noixemul -O1 -fforce-mem -fforce-addr -fthread-jumps -fcse-follow-jumps -fcse-skip-blocks -fexpensive-optimizations -fregmove
+CFLAGS += -DNDEBUG
+CFLAGS += -DFPM_DEFAULT
+CFLAGS += -DOPT_SPEED=1
+CFLAGS += -DOPT_SSO=1
+LIBNAME =  libmad.a
+
+CC      = m68k-amigaos-gcc
+AR      = m68k-amigaos-ar
+RANLIB  = m68k-amigaos-ranlib
+
+LIBOBJ = version.o fixed.o bit.o timer.o stream.o frame.o synth.o layer12.o layer3.o huffman.o decoder.o
+
+all: $(LIBNAME)
+
+$(LIBNAME): $(LIBOBJ)
+	$(AR) cru $(LIBNAME) $(LIBOBJ)
+	$(RANLIB) $(LIBNAME)
+
+%.o: %.c
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+clean:
+	$(RM) *.o
+distclean: clean
+	$(RM) $(LIBNAME)
