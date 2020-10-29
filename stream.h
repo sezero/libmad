@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: stream.h,v 1.1 2000/08/02 05:48:52 rob Exp $
+ * $Id: stream.h,v 1.2 2000/09/11 05:29:31 rob Exp $
  */
 
 # ifndef STREAM_H
@@ -66,7 +66,7 @@ struct mad_stream {
 # define MAD_ERR_BADDATALEN	0x0235	/* bad main data length */
 # define MAD_ERR_BADPART3LEN	0x0236	/* bad audio data length */
 # define MAD_ERR_BADHUFFTABLE	0x0237	/* bad Huffman table select */
-# define MAD_ERR_BADSTEREO	0x0238	/* incompatible block_type for M/S */
+# define MAD_ERR_BADSTEREO	0x0238	/* incompatible block_type for MS */
 
 # define MAD_RECOVERABLE(error)	((error) & 0xff00)
 

@@ -2,9 +2,53 @@
  mad - MPEG audio decoder
  Copyright (C) 2000 Robert Leslie
 
- $Id: CHANGES,v 1.18 2000/08/02 05:48:45 rob Exp $
+ $Id: CHANGES,v 1.27 2000/09/14 18:05:29 rob Exp $
 
 ===============================================================================
+
+Version 0.11.2 (beta)
+
+  * Incorporated Nicolas Pitre's ARM and parameterized scaling changes.
+
+  * Incorporated Andre McCurdy's ARM assembly optimization (used only if
+    --enable-aso is given to configure to enable architecture-specific
+    optimizations.)
+
+  * Reduced FPM_INTEL assembly to two instructions.
+
+  * Fixed problems with certain FPM modes in synth.c.
+
+  * Improved the accuracy of FPM_APPROX.
+
+  * Improved the accuracy of SSO.
+
+  * Added a dual channel output selection option.
+
+  * Improved the OSS output module by falling back on 8-bit format if 16-bit
+    is not available, and by using native 16-bit endianness.
+
+  * PCM output is now dithered for better audio quality. A new runtime
+    option can disable this feature.
+
+  * Added a resampling feature for unsupported output sampling frequencies.
+
+  * Centralized sample scaling and formatting in audio.c for the output
+    modules.
+
+  * Moved the empeg-car audio output support into a separate module.
+
+  * Added bad-CRC frame muting code to madplay.c.
+
+  * Improved sync discovery by checking for a sync word in the following
+    frame.
+
+  * Changed `madtime' to indicate average bitrates.
+
+  * Reduced the ID3 genre table memory usage.
+
+  * Minor code clean-up.
+
+  * Added experimental rules for generating libmad.so shared library.
 
 Version 0.11.1 (beta)
 

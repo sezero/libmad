@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: timer.h,v 1.1 2000/08/02 05:48:52 rob Exp $
+ * $Id: timer.h,v 1.2 2000/09/07 22:29:39 rob Exp $
  */
 
 # ifndef TIMER_H
@@ -32,9 +32,9 @@ void mad_timer_init(struct mad_timer *);
 # define mad_timer_finish(timer)  /* nothing */
 
 void mad_timer_add(struct mad_timer *, struct mad_timer const *);
-void mad_timer_str(struct mad_timer const *, char *, char const *, int);
 
-# define mad_timer_seconds(timer)	((timer)->seconds)
+void mad_timer_str(struct mad_timer const *, char *, char const *, int);
+unsigned long mad_timer_count(struct mad_timer const *, int);
 
 # define MAD_TIMER_HOURS	0x0002
 # define MAD_TIMER_MINUTES	0x0001

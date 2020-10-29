@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: synth.c,v 1.1 2000/08/02 05:48:52 rob Exp $
+ * $Id: synth.c,v 1.5 2000/09/14 15:53:52 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
@@ -48,10 +48,46 @@ void mad_synth_init(struct mad_synth *synth)
   synth->slot = 0;
 }
 
-# ifdef SSO_FAST
-#  define shift(x)  ((x) >> 14)
+/*
+ * An optional optimization called here the Subband Synthesis Optimization
+ * (SSO) improves the performance of subband synthesis at the expense of
+ * accuracy.
+ *
+ * The idea is to simplify 32x32->64-bit multiplication to 32x32->32 such
+ * that extra scaling and rounding are not necessary. This often allows the
+ * compiler to use faster 32-bit multiply-accumulate instructions instead of
+ * explicit 64-bit multiply, shift, and add instructions.
+ *
+ * SSO works like this: a full 32x32->64-bit multiply of two mad_fixed_t
+ * values requires the result to be right-shifted 28 bits to be properly
+ * scaled to the same fixed-point format. Right shifts can be applied at any
+ * time to either operand or to the result, so the optimization involves
+ * careful placement of these shifts to minimize the loss of accuracy.
+ *
+ * The first shift has already been applied to the D[] table of coefficients
+ * for the subband synthesis window. Each value has been right-shifted 12
+ * bits with no loss of accuracy because all of the shifted bits were zero.
+ * A second 12-bit shift occurs after the DCT calculation. This loses 12
+ * bits of accuracy. A third 2-bit shift occurs on the window coefficient.
+ * Finally, a fourth 2-bit shift occurs just before the sample is saved in
+ * the PCM buffer. 12 + 12 + 2 + 2 == 28 bits.
+ *
+ * Although the resulting loss of accuracy is unavoidable, it is within the
+ * limits of "limited accuracy" compliance spelled out in ISO/IEC 11172-4.
+ */
+
+/* FPM_APPROX without OPT_SSO will actually lose accuracy and performance */
+
+# if defined(FPM_APPROX) && !defined(OPT_SSO)
+#  define OPT_SSO
+# endif
+
+/* second SSO shift, with rounding */
+
+# if defined(OPT_SSO)
+#  define SHIFT(x)  (((x) + (1L << 11)) >> 12)
 # else
-#  define shift(x)  (x)
+#  define SHIFT(x)  (x)
 # endif
 
 /*
@@ -341,41 +377,41 @@ void dct32(mad_fixed_t const in[32], mad_fixed_t lo[16], mad_fixed_t hi[16])
 
   /* the output order is convoluted to simplify later processing */
 
-  /*  0 */ hi[15] = shift(t113 + t114);
-  /*  1 */ hi[14] = shift(t32);
-  /*  2 */ hi[13] = shift(t58);
-  /*  3 */ hi[12] = shift(t49);
-  /*  4 */ hi[11] = shift(t93);
-  /*  5 */ hi[10] = shift(t68);
-  /*  6 */ hi[9]  = shift(t82);
-  /*  7 */ hi[8]  = shift(t77);
-  /*  8 */ hi[7]  = shift(t143);
-  /*  9 */ hi[6]  = shift(t88);
-  /* 10 */ hi[5]  = shift(t105);
-  /* 11 */ hi[4]  = shift(t99);
-  /* 12 */ hi[3]  = shift(t127);
-  /* 13 */ hi[2]  = shift(t112);
-  /* 14 */ hi[1]  = shift(t120);
-  /* 15 */ hi[0]  = shift(t117);
+  /*  0 */ hi[15] = SHIFT(t113 + t114);
+  /*  1 */ hi[14] = SHIFT(t32);
+  /*  2 */ hi[13] = SHIFT(t58);
+  /*  3 */ hi[12] = SHIFT(t49);
+  /*  4 */ hi[11] = SHIFT(t93);
+  /*  5 */ hi[10] = SHIFT(t68);
+  /*  6 */ hi[9]  = SHIFT(t82);
+  /*  7 */ hi[8]  = SHIFT(t77);
+  /*  8 */ hi[7]  = SHIFT(t143);
+  /*  9 */ hi[6]  = SHIFT(t88);
+  /* 10 */ hi[5]  = SHIFT(t105);
+  /* 11 */ hi[4]  = SHIFT(t99);
+  /* 12 */ hi[3]  = SHIFT(t127);
+  /* 13 */ hi[2]  = SHIFT(t112);
+  /* 14 */ hi[1]  = SHIFT(t120);
+  /* 15 */ hi[0]  = SHIFT(t117);
 
-  /* 16 */ lo[0]  = shift(mad_f_mul(t113 - t114, costab16));
-  /* 17 */ lo[1]  = shift(t124);
-  /* 18 */ lo[2]  = shift(t135);
-  /* 19 */ lo[3]  = shift(t131);
-  /* 20 */ lo[4]  = shift(t160);
-  /* 21 */ lo[5]  = shift(t140);
-  /* 22 */ lo[6]  = shift(t151);
-  /* 23 */ lo[7]  = shift(t147);
-  /* 24 */ lo[8]  = shift((mad_f_mul(t141 - t142, costab16) << 1) - t143);
-  /* 25 */ lo[9]  = shift(t156);
-  /* 26 */ lo[10] = shift(t170);
-  /* 27 */ lo[11] = shift(t165);
-  /* 28 */ lo[12] = shift((((mad_f_mul(t157 - t158, costab16) << 1) -
+  /* 16 */ lo[0]  = SHIFT(mad_f_mul(t113 - t114, costab16));
+  /* 17 */ lo[1]  = SHIFT(t124);
+  /* 18 */ lo[2]  = SHIFT(t135);
+  /* 19 */ lo[3]  = SHIFT(t131);
+  /* 20 */ lo[4]  = SHIFT(t160);
+  /* 21 */ lo[5]  = SHIFT(t140);
+  /* 22 */ lo[6]  = SHIFT(t151);
+  /* 23 */ lo[7]  = SHIFT(t147);
+  /* 24 */ lo[8]  = SHIFT((mad_f_mul(t141 - t142, costab16) << 1) - t143);
+  /* 25 */ lo[9]  = SHIFT(t156);
+  /* 26 */ lo[10] = SHIFT(t170);
+  /* 27 */ lo[11] = SHIFT(t165);
+  /* 28 */ lo[12] = SHIFT((((mad_f_mul(t157 - t158, costab16) << 1) -
 			    t159) << 1) - t160);
-  /* 29 */ lo[13] = shift(t176);
-  /* 30 */ lo[14] = shift((((((mad_f_mul(t166 - t167, costab16) << 1) -
+  /* 29 */ lo[13] = SHIFT(t176);
+  /* 30 */ lo[14] = SHIFT((((((mad_f_mul(t166 - t167, costab16) << 1) -
 			      t168) << 1) - t169) << 1) - t170);
-  /* 31 */ lo[15] = shift((((((((mad_f_mul(t171 - t172, costab16) << 1) -
+  /* 31 */ lo[15] = SHIFT((((((((mad_f_mul(t171 - t172, costab16) << 1) -
 				t173) << 1) - t174) << 1) -
 			    t175) << 1) - t176);
 
@@ -384,24 +420,24 @@ void dct32(mad_fixed_t const in[32], mad_fixed_t lo[16], mad_fixed_t hi[16])
    *  80 multiplies
    *  80 additions
    * 119 subtractions
-   *  49 shifts
+   *  49 shifts (not counting SSO)
    */
 }
 
-# undef shift
-# ifdef SSO_FAST
-#  define f_mul(x, y)	((x) * (y))
-#  define shift(x)	((x) >> 2)
-# elif defined(FPM_MACRO)
-#  undef  mad_f_scale64
-#  define mad_f_scale64(hi, lo)	((mad_fixed_t)  \
-                                 (((mad_fixed64hi_t) (hi) << 16) |  \
-                                  ((mad_fixed64lo_t) (lo) >> 16)))
-#  define f_mul(x, y)	mad_f_mul((x), (y))
-#  define shift(x)	(x)
+/* third and fourth SSO shift (or 12-bit D[] shift compensation without SSO) */
+
+# undef SHIFT
+# if defined(OPT_SSO)
+#  define MUL(x, y)		((x) * ((y) >> 2))
+#  define SHIFT(x)		((x) >> 2)
+# elif defined(MAD_F_SCALEBITS)
+#  undef  MAD_F_SCALEBITS
+#  define MAD_F_SCALEBITS	(MAD_F_FRACBITS - 12)
+#  define MUL(x, y)		mad_f_mul((x), (y))
+#  define SHIFT(x)		(x)
 # else
-#  define f_mul(x, y)	(mad_f_mul((x), (y)) << 12)
-#  define shift(x)	(x)
+#  define MUL(x, y)		mad_f_mul((x), (y) << 12)
+#  define SHIFT(x)		(x)
 # endif
 
 /*
@@ -413,8 +449,8 @@ void mad_synth_frame(struct mad_synth *synth, struct mad_frame const *frame)
   unsigned int nch, ns, ch, s, sb;
   mad_fixed_t *pcmptr;
 
-  nch = MAD_NUMCHANNELS(frame);
-  ns  = MAD_NUMSBSAMPLES(frame);
+  nch = MAD_NCHANNELS(frame);
+  ns  = MAD_NSBSAMPLES(frame);
 
   for (s = 0; s < ns; ++s) {
     unsigned int slot, even, odd;
@@ -468,25 +504,25 @@ void mad_synth_frame(struct mad_synth *synth, struct mad_frame const *frame)
 
       Dptr = D[0];
 
-      sum1  = f_mul(evenp[0],    Dptr[even]);
-      sum1 += f_mul(evenp[32],   Dptr[even14]);
-      sum1 += f_mul(evenp[64],   Dptr[even12]);
-      sum1 += f_mul(evenp[96],   Dptr[even10]);
-      sum1 += f_mul(evenp[128],  Dptr[even8]);
-      sum1 += f_mul(evenp[160],  Dptr[even6]);
-      sum1 += f_mul(evenp[192],  Dptr[even4]);
-      sum1 += f_mul(evenp[224],  Dptr[even2]);
+      sum1  = MUL(evenp[0],    Dptr[even]);
+      sum1 += MUL(evenp[32],   Dptr[even14]);
+      sum1 += MUL(evenp[64],   Dptr[even12]);
+      sum1 += MUL(evenp[96],   Dptr[even10]);
+      sum1 += MUL(evenp[128],  Dptr[even8]);
+      sum1 += MUL(evenp[160],  Dptr[even6]);
+      sum1 += MUL(evenp[192],  Dptr[even4]);
+      sum1 += MUL(evenp[224],  Dptr[even2]);
 
-      sum1 -= f_mul(even2p[0],   Dptr[odd]);
-      sum1 -= f_mul(even2p[32],  Dptr[odd14]);
-      sum1 -= f_mul(even2p[64],  Dptr[odd12]);
-      sum1 -= f_mul(even2p[96],  Dptr[odd10]);
-      sum1 -= f_mul(even2p[128], Dptr[odd8]);
-      sum1 -= f_mul(even2p[160], Dptr[odd6]);
-      sum1 -= f_mul(even2p[192], Dptr[odd4]);
-      sum1 -= f_mul(even2p[224], Dptr[odd2]);
+      sum1 -= MUL(even2p[0],   Dptr[odd]);
+      sum1 -= MUL(even2p[32],  Dptr[odd14]);
+      sum1 -= MUL(even2p[64],  Dptr[odd12]);
+      sum1 -= MUL(even2p[96],  Dptr[odd10]);
+      sum1 -= MUL(even2p[128], Dptr[odd8]);
+      sum1 -= MUL(even2p[160], Dptr[odd6]);
+      sum1 -= MUL(even2p[192], Dptr[odd4]);
+      sum1 -= MUL(even2p[224], Dptr[odd2]);
 
-      pcmptr[0] = shift(sum1);
+      pcmptr[0] = SHIFT(sum1);
       ++evenp;
 
       for (sb = 1; sb < 16; ++sb) {
@@ -494,58 +530,58 @@ void mad_synth_frame(struct mad_synth *synth, struct mad_frame const *frame)
 
 	/* D[32 - sb][i] == -D[sb][15 - i] */
 
-	sum1  = f_mul(evenp[0],   Dptr[     even]);
-	sum2  = f_mul(evenp[0],   Dptr[15 - even]);
-	sum1 += f_mul(evenp[32],  Dptr[     even14]);
-	sum2 += f_mul(evenp[32],  Dptr[15 - even14]);
-	sum1 += f_mul(evenp[64],  Dptr[     even12]);
-	sum2 += f_mul(evenp[64],  Dptr[15 - even12]);
-	sum1 += f_mul(evenp[96],  Dptr[     even10]);
-	sum2 += f_mul(evenp[96],  Dptr[15 - even10]);
-	sum1 += f_mul(evenp[128], Dptr[     even8]);
-	sum2 += f_mul(evenp[128], Dptr[15 - even8]);
-	sum1 += f_mul(evenp[160], Dptr[     even6]);
-	sum2 += f_mul(evenp[160], Dptr[15 - even6]);
-	sum1 += f_mul(evenp[192], Dptr[     even4]);
-	sum2 += f_mul(evenp[192], Dptr[15 - even4]);
-	sum1 += f_mul(evenp[224], Dptr[     even2]);
-	sum2 += f_mul(evenp[224], Dptr[15 - even2]);
+	sum1  = MUL(evenp[0],   Dptr[     even]);
+	sum2  = MUL(evenp[0],   Dptr[15 - even]);
+	sum1 += MUL(evenp[32],  Dptr[     even14]);
+	sum2 += MUL(evenp[32],  Dptr[15 - even14]);
+	sum1 += MUL(evenp[64],  Dptr[     even12]);
+	sum2 += MUL(evenp[64],  Dptr[15 - even12]);
+	sum1 += MUL(evenp[96],  Dptr[     even10]);
+	sum2 += MUL(evenp[96],  Dptr[15 - even10]);
+	sum1 += MUL(evenp[128], Dptr[     even8]);
+	sum2 += MUL(evenp[128], Dptr[15 - even8]);
+	sum1 += MUL(evenp[160], Dptr[     even6]);
+	sum2 += MUL(evenp[160], Dptr[15 - even6]);
+	sum1 += MUL(evenp[192], Dptr[     even4]);
+	sum2 += MUL(evenp[192], Dptr[15 - even4]);
+	sum1 += MUL(evenp[224], Dptr[     even2]);
+	sum2 += MUL(evenp[224], Dptr[15 - even2]);
 
-	sum1 -= f_mul(oddp[0],    Dptr[     odd]);
-	sum2 += f_mul(oddp[0],    Dptr[15 - odd]);
-	sum1 -= f_mul(oddp[32],   Dptr[     odd14]);
-	sum2 += f_mul(oddp[32],   Dptr[15 - odd14]);
-	sum1 -= f_mul(oddp[64],   Dptr[     odd12]);
-	sum2 += f_mul(oddp[64],   Dptr[15 - odd12]);
-	sum1 -= f_mul(oddp[96],   Dptr[     odd10]);
-	sum2 += f_mul(oddp[96],   Dptr[15 - odd10]);
-	sum1 -= f_mul(oddp[128],  Dptr[     odd8]);
-	sum2 += f_mul(oddp[128],  Dptr[15 - odd8]);
-	sum1 -= f_mul(oddp[160],  Dptr[     odd6]);
-	sum2 += f_mul(oddp[160],  Dptr[15 - odd6]);
-	sum1 -= f_mul(oddp[192],  Dptr[     odd4]);
-	sum2 += f_mul(oddp[192],  Dptr[15 - odd4]);
-	sum1 -= f_mul(oddp[224],  Dptr[     odd2]);
-	sum2 += f_mul(oddp[224],  Dptr[15 - odd2]);
+	sum1 -= MUL(oddp[0],    Dptr[     odd]);
+	sum2 += MUL(oddp[0],    Dptr[15 - odd]);
+	sum1 -= MUL(oddp[32],   Dptr[     odd14]);
+	sum2 += MUL(oddp[32],   Dptr[15 - odd14]);
+	sum1 -= MUL(oddp[64],   Dptr[     odd12]);
+	sum2 += MUL(oddp[64],   Dptr[15 - odd12]);
+	sum1 -= MUL(oddp[96],   Dptr[     odd10]);
+	sum2 += MUL(oddp[96],   Dptr[15 - odd10]);
+	sum1 -= MUL(oddp[128],  Dptr[     odd8]);
+	sum2 += MUL(oddp[128],  Dptr[15 - odd8]);
+	sum1 -= MUL(oddp[160],  Dptr[     odd6]);
+	sum2 += MUL(oddp[160],  Dptr[15 - odd6]);
+	sum1 -= MUL(oddp[192],  Dptr[     odd4]);
+	sum2 += MUL(oddp[192],  Dptr[15 - odd4]);
+	sum1 -= MUL(oddp[224],  Dptr[     odd2]);
+	sum2 += MUL(oddp[224],  Dptr[15 - odd2]);
 
-	pcmptr[     sb] = shift(sum1);
-	pcmptr[32 - sb] = shift(sum2);
+	pcmptr[     sb] = SHIFT(sum1);
+	pcmptr[32 - sb] = SHIFT(sum2);
 
 	++evenp, ++oddp;
       }
 
       Dptr = D[16];
 
-      sum1  = f_mul(oddp[0],   Dptr[odd]);
-      sum1 += f_mul(oddp[32],  Dptr[odd14]);
-      sum1 += f_mul(oddp[64],  Dptr[odd12]);
-      sum1 += f_mul(oddp[96],  Dptr[odd10]);
-      sum1 += f_mul(oddp[128], Dptr[odd8]);
-      sum1 += f_mul(oddp[160], Dptr[odd6]);
-      sum1 += f_mul(oddp[192], Dptr[odd4]);
-      sum1 += f_mul(oddp[224], Dptr[odd2]);
+      sum1  = MUL(oddp[0],   Dptr[odd]);
+      sum1 += MUL(oddp[32],  Dptr[odd14]);
+      sum1 += MUL(oddp[64],  Dptr[odd12]);
+      sum1 += MUL(oddp[96],  Dptr[odd10]);
+      sum1 += MUL(oddp[128], Dptr[odd8]);
+      sum1 += MUL(oddp[160], Dptr[odd6]);
+      sum1 += MUL(oddp[192], Dptr[odd4]);
+      sum1 += MUL(oddp[224], Dptr[odd2]);
 
-      pcmptr[16] = shift(-sum1);
+      pcmptr[16] = SHIFT(-sum1);
     }
   }
 

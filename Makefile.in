@@ -16,12 +16,13 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
-# $Id: Makefile.in,v 1.2 2000/08/02 16:55:07 rob Exp $
+# $Id: Makefile.in,v 1.7 2000/09/14 19:05:22 rob Exp $
 #
 
 ## OPTIONS ####################################################################
 
 # Fixed Point Math multiply options:
+# (set by --enable-fpm during configure)
 #
 # FPM_APPROX	use 32-bit approximation
 # FPM_64BIT	use 64-bit (long long) accuracy
@@ -31,16 +32,20 @@
 # FPM_SPARC	use SPARC V8 assembly
 # (default)	use slow explicit computation
 
-# set by --enable-fpm during configure
 FPM =		@FPM@
 
-# Subband Synthesis Optimization options:
+# Architecture-Specific Optimization options (supported architectures only):
+# (set by --enable-aso during configure)
 #
-# SSO_FAST	use fast approximation
-# (default)	use standard calculation
+# ASO_IMDCT	optimize Layer III IMDCT
 
-# set by --enable-sso during configure
-SSO =		@SSO@
+ASO =		@ASO@
+
+# Other options:
+# (now kept in config.h)
+#
+# OPT_SSO	use fast subband synthesis approximation optimization
+# OPT_ISKLUGE	use Layer III intensity stereo kluge
 
 ## ENVIRONMENT ################################################################
 
@@ -64,7 +69,7 @@ LIBINSTALL =	@INSTALL_DATA@
 
 CC =		@CC@
 INCLUDES =	@CPPFLAGS@
-DEFINES =	@DEFS@ $(FPM) $(SSO)
+DEFINES =	@DEFS@ $(FPM) $(ASO)
 LIBS =		@LIBS@
 
 AR =		ar
@@ -80,7 +85,7 @@ LDOPTS =	@LDFLAGS@ $(PROFILER)
 
 ## FLAGS ######################################################################
 
-CFLAGS =	$(COPTS) $(INCLUDES) $(DEFINES)
+CFLAGS =	$(SOOPTS) $(COPTS) $(INCLUDES) $(DEFINES)
 LDFLAGS =	$(LDOPTS)
 
 ## OBJECTS ####################################################################
@@ -90,8 +95,14 @@ TARGETS =	$(LIBMAD) $(INCMAD)
 LIBMAD =	libmad.a
 INCMAD =	mad.h
 
+LIBMADSO =	libmad.so
+SOMAJOR =	0.11
+SOMINOR =	2b
+
+MISCOBJS =	@MISCOBJS@
+
 MADOBJS =	version.o fixed.o bit.o timer.o stream.o frame.o synth.o  \
-		decoder.o layer12.o layer3.o huffman.o
+		decoder.o layer12.o layer3.o huffman.o $(MISCOBJS)
 MADINCLUDES =	version.h fixed.h bit.h timer.h stream.h frame.h synth.h  \
 		decoder.h
 
@@ -109,7 +120,7 @@ install :: all
 again :: clean all
 
 clean ::
-	rm -f $(TARGETS) *.o *.a gmon.* core
+	rm -f $(TARGETS) *.o *.a *.so* gmon.* core
 
 distclean :: clean
 	rm -f mad.h
@@ -166,8 +177,23 @@ $(INCMAD): Makefile mad.h.sed ../COPYRIGHT $(MADINCLUDES)
 	grep SIZEOF config.h | sed -e 's/^#d/# d/'; echo;  \
 	sed -n -f mad.h.sed $(MADINCLUDES)) >$@
 
+$(LIBMADSO): $(LIBMADSO).$(SOMAJOR)
+	rm -f $(LIBMADSO)
+	ln -s $(LIBMADSO).$(SOMAJOR) $(LIBMADSO)
+
+$(LIBMADSO).$(SOMAJOR): $(LIBMADSO).$(SOMAJOR).$(SOMINOR)
+	rm -f $(LIBMADSO).$(SOMAJOR)
+	ln -s $(LIBMADSO).$(SOMAJOR).$(SOMINOR) $(LIBMADSO).$(SOMAJOR)
+
+$(LIBMADSO).$(SOMAJOR).$(SOMINOR): Makefile *.c *.h
+	rm -f $(MADOBJS)
+	$(MAKE) $(MADOBJS) SOOPTS=-fPIC
+	$(CC) -shared -Wl,-soname,$(LIBMADSO).$(SOMAJOR) $(LDFLAGS)  \
+		$(MADOBJS) -o $(LIBMADSO).$(SOMAJOR).$(SOMINOR)
+	rm -f $(MADOBJS)
+
 .c.s:
-	$(CC) $(ARCH) $(OPTIMIZER) $(DEFINES) -S $<
+	$(CC) $(ARCH) $(OPTIMIZER) $(INCLUDES) $(DEFINES) -S $<
 
 *.o *.s: Makefile
 

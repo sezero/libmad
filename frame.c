@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: frame.c,v 1.1 2000/08/02 05:48:51 rob Exp $
+ * $Id: frame.c,v 1.4 2000/09/10 22:04:44 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
@@ -37,21 +37,20 @@
 # include "layer3.h"
 
 static
-unsigned long const bitrate_table[3][15] = {
-  { 0,  32000,  64000,  96000, 128000, 160000, 192000, 224000,
+unsigned long const bitrate_table[5][15] = {
+  /* MPEG 1 */
+  { 0,  32000,  64000,  96000, 128000, 160000, 192000, 224000,  /* Layer I   */
        256000, 288000, 320000, 352000, 384000, 416000, 448000 },
-  { 0,  32000,  48000,  56000,  64000,  80000,  96000, 112000,
+  { 0,  32000,  48000,  56000,  64000,  80000,  96000, 112000,  /* Layer II  */
        128000, 160000, 192000, 224000, 256000, 320000, 384000 },
-  { 0,  32000,  40000,  48000,  56000,  64000,  80000,  96000,
-       112000, 128000, 160000, 192000, 224000, 256000, 320000 }
-};
+  { 0,  32000,  40000,  48000,  56000,  64000,  80000,  96000,  /* Layer III */
+       112000, 128000, 160000, 192000, 224000, 256000, 320000 },
 
-static
-unsigned long const lsf_bitrate_table[2][15] = {
-  { 0,  32000,  48000,  56000,  64000,  80000,  96000, 112000,
+  /* MPEG 2 LSF */
+  { 0,  32000,  48000,  56000,  64000,  80000,  96000, 112000,  /* Layer I   */
        128000, 144000, 160000, 176000, 192000, 224000, 256000 },
-  { 0,   8000,  16000,  24000,  32000,  40000,  48000,  56000,
-        64000,  80000,  96000, 112000, 128000, 144000, 160000 }
+  { 0,   8000,  16000,  24000,  32000,  40000,  48000,  56000,  /* Layers    */
+        64000,  80000,  96000, 112000, 128000, 144000, 160000 } /* II & III  */
 };
 
 static
@@ -158,6 +157,7 @@ int mad_frame_header(struct mad_frame *frame, struct mad_stream *stream,
     stream->sync = 1;
   }
 
+ sync:
   /* synchronize */
   if (stream->sync) {
     if (end - ptr < 4) {
@@ -197,7 +197,8 @@ int mad_frame_header(struct mad_frame *frame, struct mad_stream *stream,
   mad_bit_init(&header, ptr + 1);
   mad_bit_skip(&header, 4);
 
-  frame->flags = 0;
+  frame->flags   = 0;
+  frame->private = 0;
 
   /* ID */
   if (mad_bit_read(&header, 1) == 0)
@@ -227,7 +228,7 @@ int mad_frame_header(struct mad_frame *frame, struct mad_stream *stream,
   }
 
   if (frame->flags & MAD_FLAG_LSF_EXT)
-    frame->bitrate = lsf_bitrate_table[(frame->layer & 0x2) >> 1][index];
+    frame->bitrate = bitrate_table[3 + (frame->layer >> 1)][index];
   else
     frame->bitrate = bitrate_table[frame->layer - 1][index];
 
@@ -304,7 +305,19 @@ int mad_frame_header(struct mad_frame *frame, struct mad_stream *stream,
     }
 
     stream->next_frame = stream->this_frame + N;
-    stream->sync = 1;
+
+    if (!stream->sync) {
+      /* check that a valid frame header follows this frame */
+
+      ptr = stream->next_frame;
+
+      if (!(ptr[0] == 0xff && (ptr[1] & 0xf0) == 0xf0)) {
+	ptr = stream->next_frame = stream->this_frame + 1;
+	goto sync;
+      }
+
+      stream->sync = 1;
+    }
   }
   else {
     /* bitrate isn't yet known; estimate based on minimum requirements */

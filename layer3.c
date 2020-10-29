@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: layer3.c,v 1.1 2000/08/02 05:48:51 rob Exp $
+ * $Id: layer3.c,v 1.7 2000/09/14 17:33:47 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
@@ -653,7 +653,7 @@ mad_fixed_t III_requantize(signed int value, signed int exp, unsigned int scf,
   exp += power->exponent;
 
   if (exp < 0) {
-    if (exp <= -(sizeof(mad_fixed_t) * CHAR_BIT)) {
+    if (-exp >= sizeof(mad_fixed_t) * CHAR_BIT) {
       /* underflow */
       requantized = 0;
     }
@@ -847,7 +847,7 @@ int III_huffdecode(struct mad_bitptr *ptr, signed short is[576],
       }
 
       x = pair->value.x;
-      if (linbits && x == 15) {
+      if (x == 15 && linbits) {
 	x += MASK(bitcache, cachesz, linbits);
 	cachesz -= linbits;
       }
@@ -866,7 +866,7 @@ int III_huffdecode(struct mad_bitptr *ptr, signed short is[576],
       }
 
       y = pair->value.y;
-      if (linbits && y == 15) {
+      if (y == 15 && linbits) {
 	y += MASK(bitcache, cachesz, linbits);
 	cachesz -= linbits;
       }
@@ -1158,7 +1158,7 @@ int III_stereo(mad_fixed_t xr[2][576], struct granule *granule,
 
 	/*
 	 * There seems to be some discrepancy with respect to simultaneous
-	 * M/S and intensity stereo encoding. The ISO/IEC 11172-3 standard
+	 * MS and intensity stereo encoding. The ISO/IEC 11172-3 standard
 	 * clearly states that "...the scalefactor band in which the last
 	 * non-zero (right channel) frequency line occurs is the last
 	 * scalefactor band to which the MS_stereo equations apply" when
@@ -1177,7 +1177,7 @@ int III_stereo(mad_fixed_t xr[2][576], struct granule *granule,
 	 * happens to go unnoticed with the same decoders.
 	 *
 	 * It's not clear what the right answer is. For now, the intensity
-	 * stereo bands can also optionally be processed with M/S for
+	 * stereo bands can also optionally be processed with MS for
 	 * is_pos values outside the intensity stereo range, which seems
 	 * to be what at least one other decoder implementation is doing.
 	 * This does not necessarily produce optimal results, but it is
@@ -1241,6 +1241,9 @@ void III_aliasreduce(mad_fixed_t xr[576])
   }
 }
 
+# if defined(ASO_IMDCT)
+void III_imdct_l(mad_fixed_t const [18], mad_fixed_t [36], unsigned int);
+# else
 /*
  * NAME:	imdct36
  * DESCRIPTION:	perform X[18]->x[36] IMDCT
@@ -1541,6 +1544,7 @@ void III_imdct_l(mad_fixed_t const X[18], mad_fixed_t z[36],
     break;
   }
 }
+# endif  /* ASO_IMDCT */
 
 /*
  * NAME:	III_imdct_s()
@@ -1840,7 +1844,7 @@ int mad_layer_III(struct mad_stream *stream, struct mad_frame *frame,
     }
   }
 
-  nch = MAD_NUMCHANNELS(frame);
+  nch = MAD_NCHANNELS(frame);
   sideinfo_length = (frame->flags & MAD_FLAG_LSF_EXT) ?
     (nch == 1 ? 9 : 17) : (nch == 1 ? 17 : 32);
 

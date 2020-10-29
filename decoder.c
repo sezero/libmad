@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: decoder.c,v 1.1 2000/08/02 05:48:51 rob Exp $
+ * $Id: decoder.c,v 1.4 2000/09/08 00:48:43 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
@@ -24,8 +24,15 @@
 # endif
 
 # include <sys/types.h>
-# include <sys/wait.h>
-# include <unistd.h>
+
+# ifdef HAVE_SYS_WAIT_H
+#  include <sys/wait.h>
+# endif
+
+# ifdef HAVE_UNISTD_H
+#  include <unistd.h>
+# endif
+
 # include <fcntl.h>
 # include <stdlib.h>
 # include <errno.h>
@@ -35,7 +42,13 @@
 # include "synth.h"
 # include "decoder.h"
 
-void mad_decoder_init(struct mad_decoder *decoder)
+void mad_decoder_init(struct mad_decoder *decoder, void *data,
+		      int (*input_func)(void *, struct mad_stream *),
+		      int (*filter_func)(void *, struct mad_frame *),
+		      int (*output_func)(void *, struct mad_frame const *,
+					 struct mad_synth const *),
+		      int (*error_func)(void *, struct mad_stream *,
+					struct mad_frame *))
 {
   decoder->mode        = -1;
 
@@ -45,17 +58,17 @@ void mad_decoder_init(struct mad_decoder *decoder)
 
   decoder->sync        = 0;
 
-  decoder->input_func  = 0;
-  decoder->filter_func = 0;
-  decoder->output_func = 0;
-  decoder->error_func  = 0;
+  decoder->cb_data     = data;
 
-  decoder->cb_data     = 0;
+  decoder->input_func  = input_func;
+  decoder->filter_func = filter_func;
+  decoder->output_func = output_func;
+  decoder->error_func  = error_func;
 }
 
 int mad_decoder_finish(struct mad_decoder *decoder)
 {
-  if (decoder->mode == MAD_DECODER_ASYNC) {
+  if (decoder->mode == MAD_DECODER_ASYNC && decoder->async.pid) {
     pid_t pid;
     int status;
 
@@ -69,26 +82,10 @@ int mad_decoder_finish(struct mad_decoder *decoder)
     if (pid == -1)
       return -1;
 
-    return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
+    return (!WIFEXITED(status) || WEXITSTATUS(status)) ? -1 : 0;
   }
 
   return 0;
-}
-
-void mad_decoder_funcs(struct mad_decoder *decoder, void *data,
-		       int (*input_func)(void *, struct mad_stream *),
-		       int (*filter_func)(void *, struct mad_frame *),
-		       int (*output_func)(void *, struct mad_frame const *,
-					  struct mad_synth const *),
-		       int (*error_func)(void *, struct mad_stream *,
-					 struct mad_frame *))
-{
-  decoder->input_func  = input_func;
-  decoder->filter_func = filter_func;
-  decoder->output_func = output_func;
-  decoder->error_func  = error_func;
-
-  decoder->cb_data     = data;
 }
 
 static

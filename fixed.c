@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: fixed.c,v 1.1 2000/08/02 05:48:51 rob Exp $
+ * $Id: fixed.c,v 1.2 2000/09/12 06:19:59 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
@@ -25,7 +25,7 @@
 
 # include "fixed.h"
 
-# if !defined(FPM_MACRO)
+# if !defined(mad_f_mul)
 mad_fixed_t mad_f_mul(mad_fixed_t x, mad_fixed_t y)
 {
   int neg;

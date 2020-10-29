@@ -1,0 +1,37 @@
+
+ mad - MPEG audio decoder
+ Copyright (C) 2000 Robert Leslie
+
+ $Id: CREDITS,v 1.2 2000/09/14 15:53:16 rob Exp $
+
+===============================================================================
+
+AUTHOR
+
+  Except where otherwise noted, all code was authored by:
+
+      Robert Leslie <rob@mars.org>
+
+CONTRIBUTORS
+
+  Significant contributions have been incorporated with thanks to:
+
+      Andre McCurdy <armccurdy@yahoo.co.uk>
+        2000/08/10: libmad/imdct_l_arm.S
+          - ARM optimized assembly replacement for III_imdct_l().
+
+      Sean 'Shaleh' Perry <shaleh@via.net>
+        2000/04/04: libmad/fixed.h
+          - Suggested use of size-dependent typedefs.
+
+      Nicolas Pitre <nico@cam.org>
+        2000/09/09: libmad/fixed.h
+          - Parameterized all scaling for correct use of all multiplication
+            methods within mad_synth_frame().
+          - Rewrote the FPM_ARM version of mad_f_mul() so we have 64-bit
+            multiplication result, rounding and scaling with 3 instructions.
+        2000/09/09: libmad/imdct_l_arm.S
+          - Optimized rounding + scaling operations.
+
+===============================================================================
+

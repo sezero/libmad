@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: acconfig.h,v 1.1 2000/08/02 05:48:51 rob Exp $
+ * $Id: acconfig.h,v 1.2 2000/09/13 05:22:24 rob Exp $
  */
 
 /*****************************************************************************
@@ -26,6 +26,9 @@
 
 /* Define to enable a Layer III intensity stereo kluge. */
 #undef OPT_ISKLUGE
+
+/* Define to enable a fast subband synthesis approximation optimization. */
+#undef OPT_SSO
 
 /* Define to enable diagnostic debugging support. */
 #undef DEBUG

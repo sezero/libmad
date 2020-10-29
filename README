@@ -2,7 +2,7 @@
  mad - MPEG audio decoder
  Copyright (C) 2000 Robert Leslie
 
- $Id: README,v 1.25 2000/08/02 17:16:09 rob Exp $
+ $Id: README,v 1.30 2000/09/14 17:33:27 rob Exp $
 
 ===============================================================================
 
@@ -47,7 +47,7 @@ ABOUT THE CODE
     - an Open Sound System interface module (for Linux, et al.)
     - a Sun audio interface module
     - a Win32 audio interface module
-    - a WAV file output module
+    - a WAVE file output module
     - a raw PCM output module
     - a hex output module (for debugging and compliance testing)
     - a null module (for timing the decoder)
@@ -57,7 +57,7 @@ ABOUT THE CODE
   library consists of 32-bit signed linear fixed-point values which can be
   easily scaled for any size PCM output, up to 24 bits per sample.
 
-  The API for libmad is likely to change soon, so it is not yet documented.
+  The API for libmad is likely to change, so it is not yet documented.
   However, the header file `libmad/mad.h' may be informative, as may also be
   the sample code in `minimad.c'. Note that the `libmad/mad.h' file is
   automatically generated, and will not exist until you have built the
@@ -88,7 +88,7 @@ Intensity Stereo Kluge
   While the Layer III decoder was being written, a discrepancy was
   discovered between the intensity stereo processing that occurs in other
   decoders (and, possibly, encoders) and the ISO/IEC standard. Most notably,
-  a test bitstream encoded with both M/S and intensity stereo was audibly
+  a test bitstream encoded with both MS and intensity stereo was audibly
   different when played with three different decoders, including this one.
   Regrettably, even while following the standard, MAD produced the least
   aesthetically desirable output of the three.
@@ -129,15 +129,41 @@ Integer Performance
   is helpful for performance and the output accuracy loss is generally
   undetectable, it is disabled by default and must be explicitly enabled.
 
-Compilation Issues
+  Under some architectures, other special optimizations may also be
+  available.
+
+Audio Quality
+
+  The output from MAD has been tested and found to satisfy the ISO/IEC
+  11172-4 computational accuracy requirements for compliance. In its default
+  configuration, MAD is a Full Layer III ISO/IEC 11172-3 audio decoder as
+  defined by the standard.
+
+  The special and optional configuration called the Subband Synthesis
+  Optimization (SSO) improves the performance of MAD at the cost of some
+  accuracy. Using SSO, MAD becomes a limited accuracy ISO/IEC 11172-3 audio
+  decoder as defined by the standard.
+
+  MAD produces output samples with a precision greater than 24 bits. Because
+  most output formats use fewer bits, typically 16, `madplay' implements a
+  dithering algorithm when truncating samples for output. This produces high
+  quality audio that generally sounds superior to using a simple rounding
+  algorithm. However, dithering may unfavorably affect an analytic
+  examination of the output (such as compliance testing), and therefore it
+  may optionally be disabled at runtime.
+
+  It is recommended that applications using the MAD library also implement
+  some form of dithering to obtain the best quality audio.
+
+Portability Issues
 
   GCC is probably required to compile the code, but YMMV. Besides the
   assembly code notation, a GNU extension was used in `libmad/huffman.c' to
   specify union initialization of a member other than the first.
 
   The code should not be sensitive to word sizes or byte ordering, however it
-  is known to be dependent on sign-extended arithmetic right shifts in several
-  places.
+  is known to be dependent on sign-extending arithmetic right shifts in
+  several places, and it also assumes A % B has the same sign as A.
 
 ===============================================================================
 
@@ -149,23 +175,26 @@ INSTALLATION
 
   The specific options you may want to give configure are:
 
-      --enable-fpm=<arch>	use the <arch>-specific version of the
-				fixed-point math assembly routines
-				(current options are: intel, arm, mips,
-				sparc; also allowed are: 64bit, approx)
+      --enable-fpm=<arch>       use the <arch>-specific version of the
+                                fixed-point math assembly routines
+                                (current options are: intel, arm, mips,
+                                sparc; also allowed are: 64bit, approx)
 
-      --disable-is-kluge	don't use the intensity stereo kluge
-				described above
+      --disable-is-kluge        don't use the intensity stereo kluge
+                                described above
 
-      --enable-sso		use the subband synthesis optimization for
-				better speed, despite reduced accuracy
+      --enable-sso              use the subband synthesis optimization for
+                                better speed, despite reduced accuracy
 
-      --disable-debugging	do not compile with debugging support, and
-				use more optimizations
+      --enable-aso              use architecture-specific optimizations,
+                                if available
 
-      --enable-devlib		install `libmad.a' developer library and
-				`mad.h' header file in addition to the
-				user programs
+      --disable-debugging       do not compile with debugging support, and
+                                use more optimizations
+
+      --enable-devlib           install `libmad.a' developer library and
+                                `mad.h' header file in addition to the
+                                user programs
 
   By default an appropriate fixed-point assembly routine will be selected
   for the configured host type, if it can be determined. Thus if you are
@@ -183,13 +212,13 @@ EXPERIMENTING AND DEVELOPING
   Further options for `configure' that may be useful to developers and
   experimenters are:
 
-      --enable-debugging	enable diagnostic debugging support and
-				debugging symbols
+      --enable-debugging        enable diagnostic debugging support and
+                                debugging symbols
 
-      --enable-profiling	generate `gprof' profiling code
+      --enable-profiling        generate `gprof' profiling code
 
-      --enable-experimental	enable code using the EXPERIMENTAL
-				preprocessor define
+      --enable-experimental     enable code using the EXPERIMENTAL
+                                preprocessor define
 
 ===============================================================================
 

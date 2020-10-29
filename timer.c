@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: timer.c,v 1.1 2000/08/02 05:48:52 rob Exp $
+ * $Id: timer.c,v 1.2 2000/09/07 22:29:38 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
@@ -60,7 +60,7 @@ void mad_timer_str(struct mad_timer const *timer,
 {
   unsigned int hours, minutes, seconds, tenths;
 
-  seconds = mad_timer_seconds(timer);
+  seconds = timer->seconds;
   tenths  = timer->parts36750 / 3675;
 
   switch (resolution) {

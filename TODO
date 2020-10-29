@@ -1,38 +1,40 @@
 
 libmad:
-  - fix broken fixed-point semantics in synth.c
+  - fix sync discovery/recovery
   - fix free format fixed bitrate discovery
   - speed up mad_bit_read()
   - MPEG 2 MC, 2.5?
   - parse system streams
   - function documentation, general docs
   - finish async API
-  - fix frame muting within decoder
+  - 64-bit synthesis optimization?
 
 libmad Layer I:
-  - fix sign-extending right shift assumption
   - check frame length sanity
 
 libmad Layer II:
-  - fix sign-extending right shift assumption
   - check legal bitrate/mode combinations
   - check frame length sanity
 
 libmad Layer III:
   - optimize imdct12 (short blocks)
-  - fix sign-extending right shift assumption
   - perform requantization during Huffman decoding
   - ancillary bits
   - ms_stereo + intensity_stereo not right?
-  - stereo->mono conversion optimization
+  - stereo->mono conversion optimization?
+  - 64-bit IMDCT optimization?
 
 madplay:
   - byte position reporting
-  - dual channel output selection?
   - better bitstream error recovery
   - ensure last frame is played at end-of-stream
   - further ID3v2 support
   - move static vars from audio_* to audio control union
+  - resampling with bandlimited interpolation
+
+madtime:
+  - collect directory names
+  - recurse directories
 
 ID3v2:
   - Unicode support

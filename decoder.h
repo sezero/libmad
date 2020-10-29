@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: decoder.h,v 1.1 2000/08/02 05:48:51 rob Exp $
+ * $Id: decoder.h,v 1.2 2000/09/08 00:48:43 rob Exp $
  */
 
 # ifndef DECODER_H
@@ -41,13 +41,13 @@ struct mad_decoder {
     struct mad_synth synth;
   } *sync;
 
+  void *cb_data;
+
   int (*input_func)(void *, struct mad_stream *);
   int (*filter_func)(void *, struct mad_frame *);
   int (*output_func)(void *, struct mad_frame const *,
 		     struct mad_synth const *);
   int (*error_func)(void *, struct mad_stream *, struct mad_frame *);
-
-  void *cb_data;
 };
 
 enum {
@@ -82,16 +82,14 @@ union mad_control {
   } stop;
 };
 
-void mad_decoder_init(struct mad_decoder *);
+void mad_decoder_init(struct mad_decoder *, void *,
+		      int (*)(void *, struct mad_stream *),
+		      int (*)(void *, struct mad_frame *),
+		      int (*)(void *, struct mad_frame const *,
+			      struct mad_synth const *),
+		      int (*)(void *, struct mad_stream *,
+			      struct mad_frame *));
 int mad_decoder_finish(struct mad_decoder *);
-
-void mad_decoder_funcs(struct mad_decoder *, void *,
-		       int (*)(void *, struct mad_stream *),
-		       int (*)(void *, struct mad_frame *),
-		       int (*)(void *, struct mad_frame const *,
-			       struct mad_synth const *),
-		       int (*)(void *, struct mad_stream *,
-			       struct mad_frame *));
 
 int mad_decoder_run(struct mad_decoder *, int);
 int mad_decoder_command(struct mad_decoder *, union mad_control *);

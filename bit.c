@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: bit.c,v 1.1 2000/08/02 05:48:51 rob Exp $
+ * $Id: bit.c,v 1.2 2000/09/07 22:29:35 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
@@ -76,6 +76,8 @@ unsigned short const crc_table[256] = {
   0x0220, 0x8225, 0x822f, 0x022a, 0x823b, 0x023e, 0x0234, 0x8231,
   0x8213, 0x0216, 0x021c, 0x8219, 0x0208, 0x820d, 0x8207, 0x0202
 };
+
+# define CRC_POLY  0x8005
 
 /*
  * NAME:	bit->init()
@@ -170,6 +172,7 @@ unsigned long mad_bit_read(struct mad_bitptr *bitptr, unsigned int len)
   return value;
 }
 
+# if 0
 /*
  * NAME:	bit->write()
  * DESCRIPTION:	write an arbitrary number of bits
@@ -183,6 +186,7 @@ void mad_bit_write(struct mad_bitptr *bitptr, unsigned int len,
 
   /* ... */
 }
+# endif
 
 /*
  * NAME:	bit->crc()
@@ -191,20 +195,19 @@ void mad_bit_write(struct mad_bitptr *bitptr, unsigned int len,
 unsigned short mad_bit_crc(struct mad_bitptr bitptr, unsigned int len,
 			   unsigned short init)
 {
-  register unsigned short crc = init;
-  register unsigned int data;
+  register unsigned int crc, data;
 
-  while (len >= 8) {
-    crc = crc_table[((crc >> 8) ^ mad_bit_read(&bitptr, 8)) & 0xff] ^
-      (crc << 8);
-    len -= 8;
+  for (crc = init; len >= 8; len -= 8) {
+    crc = (crc << 8) ^
+      crc_table[((crc >> 8) ^ mad_bit_read(&bitptr, 8)) & 0xff];
   }
 
   while (len--) {
-    data = (mad_bit_read(&bitptr, 1) ^ (crc >> 15)) & 1;
+    data = mad_bit_read(&bitptr, 1) ^ (crc >> 15);
+
     crc <<= 1;
-    if (data)
-      crc ^= 0x8005;
+    if (data & 1)
+      crc ^= CRC_POLY;
   }
 
   return crc & 0xffff;

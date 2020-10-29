@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: layer12.c,v 1.1 2000/08/02 05:48:51 rob Exp $
+ * $Id: layer12.c,v 1.2 2000/09/11 03:52:19 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
@@ -106,7 +106,7 @@ int mad_layer_I(struct mad_stream *stream, struct mad_frame *frame,
   unsigned int nch, bound, ch, s, sb, nb;
   unsigned char allocation[2][32], scalefactor[2][32];
 
-  nch = MAD_NUMCHANNELS(frame);
+  nch = MAD_NCHANNELS(frame);
 
   if (frame->mode == MAD_MODE_JOINT_STEREO) {
     frame->flags |= MAD_FLAG_I_STEREO;
@@ -326,7 +326,7 @@ int mad_layer_II(struct mad_stream *stream, struct mad_frame *frame,
   unsigned char allocation[2][32], scfsi[2][32], scalefactor[2][32][3];
   mad_fixed_t samples[3];
 
-  nch = MAD_NUMCHANNELS(frame);
+  nch = MAD_NCHANNELS(frame);
 
   if (frame->flags & MAD_FLAG_LSF_EXT)
     index = 4;
