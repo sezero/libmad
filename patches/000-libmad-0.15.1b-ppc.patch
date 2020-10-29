@@ -1,0 +1,22 @@
+https://bugzilla.rpmfusion.org/show_bug.cgi?id=730
+libmad outputs white noise due to incorrect asm constraints
+dwmw2@infradead.org
+2009-07-19 14:09:50 CEST
+
+The constraints lacked an earlyclobber on the outputs, so gcc was free to use
+the same register for input and output. This version is faster than the simple
+fix.
+
+--- libmad-0.15.1b/fixed.h~	2004-02-17 02:02:03.000000000 +0000
++++ libmad-0.15.1b/fixed.h	2009-07-19 13:03:08.000000000 +0100
+@@ -379,8 +379,8 @@ mad_fixed_t mad_f_mul_inline(mad_fixed_t
+        asm ("addc %0,%2,%3\n\t"  \
+ 	    "adde %1,%4,%5"  \
+ 	    : "=r" (lo), "=r" (hi)  \
+-	    : "%r" (lo), "r" (__lo),  \
+-	      "%r" (hi), "r" (__hi)  \
++	    : "0" (lo), "r" (__lo), \
++	      "1" (hi), "r" (__hi) \
+ 	    : "xer");  \
+     })
+ #  endif
