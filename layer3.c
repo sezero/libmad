@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: layer3.c,v 1.12 2000/10/25 21:52:32 rob Exp $
+ * $Id: layer3.c,v 1.14 2000/11/17 06:17:53 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
@@ -319,12 +319,12 @@ mad_fixed_t const lsf_is_table[2][3] = {
  * DESCRIPTION:	decode frame side information from a bitstream
  */
 static
-int III_sideinfo(struct mad_bitptr *ptr, unsigned int nch,
-		 int lsf, struct sideinfo *si,
-		 unsigned int *md_bitlen, unsigned int *priv_bitlen)
+enum mad_error III_sideinfo(struct mad_bitptr *ptr, unsigned int nch,
+			    int lsf, struct sideinfo *si,
+			    unsigned int *md_bitlen, unsigned int *priv_bitlen)
 {
   unsigned int ngr, gr, ch, i;
-  int result = 0;
+  enum mad_error result = 0;
 
   *md_bitlen   = 0;
   *priv_bitlen = lsf ? ((nch == 1) ? 1 : 2) : ((nch == 1) ? 5 : 3);
@@ -664,7 +664,7 @@ mad_fixed_t III_requantize(signed int value, signed int exp, unsigned int scf,
   else {
     if (exp >= 5) {
       /* overflow */
-# ifdef DEBUG
+# if defined(DEBUG)
       fprintf(stderr, "requantize overflow (%f * 2^%d)\n",
 	      mad_f_todouble(requantized), exp);
 # endif
@@ -729,9 +729,9 @@ mad_fixed_t III_requantize_s(signed int value, unsigned int sfb,
  * DESCRIPTION:	decode Huffman code words of one channel of one granule
  */
 static
-int III_huffdecode(struct mad_bitptr *ptr, signed short is[576],
-		   struct channel *channel, unsigned int sfreqi,
-		   unsigned int part2_length)
+enum mad_error III_huffdecode(struct mad_bitptr *ptr, signed short is[576],
+			      struct channel *channel, unsigned int sfreqi,
+			      unsigned int part2_length)
 {
   struct mad_bitptr peek;
   signed int bits_left, cachesz;
@@ -984,8 +984,10 @@ int III_huffdecode(struct mad_bitptr *ptr, signed short is[576],
 
   /* rzero */
   while (l < 576) {
-    is[l++] = 0;
-    is[l++] = 0;
+    is[l + 0] = 0;
+    is[l + 1] = 0;
+
+    l += 2;
   }
 
   return 0;
@@ -1044,14 +1046,14 @@ void III_reorder(mad_fixed_t xr[576], struct channel const *channel,
  * DESCRIPTION:	perform joint stereo processing on a granule
  */
 static
-int III_stereo(mad_fixed_t xr[2][576], struct granule *granule,
-	       struct mad_frame *frame, unsigned int sfreqi)
+enum mad_error III_stereo(mad_fixed_t xr[2][576], struct granule *granule,
+			  struct mad_header *header, unsigned int sfreqi)
 {
   int i_stereo, ms_stereo;
   unsigned int bound;
 
-  i_stereo  = frame->mode_ext & 0x1;
-  ms_stereo = frame->mode_ext & 0x2;
+  i_stereo  = header->mode_ext & 0x1;
+  ms_stereo = header->mode_ext & 0x2;
 
   bound = 576;
 
@@ -1061,8 +1063,9 @@ int III_stereo(mad_fixed_t xr[2][576], struct granule *granule,
     struct channel const *right_ch = &granule->ch[1];
     unsigned int zero_part, i, sfb_l, sfb_s, f, w, n;
     mad_fixed_t const *lsf_scale;
+    unsigned int is_pos = 7;
 
-    frame->flags |= MAD_FLAG_I_STEREO;
+    header->flags |= MAD_FLAG_I_STEREO;
 
     zero_part = 576 - right_ch->big_values * 2 - right_ch->count1 * 4;
 
@@ -1072,7 +1075,7 @@ int III_stereo(mad_fixed_t xr[2][576], struct granule *granule,
 # endif
 
     sfb_l = (right_ch->block_type == 2) ?
-      ((frame->flags & MAD_FLAG_LSF_EXT) ? 6 : 8) : 22;
+      ((header->flags & MAD_FLAG_LSF_EXT) ? 6 : 8) : 22;
     sfb_s = 13;
 
     while (bound > 0) {
@@ -1111,8 +1114,6 @@ int III_stereo(mad_fixed_t xr[2][576], struct granule *granule,
     lsf_scale = lsf_is_table[right_ch->scalefac_compress & 0x1];
 
     for (i = bound; i < 576; ++i) {
-      unsigned int is_pos = 7;
-
       if (f-- == 0) {
 	if (w-- == 0) {
 	  if (right_ch->block_type != 2 ||
@@ -1138,7 +1139,7 @@ int III_stereo(mad_fixed_t xr[2][576], struct granule *granule,
 
 	left = xr[0][i];
 
-	if (frame->flags & MAD_FLAG_LSF_EXT) {
+	if (header->flags & MAD_FLAG_LSF_EXT) {
 	  if (is_pos == 0)
 	    xr[1][i] = left;
 	  else if (is_pos & 0x1) {
@@ -1153,7 +1154,6 @@ int III_stereo(mad_fixed_t xr[2][576], struct granule *granule,
 	  xr[1][i] = mad_f_mul(left, is_table[6 - is_pos]);
 	}
       }
-# if defined(OPT_ISKLUGE)
       else if (ms_stereo) {
 	mad_fixed_t m, s;
 
@@ -1172,17 +1172,10 @@ int III_stereo(mad_fixed_t xr[2][576], struct granule *granule,
 	 * ISO/IEC 11172-3 if MS stereo is enabled, or both channels
 	 * independently if MS stereo is not enabled."
 	 *
-	 * The ISO reference source and many other decoders are apparently
-	 * interpreting this with mixed results. It's possible many
-	 * encoders have a questionable implementation as well, but it
-	 * happens to go unnoticed with the same decoders.
-	 *
-	 * It's not clear what the right answer is. For now, the intensity
-	 * stereo bands can also optionally be processed with MS for
-	 * is_pos values outside the intensity stereo range, which seems
-	 * to be what at least one other decoder implementation is doing.
-	 * This does not necessarily produce optimal results, but it is
-	 * better than no processing for many bitstreams.
+	 * Various decoders have interpreted this with mixed results, but
+	 * this implementation is believed to be correct. The intensity
+	 * stereo bands will be processed with MS for is_pos values
+	 * outside the intensity stereo range.
 	 */
 
 	m = xr[0][i];
@@ -1191,7 +1184,6 @@ int III_stereo(mad_fixed_t xr[2][576], struct granule *granule,
 	xr[0][i] = mad_f_mul(m + s, root_table[1]); /* l = (m + s) / sqrt(2) */
 	xr[1][i] = mad_f_mul(m - s, root_table[1]); /* r = (m - s) / sqrt(2) */
       }
-# endif  /* OPT_ISKLUGE */
     }
   }
 
@@ -1200,10 +1192,10 @@ int III_stereo(mad_fixed_t xr[2][576], struct granule *granule,
   if (ms_stereo) {
     unsigned int i;
 
-    frame->flags |= MAD_FLAG_MS_STEREO;
-
     if (granule->ch[0].block_type != granule->ch[1].block_type)
       return MAD_ERROR_BADSTEREO;
+
+    header->flags |= MAD_FLAG_MS_STEREO;
 
     i = bound;
     while (i--) {
@@ -1635,16 +1627,17 @@ static
 int III_decode(struct mad_bitptr *ptr, struct mad_frame *frame,
 		struct sideinfo *si, unsigned int nch)
 {
+  struct mad_header *header = &frame->header;
   unsigned int sfreqi, ngr, gr, sfbcut;
 
   /* 48000 => 0, 44100 => 1, 32000 => 2,
      24000 => 3, 22050 => 4, 16000 => 5 */
-  sfreqi = ((frame->sfreq >>  7) & 0x000f) +
-           ((frame->sfreq >> 15) & 0x0001) - 8;
+  sfreqi = ((header->sfreq >>  7) & 0x000f) +
+           ((header->sfreq >> 15) & 0x0001) - 8;
 
   /* scalefactors, Huffman decoding, requantization */
 
-  if (frame->flags & MAD_FLAG_LSF_EXT)
+  if (header->flags & MAD_FLAG_LSF_EXT)
     ngr = 1, sfbcut = 6;
   else
     ngr = 2, sfbcut = 8;
@@ -1653,15 +1646,17 @@ int III_decode(struct mad_bitptr *ptr, struct mad_frame *frame,
     struct granule *granule = &si->gr[gr];
     static mad_fixed_t xr[2][576];
     unsigned int ch;
-    int error;
+    enum mad_error error;
 
     for (ch = 0; ch < nch; ++ch) {
       struct channel *channel = &granule->ch[ch];
       static signed short is[576];
       unsigned int part2_length, sfb, i, f, w;
 
-      if (frame->flags & MAD_FLAG_LSF_EXT)
-	part2_length = III_lsf_scalefactors(ptr, frame->mode_ext, ch, channel);
+      if (header->flags & MAD_FLAG_LSF_EXT) {
+	part2_length = III_lsf_scalefactors(ptr, header->mode_ext,
+					    ch, channel);
+      }
       else {
 	part2_length = III_scalefactors(ptr, channel, &si->gr[0].ch[ch],
 					gr == 0 ? 0 : si->scfsi[ch]);
@@ -1714,8 +1709,8 @@ int III_decode(struct mad_bitptr *ptr, struct mad_frame *frame,
 
     /* joint stereo processing */
 
-    if (frame->mode == MAD_MODE_JOINT_STEREO) {
-      error = III_stereo(xr, granule, frame, sfreqi);
+    if (header->mode == MAD_MODE_JOINT_STEREO) {
+      error = III_stereo(xr, granule, header, sfreqi);
       if (error)
 	return error;
     }
@@ -1803,12 +1798,14 @@ int III_decode(struct mad_bitptr *ptr, struct mad_frame *frame,
  */
 int mad_layer_III(struct mad_stream *stream, struct mad_frame *frame)
 {
+  struct mad_header *header = &frame->header;
   unsigned int nch, private_bitlen;
   unsigned int main_data_bitlen, main_data_length, sideinfo_length;
   unsigned int frame_space, frame_used, frame_free;
   struct mad_bitptr ptr;
   struct sideinfo si;
-  int error, result = 0;
+  enum mad_error error;
+  int result = 0;
 
   /* allocate Layer III dynamic structures */
 
@@ -1828,8 +1825,8 @@ int mad_layer_III(struct mad_stream *stream, struct mad_frame *frame)
     }
   }
 
-  nch = MAD_NCHANNELS(frame);
-  sideinfo_length = (frame->flags & MAD_FLAG_LSF_EXT) ?
+  nch = MAD_NCHANNELS(header);
+  sideinfo_length = (header->flags & MAD_FLAG_LSF_EXT) ?
     (nch == 1 ? 9 : 17) : (nch == 1 ? 17 : 32);
 
   /* check frame sanity */
@@ -1843,24 +1840,24 @@ int mad_layer_III(struct mad_stream *stream, struct mad_frame *frame)
 
   /* check CRC word */
 
-  if ((frame->flags & MAD_FLAG_PROTECTION) &&
+  if ((header->flags & MAD_FLAG_PROTECTION) &&
       mad_bit_crc(stream->ptr, sideinfo_length * CHAR_BIT,
-		  frame->crc_header) != frame->crc_check) {
+		  header->crc_header) != header->crc_check) {
     stream->error = MAD_ERROR_BADCRC;
     result = -1;
   }
 
   /* decode frame side information */
 
-  error = III_sideinfo(&stream->ptr, nch, frame->flags & MAD_FLAG_LSF_EXT,
+  error = III_sideinfo(&stream->ptr, nch, header->flags & MAD_FLAG_LSF_EXT,
 		       &si, &main_data_bitlen, &private_bitlen);
   if (error && result == 0) {
     stream->error = error;
     result = -1;
   }
 
-  frame->flags   |= private_bitlen;
-  frame->private |= si.private_bits;
+  header->flags   |= private_bitlen;
+  header->private |= si.private_bits;
 
   /* find main_data */
 
@@ -1944,11 +1941,12 @@ int mad_layer_III(struct mad_stream *stream, struct mad_frame *frame)
       if (extra + frame_free > 511)
 	extra = 511 - frame_free;
 
-      memmove(*stream->main_data,
-	      *stream->main_data + stream->md_len - extra,
-	      extra);
-
-      stream->md_len = extra;
+      if (extra < stream->md_len) {
+	memmove(*stream->main_data,
+		*stream->main_data + stream->md_len - extra,
+		extra);
+	stream->md_len = extra;
+      }
     }
     else
       stream->md_len = 0;

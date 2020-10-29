@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: timer.h,v 1.6 2000/10/25 21:52:32 rob Exp $
+ * $Id: timer.h,v 1.7 2000/11/16 10:51:10 rob Exp $
  */
 
 # ifndef MAD_TIMER_H
@@ -64,6 +64,10 @@ enum mad_units {
   MAD_UNITS_48_FPS	 =    48,
   MAD_UNITS_50_FPS	 =    50,
   MAD_UNITS_60_FPS	 =    60,
+
+  /* CD audio frames */
+
+  MAD_UNITS_75_FPS	 =    75,
 
   /* video drop-frame units */
 

@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: decoder.h,v 1.5 2000/10/25 21:52:31 rob Exp $
+ * $Id: decoder.h,v 1.6 2000/11/16 10:51:10 rob Exp $
  */
 
 # ifndef MAD_DECODER_H
@@ -56,20 +56,20 @@ struct mad_decoder {
   void *cb_data;
 
   enum mad_flow (*input_func)(void *, struct mad_stream *);
-  enum mad_flow (*header_func)(void *, struct mad_frame const *);
+  enum mad_flow (*header_func)(void *, struct mad_header const *);
   enum mad_flow (*filter_func)(void *, struct mad_frame *);
   enum mad_flow (*output_func)(void *,
-			       struct mad_frame const *, struct mad_pcm *);
+			       struct mad_header const *, struct mad_pcm *);
   enum mad_flow (*error_func)(void *, struct mad_stream *, struct mad_frame *);
   enum mad_flow (*message_func)(void *, void *, unsigned int *);
 };
 
 void mad_decoder_init(struct mad_decoder *, void *,
 		      enum mad_flow (*)(void *, struct mad_stream *),
-		      enum mad_flow (*)(void *, struct mad_frame const *),
+		      enum mad_flow (*)(void *, struct mad_header const *),
 		      enum mad_flow (*)(void *, struct mad_frame *),
 		      enum mad_flow (*)(void *,
-					struct mad_frame const *,
+					struct mad_header const *,
 					struct mad_pcm *),
 		      enum mad_flow (*)(void *,
 					struct mad_stream *,

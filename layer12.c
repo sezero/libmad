@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: layer12.c,v 1.5 2000/10/25 21:52:32 rob Exp $
+ * $Id: layer12.c,v 1.6 2000/11/16 10:51:10 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
@@ -104,23 +104,24 @@ mad_fixed_t I_sample(struct mad_bitptr *ptr, unsigned int nb)
  */
 int mad_layer_I(struct mad_stream *stream, struct mad_frame *frame)
 {
+  struct mad_header *header = &frame->header;
   unsigned int nch, bound, ch, s, sb, nb;
   unsigned char allocation[2][32], scalefactor[2][32];
 
-  nch = MAD_NCHANNELS(frame);
+  nch = MAD_NCHANNELS(header);
 
-  if (frame->mode == MAD_MODE_JOINT_STEREO) {
-    frame->flags |= MAD_FLAG_I_STEREO;
-    bound = 4 + frame->mode_ext * 4;
+  if (header->mode == MAD_MODE_JOINT_STEREO) {
+    header->flags |= MAD_FLAG_I_STEREO;
+    bound = 4 + header->mode_ext * 4;
   }
   else
     bound = 32;
 
   /* check CRC word */
 
-  if ((frame->flags & MAD_FLAG_PROTECTION) &&
+  if ((header->flags & MAD_FLAG_PROTECTION) &&
       mad_bit_crc(stream->ptr, 4 * (bound * nch + (32 - bound)),
-		  frame->crc_header) != frame->crc_check) {
+		  header->crc_header) != header->crc_check) {
     stream->error = MAD_ERROR_BADCRC;
     return -1;
   }
@@ -253,6 +254,7 @@ unsigned char const offset_table[6][15] = {
 };
 
 /* quantization class table */
+static
 struct quantclass {
   unsigned short nlevels;
   unsigned char group;
@@ -320,21 +322,22 @@ void II_samples(struct mad_bitptr *ptr,
  */
 int mad_layer_II(struct mad_stream *stream, struct mad_frame *frame)
 {
+  struct mad_header *header = &frame->header;
   struct mad_bitptr start;
   unsigned int index, sblimit, nbal, nch, bound, gr, ch, s, sb;
   unsigned char const *offsets;
   unsigned char allocation[2][32], scfsi[2][32], scalefactor[2][32][3];
   mad_fixed_t samples[3];
 
-  nch = MAD_NCHANNELS(frame);
+  nch = MAD_NCHANNELS(header);
 
-  if (frame->flags & MAD_FLAG_LSF_EXT)
+  if (header->flags & MAD_FLAG_LSF_EXT)
     index = 4;
   else {
-    switch (nch == 2 ? frame->bitrate / 2 : frame->bitrate) {
+    switch (nch == 2 ? header->bitrate / 2 : header->bitrate) {
     case 32000:
     case 48000:
-      index = (frame->sfreq == 32000) ? 3 : 2;
+      index = (header->sfreq == 32000) ? 3 : 2;
       break;
 
     case 56000:
@@ -344,16 +347,16 @@ int mad_layer_II(struct mad_stream *stream, struct mad_frame *frame)
       break;
 
     default:
-      index = (frame->sfreq == 48000) ? 0 : 1;
+      index = (header->sfreq == 48000) ? 0 : 1;
     }
   }
 
   sblimit = sbquant_table[index].sblimit;
   offsets = sbquant_table[index].offsets;
 
-  if (frame->mode == MAD_MODE_JOINT_STEREO) {
-    frame->flags |= MAD_FLAG_I_STEREO;
-    bound = 4 + frame->mode_ext * 4;
+  if (header->mode == MAD_MODE_JOINT_STEREO) {
+    header->flags |= MAD_FLAG_I_STEREO;
+    bound = 4 + header->mode_ext * 4;
   }
   else
     bound = 32;
@@ -389,9 +392,9 @@ int mad_layer_II(struct mad_stream *stream, struct mad_frame *frame)
 
   /* check CRC word */
 
-  if ((frame->flags & MAD_FLAG_PROTECTION) &&
+  if ((header->flags & MAD_FLAG_PROTECTION) &&
       mad_bit_crc(start, mad_bit_length(&start, &stream->ptr),
-		  frame->crc_header) != frame->crc_check) {
+		  header->crc_header) != header->crc_check) {
     stream->error = MAD_ERROR_BADCRC;
     return -1;
   }

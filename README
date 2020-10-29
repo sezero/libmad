@@ -2,7 +2,7 @@
  mad - MPEG audio decoder
  Copyright (C) 2000 Robert Leslie
 
- $Id: README,v 1.37 2000/10/25 21:51:39 rob Exp $
+ $Id: README,v 1.38 2000/11/16 10:51:04 rob Exp $
 
 ===============================================================================
 
@@ -27,7 +27,7 @@ INTRODUCTION
   Because MAD provides full 24-bit PCM output, applications using MAD are
   able to produce high quality audio. Even when the output device supports
   only 16-bit PCM, applications can use the extra resolution to increase the
-  audible dynamic range by proper use of dithering.
+  audible dynamic range through the use of dithering or noise shaping.
 
   Because MAD uses integer computation rather than floating point, it is
   well suited for architectures without a floating point unit. All
@@ -91,29 +91,6 @@ ABOUT THE CODE
   standard input, and it sends decoded 16-bit signed little-endian PCM
   samples to standard output. It will abort at the first discovery of a
   decoding error.
-
-Intensity Stereo Kluge
-
-  While the Layer III decoder was being written, a discrepancy was
-  discovered between the intensity stereo processing that occurs in other
-  decoders (and, possibly, encoders) and the ISO/IEC standard. Most notably,
-  a test bitstream encoded with both MS and intensity stereo was audibly
-  different when played with three different decoders, including this one.
-  Regrettably, even while following the standard, MAD produced the least
-  aesthetically desirable output of the three.
-
-  To compensate for this, a kluge was introduced which processes intensity
-  stereo bitstreams in a way which appears to mimic the output of one of the
-  other decoders. The output is still not ideal, but it may produce a better
-  sound in the right channel for many bitstreams.
-
-  It is possible that the fault lies with some Layer III encoders, and so
-  this kluge may be unnecessary for properly encoded bitstreams. However,
-  apparently even the ISO reference source performs intensity stereo
-  processing in a way not described by the standard, and so it is suspected
-  that very few bitstreams would be properly decoded by following the
-  standard exactly. Therefore the intensity stereo kluge has been enabled by
-  default; it must be explicitly disabled to get pure standard behavior.
 
 Integer Performance
 
@@ -189,9 +166,6 @@ INSTALLATION
       --enable-speed            optimize for speed over accuracy
 
       --enable-accuracy         optimize for accuracy over speed
-
-      --disable-is-kluge        don't use the intensity stereo kluge
-                                described above
 
       --disable-debugging       do not compile with debugging support, and
                                 use more optimizations

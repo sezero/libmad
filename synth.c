@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: synth.c,v 1.9 2000/10/25 21:52:32 rob Exp $
+ * $Id: synth.c,v 1.10 2000/11/16 10:51:10 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
@@ -35,14 +35,8 @@
  */
 void mad_synth_init(struct mad_synth *synth)
 {
-  unsigned int i;
-
-  for (i = 0; i < 256; ++i) {
-    synth->polyfilter[0][0][i] = synth->polyfilter[0][1][i] =
-    synth->polyfilter[1][0][i] = synth->polyfilter[1][1][i] = 0;
-  }
-
   synth->slot = 0;
+  mad_synth_mute(synth);
 }
 
 /*
@@ -454,8 +448,8 @@ void mad_synth_frame(struct mad_synth *synth, struct mad_frame const *frame)
   unsigned int nch, ns, ch, s, sb;
   mad_fixed_t *pcmptr;
 
-  nch = MAD_NCHANNELS(frame);
-  ns  = MAD_NSBSAMPLES(frame);
+  nch = MAD_NCHANNELS(&frame->header);
+  ns  = MAD_NSBSAMPLES(&frame->header);
 
   for (s = 0; s < ns; ++s) {
     unsigned int slot, even, odd;
@@ -706,4 +700,18 @@ void mad_synth_frame(struct mad_synth *synth, struct mad_frame const *frame)
   }
 
   synth->pcm.length = 32 * ns;
+}
+
+/*
+ * NAME:	synth->mute()
+ * DESCRIPTION:	zero all polyphase filterbank values, resetting synthesis
+ */
+void mad_synth_mute(struct mad_synth *synth)
+{
+  unsigned int i;
+
+  for (i = 0; i < 256; ++i) {
+    synth->polyfilter[0][0][i] = synth->polyfilter[0][1][i] =
+    synth->polyfilter[1][0][i] = synth->polyfilter[1][1][i] = 0;
+  }
 }

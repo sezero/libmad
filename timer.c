@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: timer.c,v 1.6 2000/10/25 21:52:32 rob Exp $
+ * $Id: timer.c,v 1.7 2000/11/16 10:51:10 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
@@ -256,6 +256,7 @@ signed long mad_timer_count(mad_timer_t timer, enum mad_units units)
   case MAD_UNITS_48_FPS:
   case MAD_UNITS_50_FPS:
   case MAD_UNITS_60_FPS:
+  case MAD_UNITS_75_FPS:
     return timer.seconds * (signed long) units +
       (signed long) scale_rational(timer.fraction, MAD_TIMER_RESOLUTION,
 				   units);
@@ -335,6 +336,7 @@ void mad_timer_string(mad_timer_t timer,
   case MAD_UNITS_48_FPS:
   case MAD_UNITS_50_FPS:
   case MAD_UNITS_60_FPS:
+  case MAD_UNITS_75_FPS:
     {
       unsigned long fracparts;
 
@@ -432,6 +434,7 @@ void mad_timer_string(mad_timer_t timer,
   case MAD_UNITS_48_FPS:
   case MAD_UNITS_50_FPS:
   case MAD_UNITS_60_FPS:
+  case MAD_UNITS_75_FPS:
     sprintf(dest, format, mad_timer_count(timer, units), sub);
     break;
   }

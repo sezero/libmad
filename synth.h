@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: synth.h,v 1.3 2000/10/25 21:52:32 rob Exp $
+ * $Id: synth.h,v 1.4 2000/11/16 10:51:10 rob Exp $
  */
 
 # ifndef MAD_SYNTH_H
@@ -40,5 +40,7 @@ void mad_synth_init(struct mad_synth *);
 # define mad_synth_finish(synth)  /* nothing */
 
 void mad_synth_frame(struct mad_synth *, struct mad_frame const *);
+
+void mad_synth_mute(struct mad_synth *);
 
 # endif

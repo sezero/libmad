@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: frame.c,v 1.9 2000/10/25 21:52:31 rob Exp $
+ * $Id: frame.c,v 1.10 2000/11/16 10:51:10 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
@@ -62,29 +62,38 @@ int (*const decoder_table[3])(struct mad_stream *, struct mad_frame *) = {
 };
 
 /*
+ * NAME:	header->init()
+ * DESCRIPTION:	initialize header struct
+ */
+void mad_header_init(struct mad_header *header)
+{
+  header->layer      = 0;
+  header->mode       = 0;
+  header->mode_ext   = 0;
+  header->emphasis   = 0;
+
+  header->bitrate    = 0;
+  header->sfreq      = 0;
+
+  header->crc_header = 0;
+  header->crc_check  = 0;
+
+  header->flags      = 0;
+  header->private    = 0;
+
+  header->duration   = mad_timer_zero;
+}
+
+/*
  * NAME:	frame->init()
  * DESCRIPTION:	initialize frame struct
  */
 void mad_frame_init(struct mad_frame *frame)
 {
-  frame->layer      = 0;
-  frame->mode       = 0;
-  frame->mode_ext   = 0;
-  frame->emphasis   = 0;
+  mad_header_init(&frame->header);
 
-  frame->bitrate    = 0;
-  frame->sfreq      = 0;
-
-  frame->crc_header = 0;
-  frame->crc_check  = 0;
-
-  frame->flags      = 0;
-  frame->private    = 0;
-
-  frame->duration   = mad_timer_zero;
-
-  mad_frame_mute(frame);
   frame->overlap = 0;
+  mad_frame_mute(frame);
 }
 
 /*
@@ -97,21 +106,8 @@ void mad_frame_finish(struct mad_frame *frame)
     free(frame->overlap);
     frame->overlap = 0;
   }
-}
 
-/*
- * NAME:	frame->mute()
- * DESCRIPTION:	zero all subband values so the frame becomes silent
- */
-void mad_frame_mute(struct mad_frame *frame)
-{
-  unsigned int s, sb;
-
-  for (s = 0; s < 36; ++s) {
-    for (sb = 0; sb < 32; ++sb)
-      frame->sbsample[0][s][sb] =
-      frame->sbsample[1][s][sb] = 0;
-  }
+  mad_header_finish(&frame->header);
 }
 
 /*
@@ -119,12 +115,12 @@ void mad_frame_mute(struct mad_frame *frame)
  * DESCRIPTION:	read header data and following CRC word
  */
 static
-int decode_header(struct mad_frame *frame, struct mad_stream *stream)
+int decode_header(struct mad_header *header, struct mad_stream *stream)
 {
   unsigned int index;
 
-  frame->flags   = 0;
-  frame->private = 0;
+  header->flags   = 0;
+  header->private = 0;
 
   /* header() */
 
@@ -133,20 +129,20 @@ int decode_header(struct mad_frame *frame, struct mad_stream *stream)
 
   /* ID */
   if (mad_bit_read(&stream->ptr, 1) == 0)
-    frame->flags |= MAD_FLAG_LSF_EXT;
+    header->flags |= MAD_FLAG_LSF_EXT;
 
   /* layer */
-  frame->layer = (4 - mad_bit_read(&stream->ptr, 2)) & 3;
+  header->layer = (4 - mad_bit_read(&stream->ptr, 2)) & 3;
 
-  if (frame->layer == 0) {
+  if (header->layer == 0) {
     stream->error = MAD_ERROR_BADLAYER;
     return -1;
   }
 
   /* protection_bit */
   if (mad_bit_read(&stream->ptr, 1) == 0) {
-    frame->flags     |= MAD_FLAG_PROTECTION;
-    frame->crc_header = mad_bit_crc(stream->ptr, 16, 0xffff);
+    header->flags     |= MAD_FLAG_PROTECTION;
+    header->crc_header = mad_bit_crc(stream->ptr, 16, 0xffff);
   }
 
   /* bitrate_index */
@@ -156,10 +152,10 @@ int decode_header(struct mad_frame *frame, struct mad_stream *stream)
     return -1;
   }
 
-  if (frame->flags & MAD_FLAG_LSF_EXT)
-    frame->bitrate = bitrate_table[3 + (frame->layer >> 1)][index];
+  if (header->flags & MAD_FLAG_LSF_EXT)
+    header->bitrate = bitrate_table[3 + (header->layer >> 1)][index];
   else
-    frame->bitrate = bitrate_table[frame->layer - 1][index];
+    header->bitrate = bitrate_table[header->layer - 1][index];
 
   /* sampling_frequency */
   index = mad_bit_read(&stream->ptr, 2);
@@ -168,37 +164,37 @@ int decode_header(struct mad_frame *frame, struct mad_stream *stream)
     return -1;
   }
 
-  frame->sfreq = sfreq_table[index];
+  header->sfreq = sfreq_table[index];
 
-  if (frame->flags & MAD_FLAG_LSF_EXT)
-    frame->sfreq /= 2;
+  if (header->flags & MAD_FLAG_LSF_EXT)
+    header->sfreq /= 2;
 
   /* padding_bit */
   if (mad_bit_read(&stream->ptr, 1))
-    frame->flags |= MAD_FLAG_PADDING;
+    header->flags |= MAD_FLAG_PADDING;
 
   /* private_bit */
   if (mad_bit_read(&stream->ptr, 1))
-    frame->private |= MAD_PRIVATE_HEADER;
+    header->private |= MAD_PRIVATE_HEADER;
 
   /* mode */
-  frame->mode = 3 - mad_bit_read(&stream->ptr, 2);
+  header->mode = 3 - mad_bit_read(&stream->ptr, 2);
 
   /* mode_extension */
-  frame->mode_ext = mad_bit_read(&stream->ptr, 2);
+  header->mode_ext = mad_bit_read(&stream->ptr, 2);
 
   /* copyright */
   if (mad_bit_read(&stream->ptr, 1))
-    frame->flags |= MAD_FLAG_COPYRIGHT;
+    header->flags |= MAD_FLAG_COPYRIGHT;
 
   /* original/copy */
   if (mad_bit_read(&stream->ptr, 1))
-    frame->flags |= MAD_FLAG_ORIGINAL;
+    header->flags |= MAD_FLAG_ORIGINAL;
 
   /* emphasis */
-  frame->emphasis = mad_bit_read(&stream->ptr, 2);
+  header->emphasis = mad_bit_read(&stream->ptr, 2);
 
-  if (frame->emphasis == 2) {
+  if (header->emphasis == 2) {
     stream->error = MAD_ERROR_BADEMPHASIS;
     return -1;
   }
@@ -206,8 +202,8 @@ int decode_header(struct mad_frame *frame, struct mad_stream *stream)
   /* error_check() */
 
   /* crc_check */
-  if (frame->flags & MAD_FLAG_PROTECTION)
-    frame->crc_check = mad_bit_read(&stream->ptr, 16);
+  if (header->flags & MAD_FLAG_PROTECTION)
+    header->crc_check = mad_bit_read(&stream->ptr, 16);
 
   return 0;
 }
@@ -217,7 +213,7 @@ int decode_header(struct mad_frame *frame, struct mad_stream *stream)
  * DESCRIPTION:	attempt to discover the bitstream's free bitrate
  */
 static
-int free_bitrate(struct mad_stream *stream, struct mad_frame *frame)
+int free_bitrate(struct mad_stream *stream, struct mad_header *header)
 {
   struct mad_bitptr keep_ptr;
   unsigned long rate = 0;
@@ -226,32 +222,32 @@ int free_bitrate(struct mad_stream *stream, struct mad_frame *frame)
 
   keep_ptr = stream->ptr;
 
-  pad_slot = (frame->flags & MAD_FLAG_PADDING) ? 1 : 0;
-  slots_per_frame = (frame->layer == MAD_LAYER_III &&
-		     (frame->flags & MAD_FLAG_LSF_EXT)) ? 72 : 144;
+  pad_slot = (header->flags & MAD_FLAG_PADDING) ? 1 : 0;
+  slots_per_frame = (header->layer == MAD_LAYER_III &&
+		     (header->flags & MAD_FLAG_LSF_EXT)) ? 72 : 144;
 
   while (mad_stream_sync(stream) == 0) {
     struct mad_stream peek_stream;
-    struct mad_frame peek_frame;
+    struct mad_header peek_header;
 
     peek_stream = *stream;
-    peek_frame  = *frame;
+    peek_header = *header;
 
-    if (decode_header(&peek_frame, &peek_stream) == 0 &&
-	peek_frame.layer == frame->layer &&
-	peek_frame.sfreq == frame->sfreq) {
+    if (decode_header(&peek_header, &peek_stream) == 0 &&
+	peek_header.layer == header->layer &&
+	peek_header.sfreq == header->sfreq) {
       unsigned int N;
 
       ptr = mad_bit_nextbyte(&stream->ptr);
 
       N = ptr - stream->this_frame;
 
-      if (frame->layer == MAD_LAYER_I) {
-	rate = (unsigned long) frame->sfreq *
+      if (header->layer == MAD_LAYER_I) {
+	rate = (unsigned long) header->sfreq *
 	  (N - 4 * pad_slot + 4) / 48 / 1000;
       }
       else {
-	rate = (unsigned long) frame->sfreq *
+	rate = (unsigned long) header->sfreq *
 	  (N - pad_slot + 1) / slots_per_frame / 1000;
       }
 
@@ -281,10 +277,10 @@ int free_bitrate(struct mad_stream *stream, struct mad_frame *frame)
 }
 
 /*
- * NAME:	frame->header()
+ * NAME:	header->decode()
  * DESCRIPTION:	read the next frame header from the stream
  */
-int mad_frame_header(struct mad_frame *frame, struct mad_stream *stream)
+int mad_header_decode(struct mad_header *header, struct mad_stream *stream)
 {
   register unsigned char const *ptr, *end;
   unsigned int pad_slot, N;
@@ -354,34 +350,34 @@ int mad_frame_header(struct mad_frame *frame, struct mad_stream *stream)
 
   mad_bit_init(&stream->ptr, stream->this_frame);
 
-  if (decode_header(frame, stream) == -1)
+  if (decode_header(header, stream) == -1)
     goto fail;
 
   /* calculate frame duration */
-  mad_timer_set(&frame->duration, 0,
-		32 * MAD_NSBSAMPLES(frame), frame->sfreq);
+  mad_timer_set(&header->duration, 0,
+		32 * MAD_NSBSAMPLES(header), header->sfreq);
 
   /* calculate free bit rate */
-  if (frame->bitrate == 0) {
+  if (header->bitrate == 0) {
     if ((!stream->sync || !stream->freerate) &&
-	free_bitrate(stream, frame) == -1)
+	free_bitrate(stream, header) == -1)
       goto fail;
 
-    frame->bitrate = stream->freerate;
+    header->bitrate = stream->freerate;
   }
 
   /* calculate beginning of next frame */
-  pad_slot = (frame->flags & MAD_FLAG_PADDING) ? 1 : 0;
+  pad_slot = (header->flags & MAD_FLAG_PADDING) ? 1 : 0;
 
-  if (frame->layer == MAD_LAYER_I)
-    N = ((12 * frame->bitrate / frame->sfreq) + pad_slot) * 4;
+  if (header->layer == MAD_LAYER_I)
+    N = ((12 * header->bitrate / header->sfreq) + pad_slot) * 4;
   else {
     unsigned int slots_per_frame;
 
-    slots_per_frame = (frame->layer == MAD_LAYER_III &&
-		       (frame->flags & MAD_FLAG_LSF_EXT)) ? 72 : 144;
+    slots_per_frame = (header->layer == MAD_LAYER_III &&
+		       (header->flags & MAD_FLAG_LSF_EXT)) ? 72 : 144;
 
-    N = (slots_per_frame * frame->bitrate / frame->sfreq) + pad_slot;
+    N = (slots_per_frame * header->bitrate / header->sfreq) + pad_slot;
   }
 
   /* verify there is enough data left in buffer to decode this frame */
@@ -406,7 +402,7 @@ int mad_frame_header(struct mad_frame *frame, struct mad_stream *stream)
     stream->sync = 1;
   }
 
-  frame->flags |= MAD_FLAG_INCOMPLETE;
+  header->flags |= MAD_FLAG_INCOMPLETE;
 
   return 0;
 
@@ -425,15 +421,15 @@ int mad_frame_decode(struct mad_frame *frame, struct mad_stream *stream)
   /* header() */
   /* error_check() */
 
-  if (!(frame->flags & MAD_FLAG_INCOMPLETE) &&
-      mad_frame_header(frame, stream) == -1)
+  if (!(frame->header.flags & MAD_FLAG_INCOMPLETE) &&
+      mad_header_decode(&frame->header, stream) == -1)
     goto fail;
 
   /* audio_data() */
 
-  frame->flags &= ~MAD_FLAG_INCOMPLETE;
+  frame->header.flags &= ~MAD_FLAG_INCOMPLETE;
 
-  if (decoder_table[frame->layer - 1](stream, frame) == -1) {
+  if (decoder_table[frame->header.layer - 1](stream, frame) == -1) {
     if (!MAD_RECOVERABLE(stream->error))
       stream->next_frame = stream->this_frame;
 
@@ -442,7 +438,7 @@ int mad_frame_decode(struct mad_frame *frame, struct mad_stream *stream)
 
   /* ancillary_data() */
 
-  if (frame->layer != MAD_LAYER_III) {
+  if (frame->header.layer != MAD_LAYER_III) {
     struct mad_bitptr next_frame;
 
     mad_bit_init(&next_frame, stream->next_frame);
@@ -458,4 +454,29 @@ int mad_frame_decode(struct mad_frame *frame, struct mad_stream *stream)
  fail:
   stream->anc_bitlen = 0;
   return -1;
+}
+
+/*
+ * NAME:	frame->mute()
+ * DESCRIPTION:	zero all subband values so the frame becomes silent
+ */
+void mad_frame_mute(struct mad_frame *frame)
+{
+  unsigned int s, sb;
+
+  for (s = 0; s < 36; ++s) {
+    for (sb = 0; sb < 32; ++sb) {
+      frame->sbsample[0][s][sb] =
+      frame->sbsample[1][s][sb] = 0;
+    }
+  }
+
+  if (frame->overlap) {
+    for (s = 0; s < 18; ++s) {
+      for (sb = 0; sb < 32; ++sb) {
+	(*frame->overlap)[0][sb][s] =
+	(*frame->overlap)[1][sb][s] = 0;
+      }
+    }
+  }
 }

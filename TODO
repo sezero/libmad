@@ -25,6 +25,7 @@ libmad Layer III:
   - 64-bit IMDCT optimization?
 
 madplay:
+  - ESD output module
   - 24-bit output under Win32
   - fade-out support
   - customizable gap support
@@ -54,4 +55,14 @@ ID3v2:
   - support more frame types
   - Unicode support
   - make into library
+
+Winamp plug-in:
+  - read Xing headers
+  - better streaming support
+  - ID3v2 tag viewer/editor
+  - buffer size/read whole file
+  - mono downmix
+  - left/right/reverse channel selection
+  - DSP before dither?
+  - better VBR seek
 

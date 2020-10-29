@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: frame.h,v 1.5 2000/10/25 21:52:32 rob Exp $
+ * $Id: frame.h,v 1.6 2000/11/16 10:51:10 rob Exp $
  */
 
 # ifndef MAD_FRAME_H
@@ -46,31 +46,33 @@ enum mad_emphasis {
 };
 
 struct mad_frame {
-  enum mad_layer layer;			/* audio layer (1, 2, or 3) */
-  enum mad_mode mode;			/* channel mode (see above) */
-  int mode_ext;				/* additional mode info */
-  enum mad_emphasis emphasis;		/* de-emphasis to use (see above) */
+  struct mad_header {
+    enum mad_layer layer;		/* audio layer (1, 2, or 3) */
+    enum mad_mode mode;			/* channel mode (see above) */
+    int mode_ext;			/* additional mode info */
+    enum mad_emphasis emphasis;		/* de-emphasis to use (see above) */
 
-  unsigned long bitrate;		/* stream bitrate (bps) */
-  unsigned int sfreq;			/* sampling frequency (Hz) */
+    unsigned long bitrate;		/* stream bitrate (bps) */
+    unsigned int sfreq;			/* sampling frequency (Hz) */
 
-  unsigned int crc_header;		/* header CRC partial checksum */
-  unsigned int crc_check;		/* target CRC final checksum */
+    unsigned int crc_header;		/* header CRC partial checksum */
+    unsigned int crc_check;		/* target CRC final checksum */
 
-  int flags;				/* flags (below) */
-  int private;				/* private bits (below) */
+    int flags;				/* flags (below) */
+    int private;			/* private bits (below) */
 
-  mad_timer_t duration;			/* audio playing time of frame */
+    mad_timer_t duration;		/* audio playing time of frame */
+  } header;
 
   mad_fixed_t sbsample[2][36][32];	/* synthesis subband filter samples */
   mad_fixed_t (*overlap)[2][32][18];	/* Layer III block overlap data */
 };
 
-# define MAD_NCHANNELS(frame)		((frame)->mode ? 2 : 1)
-# define MAD_NSBSAMPLES(frame)  \
-  ((frame)->layer == MAD_LAYER_I ? 12 :  \
-   (((frame)->layer == MAD_LAYER_III &&  \
-     ((frame)->flags & MAD_FLAG_LSF_EXT)) ? 18 : 36))
+# define MAD_NCHANNELS(header)		((header)->mode ? 2 : 1)
+# define MAD_NSBSAMPLES(header)  \
+  ((header)->layer == MAD_LAYER_I ? 12 :  \
+   (((header)->layer == MAD_LAYER_III &&  \
+     ((header)->flags & MAD_FLAG_LSF_EXT)) ? 18 : 36))
 
 enum {
   MAD_FLAG_NPRIVATE_III	  = 0x0007,	/* number of Layer III private bits */
@@ -93,12 +95,17 @@ enum {
   MAD_PRIVATE_III	  = 0x001f	/* Layer III private bits (up to 5) */
 };
 
+void mad_header_init(struct mad_header *);
+
+# define mad_header_finish(header)  /* nothing */
+
+int mad_header_decode(struct mad_header *, struct mad_stream *);
+
 void mad_frame_init(struct mad_frame *);
 void mad_frame_finish(struct mad_frame *);
 
-void mad_frame_mute(struct mad_frame *);
-
-int mad_frame_header(struct mad_frame *, struct mad_stream *);
 int mad_frame_decode(struct mad_frame *, struct mad_stream *);
+
+void mad_frame_mute(struct mad_frame *);
 
 # endif

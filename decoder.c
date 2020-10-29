@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: decoder.c,v 1.6 2000/10/25 21:52:31 rob Exp $
+ * $Id: decoder.c,v 1.7 2000/11/16 10:51:10 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
@@ -47,10 +47,10 @@
 void mad_decoder_init(struct mad_decoder *decoder, void *data,
 		      enum mad_flow (*input_func)(void *, struct mad_stream *),
 		      enum mad_flow (*header_func)(void *,
-						   struct mad_frame const *),
+						   struct mad_header const *),
 		      enum mad_flow (*filter_func)(void *, struct mad_frame *),
 		      enum mad_flow (*output_func)(void *,
-						   struct mad_frame const *,
+						   struct mad_header const *,
 						   struct mad_pcm *),
 		      enum mad_flow (*error_func)(void *, struct mad_stream *,
 						  struct mad_frame *),
@@ -344,7 +344,7 @@ int run_sync(struct mad_decoder *decoder)
       }
 
       if (decoder->header_func) {
-	if (mad_frame_header(frame, stream) == -1) {
+	if (mad_header_decode(&frame->header, stream) == -1) {
 	  if (!MAD_RECOVERABLE(stream->error))
 	    break;
 
@@ -360,7 +360,7 @@ int run_sync(struct mad_decoder *decoder)
 	  }
 	}
 
-	switch (decoder->header_func(decoder->cb_data, frame)) {
+	switch (decoder->header_func(decoder->cb_data, &frame->header)) {
 	case MAD_FLOW_STOP:
 	  goto done;
 	case MAD_FLOW_BREAK:
@@ -407,7 +407,8 @@ int run_sync(struct mad_decoder *decoder)
       mad_synth_frame(synth, frame);
 
       if (decoder->output_func) {
-	switch (decoder->output_func(decoder->cb_data, frame, &synth->pcm)) {
+	switch (decoder->output_func(decoder->cb_data,
+				     &frame->header, &synth->pcm)) {
 	case MAD_FLOW_STOP:
 	  goto done;
 	case MAD_FLOW_BREAK:

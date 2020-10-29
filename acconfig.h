@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: acconfig.h,v 1.7 2000/10/25 21:52:31 rob Exp $
+ * $Id: acconfig.h,v 1.8 2000/11/16 10:51:10 rob Exp $
  */
 
 # ifndef MAD_CONFIG_H
@@ -32,9 +32,6 @@
 
 /* Define to optimize for accuracy over speed. */
 #undef OPT_ACCURACY
-
-/* Define to enable a Layer III intensity stereo kluge. */
-#undef OPT_ISKLUGE
 
 /* Define to enable a fast subband synthesis approximation optimization. */
 #undef OPT_SSO

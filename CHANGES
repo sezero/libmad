@@ -2,9 +2,35 @@
  mad - MPEG audio decoder
  Copyright (C) 2000 Robert Leslie
 
- $Id: CHANGES,v 1.35 2000/10/26 00:34:02 rob Exp $
+ $Id: CHANGES,v 1.36 2000/11/16 10:51:04 rob Exp $
 
 ===============================================================================
+
+Version 0.12.1 (beta)
+
+  * New code for a Winamp plug-in.
+
+  * Resolved the intensity + MS joint stereo issue (a simple bug).
+    OPT_ISKLUGE is no longer considered to be a kluge.
+
+  * Fixed another, hopefully last main_data memory bug.
+
+  * Split part of struct mad_frame into struct mad_header for convenience
+    and size.
+
+  * Rewrote the audio PCM packing routines for (hopefully) somewhat better
+    performance.
+
+  * Fixed a FreeBSD sound compatibility problem in audio_oss.c with help
+    from Graham Guttocks.
+
+  * Moved ID3 genre table into a separate file (shared by Winamp plug-in)
+    and updated extensions with current list from Winamp.
+
+  * New Croatian, Norwegian, and Spanish translations courtesy of Mario
+    Horvat, Christoffer Nicolaisen, and Damian Brizuela, respectively.
+
+  * Added a simple ABX testing script.
 
 Version 0.12.0 (alpha)
 
