@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: stream.h,v 1.3 2000/09/17 18:52:18 rob Exp $
+ * $Id: stream.h,v 1.5 2000/10/25 21:52:32 rob Exp $
  */
 
 # ifndef MAD_STREAM_H
@@ -24,13 +24,41 @@
 
 # include "bit.h"
 
+# define MAD_BUFFER_GUARD	4
+# define MAD_BUFFER_MDLEN	(511 + 2048 + MAD_BUFFER_GUARD)
+
+enum mad_error {
+  MAD_ERROR_BUFLEN	   = 0x0001,	/* input buffer too small (or EOF) */
+  MAD_ERROR_BUFPTR	   = 0x0002,	/* invalid (null) buffer pointer */
+
+  MAD_ERROR_NOMEM	   = 0x0031,	/* not enough memory */
+
+  MAD_ERROR_LOSTSYNC	   = 0x0101,	/* lost synchronization */
+  MAD_ERROR_BADLAYER	   = 0x0102,	/* reserved header layer value */
+  MAD_ERROR_BADBITRATE	   = 0x0103,	/* forbidden bitrate value */
+  MAD_ERROR_BADSAMPLEFREQ  = 0x0104,	/* reserved sample frequency value */
+  MAD_ERROR_BADEMPHASIS	   = 0x0105,	/* reserved emphasis value */
+
+  MAD_ERROR_BADCRC	   = 0x0201,	/* CRC check failed */
+  MAD_ERROR_BADBITALLOC	   = 0x0211,	/* forbidden bit allocation value */
+  MAD_ERROR_BADSCALEFACTOR = 0x0221,	/* bad scalefactor index */
+  MAD_ERROR_BADFRAMELEN	   = 0x0231,	/* bad frame length */
+  MAD_ERROR_BADBIGVALUES   = 0x0232,	/* bad big_values count */
+  MAD_ERROR_BADBLOCKTYPE   = 0x0233,	/* reserved block_type */
+  MAD_ERROR_BADDATAPTR	   = 0x0234,	/* bad main_data_begin pointer */
+  MAD_ERROR_BADDATALEN	   = 0x0235,	/* bad main data length */
+  MAD_ERROR_BADPART3LEN	   = 0x0236,	/* bad audio data length */
+  MAD_ERROR_BADHUFFTABLE   = 0x0237,	/* bad Huffman table select */
+  MAD_ERROR_BADSTEREO	   = 0x0238	/* incompatible block_type for MS */
+};
+
 struct mad_stream {
   unsigned char const *buffer;		/* input bitstream buffer */
   unsigned char const *bufend;		/* end of buffer */
   unsigned long skiplen;		/* bytes to skip before next frame */
 
   int sync;				/* stream sync found */
-  unsigned int freerate;		/* free bitrate (fixed) */
+  unsigned long freerate;		/* free bitrate (fixed) */
 
   unsigned char const *this_frame;	/* start of current frame */
   unsigned char const *next_frame;	/* start of next frame */
@@ -39,34 +67,12 @@ struct mad_stream {
   struct mad_bitptr anc_ptr;		/* ancillary bits pointer */
   unsigned int anc_bitlen;		/* number of ancillary bits */
 
-  unsigned char (*main_data)[1935];	/* Layer III main_data */
+  unsigned char (*main_data)[MAD_BUFFER_MDLEN];
+					/* Layer III main_data() */
   unsigned int md_len;			/* bytes in main_data */
 
-  int error;				/* error code (see below) */
+  enum mad_error error;			/* error code (see above) */
 };
-
-# define MAD_ERR_BUFLEN		0x0001	/* input buffer too small (or EOF) */
-# define MAD_ERR_BUFPTR		0x0002	/* invalid (null) buffer pointer */
-
-# define MAD_ERR_NOMEM		0x0031	/* not enough memory */
-
-# define MAD_ERR_LOSTSYNC	0x0101	/* lost synchronization */
-# define MAD_ERR_BADLAYER	0x0102	/* reserved header layer value */
-# define MAD_ERR_BADBITRATE	0x0103	/* forbidden bitrate value */
-# define MAD_ERR_BADSAMPLEFREQ	0x0104	/* reserved sample frequency value */
-# define MAD_ERR_BADEMPHASIS	0x0105	/* reserved emphasis value */
-
-# define MAD_ERR_BADCRC		0x0201	/* CRC check failed */
-# define MAD_ERR_BADBITALLOC	0x0211	/* forbidden bit allocation value */
-# define MAD_ERR_BADSCALEFACTOR	0x0221	/* bad scalefactor index */
-# define MAD_ERR_BADFRAMELEN	0x0231	/* bad frame length */
-# define MAD_ERR_BADBIGVALUES	0x0232	/* bad big_values count */
-# define MAD_ERR_BADBLOCKTYPE	0x0233	/* reserved block_type */
-# define MAD_ERR_BADDATAPTR	0x0234	/* bad main_data_begin pointer */
-# define MAD_ERR_BADDATALEN	0x0235	/* bad main data length */
-# define MAD_ERR_BADPART3LEN	0x0236	/* bad audio data length */
-# define MAD_ERR_BADHUFFTABLE	0x0237	/* bad Huffman table select */
-# define MAD_ERR_BADSTEREO	0x0238	/* incompatible block_type for MS */
 
 # define MAD_RECOVERABLE(error)	((error) & 0xff00)
 
@@ -80,4 +86,3 @@ void mad_stream_skip(struct mad_stream *, unsigned long);
 int mad_stream_sync(struct mad_stream *);
 
 # endif
-

@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: huffman.h,v 1.2 2000/09/17 18:52:18 rob Exp $
+ * $Id: huffman.h,v 1.3 2000/10/25 21:52:32 rob Exp $
  */
 
 # ifndef MAD_HUFFMAN_H
@@ -64,4 +64,3 @@ extern union huffquad const *const mad_huff_quad_table[2];
 extern struct hufftable const mad_huff_pair_table[32];
 
 # endif
-

@@ -16,12 +16,14 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: synth.c,v 1.8 2000/09/24 21:22:42 rob Exp $
+ * $Id: synth.c,v 1.9 2000/10/25 21:52:32 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
 #  include "config.h"
 # endif
+
+# include "global.h"
 
 # include "fixed.h"
 # include "frame.h"
@@ -36,8 +38,8 @@ void mad_synth_init(struct mad_synth *synth)
   unsigned int i;
 
   for (i = 0; i < 256; ++i) {
-    synth->filterout[0][0][i] = synth->filterout[0][1][i] =
-    synth->filterout[1][0][i] = synth->filterout[1][1][i] = 0;
+    synth->polyfilter[0][0][i] = synth->polyfilter[0][1][i] =
+    synth->polyfilter[1][0][i] = synth->polyfilter[1][1][i] = 0;
   }
 
   synth->slot = 0;
@@ -487,12 +489,12 @@ void mad_synth_frame(struct mad_synth *synth, struct mad_frame const *frame)
       register mad_fixed_t const *Dptr;
       register mad_fixed_t sum1, sum2;
 
-      evenp = synth->filterout[ch][0];
-      oddp  = synth->filterout[ch][1];
+      evenp = synth->polyfilter[ch][0];
+      oddp  = synth->polyfilter[ch][1];
 
       dct32(frame->sbsample[ch][s], &evenp[16 * slot], &oddp[16 * slot]);
 
-      pcmptr = &synth->pcmout[ch][s * 32];
+      pcmptr = &synth->pcm.samples[ch][s * 32];
 
       if (slot & 1) {
 	even2p = evenp;
@@ -703,5 +705,5 @@ void mad_synth_frame(struct mad_synth *synth, struct mad_frame const *frame)
     }
   }
 
-  synth->pcmlen = 32 * ns;
+  synth->pcm.length = 32 * ns;
 }

@@ -16,12 +16,15 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: layer3.h,v 1.1 2000/08/02 05:48:51 rob Exp $
+ * $Id: layer3.h,v 1.3 2000/10/25 21:52:32 rob Exp $
  */
+
+# ifndef MAD_LAYER3_H
+# define MAD_LAYER3_H
 
 # include "stream.h"
 # include "frame.h"
 
-int mad_layer_III(struct mad_stream *, struct mad_frame *,
-		  unsigned short const [2]);
+int mad_layer_III(struct mad_stream *, struct mad_frame *);
 
+# endif

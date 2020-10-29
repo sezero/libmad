@@ -16,33 +16,30 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: version.h,v 1.7 2000/10/25 21:52:32 rob Exp $
+ * $Id: global.h,v 1.1 2000/10/25 21:52:32 rob Exp $
  */
 
-# ifndef MAD_VERSION_H
-# define MAD_VERSION_H
+# ifndef MAD_GLOBAL_H
+# define MAD_GLOBAL_H
 
-# define MAD_VERSION_MAJOR	0
-# define MAD_VERSION_MINOR	12
-# define MAD_VERSION_PATCH	0
-# define MAD_VERSION_EXTRA	" (alpha)"
+/* conditional debugging */
 
-# define MAD_VERSION_STRINGIZE(str)	#str
-# define MAD_VERSION_STRING(num)	MAD_VERSION_STRINGIZE(num)
+# if defined(DEBUG) && defined(NDEBUG)
+#  error "cannot define both DEBUG and NDEBUG"
+# endif
 
-# define MAD_VERSION		MAD_VERSION_STRING(MAD_VERSION_MAJOR) "."  \
-				MAD_VERSION_STRING(MAD_VERSION_MINOR) "."  \
-				MAD_VERSION_STRING(MAD_VERSION_PATCH)  \
-				MAD_VERSION_EXTRA
+# if defined(DEBUG)
+#  include <stdio.h>
+# endif
 
-# define MAD_PUBLISHYEAR	"2000"
-# define MAD_AUTHOR		"Robert Leslie"
-# define MAD_EMAIL		"rob@mars.org"
+/* conditional features */
 
-extern char const mad_version[];
-extern char const mad_copyright[];
-extern char const mad_author[];
-extern char const mad_license[];
-extern char const mad_build[];
+# if defined(OPT_SPEED) && defined(OPT_ACCURACY)
+#  error "cannot optimize for both speed and accuracy"
+# endif
+
+# if defined(OPT_SPEED) && !defined(OPT_SSO)
+#  define OPT_SSO 1
+# endif
 
 # endif

@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: decoder.h,v 1.3 2000/09/17 18:52:18 rob Exp $
+ * $Id: decoder.h,v 1.5 2000/10/25 21:52:31 rob Exp $
  */
 
 # ifndef MAD_DECODER_H
@@ -26,11 +26,23 @@
 # include "frame.h"
 # include "synth.h"
 
+enum mad_decoder_mode {
+  MAD_DECODER_MODE_SYNC  = 0,
+  MAD_DECODER_MODE_ASYNC
+};
+
+enum mad_flow {
+  MAD_FLOW_CONTINUE = 0x0000,
+  MAD_FLOW_STOP     = 0x0010,
+  MAD_FLOW_BREAK    = 0x0011,
+  MAD_FLOW_IGNORE   = 0x0020
+};
+
 struct mad_decoder {
-  int mode;
+  enum mad_decoder_mode mode;
 
   struct {
-    int pid;
+    long pid;
     int in;
     int out;
   } async;
@@ -43,64 +55,29 @@ struct mad_decoder {
 
   void *cb_data;
 
-  int (*input_func)(void *, struct mad_stream *);
-  int (*filter_func)(void *, struct mad_frame *);
-  int (*output_func)(void *, struct mad_frame const *,
-		     struct mad_synth const *);
-  int (*error_func)(void *, struct mad_stream *, struct mad_frame *);
-};
-
-enum {
-  mad_cmd_play,
-  mad_cmd_pause,
-  mad_cmd_rewind,
-  mad_cmd_skip,
-  mad_cmd_stop
-};
-
-union mad_control {
-  short command;
-
-  struct mad_cmd_play {
-    short command;
-  } play;
-
-  struct mad_cmd_pause {
-    short command;
-  } pause;
-
-  struct mad_cmd_rewind {
-    short command;
-  } rewind;
-
-  struct mad_cmd_skip {
-    short command;
-  } skip;
-
-  struct mad_cmd_stop {
-    short command;
-  } stop;
+  enum mad_flow (*input_func)(void *, struct mad_stream *);
+  enum mad_flow (*header_func)(void *, struct mad_frame const *);
+  enum mad_flow (*filter_func)(void *, struct mad_frame *);
+  enum mad_flow (*output_func)(void *,
+			       struct mad_frame const *, struct mad_pcm *);
+  enum mad_flow (*error_func)(void *, struct mad_stream *, struct mad_frame *);
+  enum mad_flow (*message_func)(void *, void *, unsigned int *);
 };
 
 void mad_decoder_init(struct mad_decoder *, void *,
-		      int (*)(void *, struct mad_stream *),
-		      int (*)(void *, struct mad_frame *),
-		      int (*)(void *, struct mad_frame const *,
-			      struct mad_synth const *),
-		      int (*)(void *, struct mad_stream *,
-			      struct mad_frame *));
+		      enum mad_flow (*)(void *, struct mad_stream *),
+		      enum mad_flow (*)(void *, struct mad_frame const *),
+		      enum mad_flow (*)(void *, struct mad_frame *),
+		      enum mad_flow (*)(void *,
+					struct mad_frame const *,
+					struct mad_pcm *),
+		      enum mad_flow (*)(void *,
+					struct mad_stream *,
+					struct mad_frame *),
+		      enum mad_flow (*)(void *, void *, unsigned int *));
 int mad_decoder_finish(struct mad_decoder *);
 
-int mad_decoder_run(struct mad_decoder *, int);
-int mad_decoder_command(struct mad_decoder *, union mad_control *);
-
-# define MAD_DECODER_SYNC	0x0000
-# define MAD_DECODER_ASYNC	0x0001
-
-# define MAD_DECODER_CONTINUE	0x0000
-# define MAD_DECODER_STOP	0x0010
-# define MAD_DECODER_BREAK	0x0011
-# define MAD_DECODER_IGNORE	0x0020
+int mad_decoder_run(struct mad_decoder *, enum mad_decoder_mode);
+int mad_decoder_message(struct mad_decoder *, void *, unsigned int *);
 
 # endif
-

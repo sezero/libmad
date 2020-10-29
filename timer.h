@@ -16,39 +16,80 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: timer.h,v 1.4 2000/09/24 17:49:38 rob Exp $
+ * $Id: timer.h,v 1.6 2000/10/25 21:52:32 rob Exp $
  */
 
 # ifndef MAD_TIMER_H
 # define MAD_TIMER_H
 
-struct mad_timer {
-  unsigned long seconds;		/* whole seconds */
-  unsigned long fraction;		/* 1/14112000 seconds */
+typedef struct {
+  signed long seconds;		/* whole seconds */
+  unsigned long fraction;	/* 1/MAD_TIMER_RESOLUTION seconds */
+} mad_timer_t;
+
+extern mad_timer_t const mad_timer_zero;
+
+# define MAD_TIMER_RESOLUTION	352800000UL
+
+enum mad_units {
+  MAD_UNITS_HOURS	 =    -2,
+  MAD_UNITS_MINUTES	 =    -1,
+  MAD_UNITS_SECONDS	 =     0,
+
+  /* metric units */
+
+  MAD_UNITS_DECISECONDS	 =    10,
+  MAD_UNITS_CENTISECONDS =   100,
+  MAD_UNITS_MILLISECONDS =  1000,
+
+  /* audio sample units */
+
+  MAD_UNITS_8000_HZ	 =  8000,
+  MAD_UNITS_11025_HZ	 = 11025,
+  MAD_UNITS_12000_HZ	 = 12000,
+
+  MAD_UNITS_16000_HZ	 = 16000,
+  MAD_UNITS_22050_HZ	 = 22050,
+  MAD_UNITS_24000_HZ	 = 24000,
+
+  MAD_UNITS_32000_HZ	 = 32000,
+  MAD_UNITS_44100_HZ	 = 44100,
+  MAD_UNITS_48000_HZ	 = 48000,
+
+  /* video frame/field units */
+
+  MAD_UNITS_24_FPS	 =    24,
+  MAD_UNITS_25_FPS	 =    25,
+  MAD_UNITS_30_FPS	 =    30,
+  MAD_UNITS_48_FPS	 =    48,
+  MAD_UNITS_50_FPS	 =    50,
+  MAD_UNITS_60_FPS	 =    60,
+
+  /* video drop-frame units */
+
+  MAD_UNITS_23_976_FPS	 =   -24,
+  MAD_UNITS_24_975_FPS	 =   -25,
+  MAD_UNITS_29_97_FPS	 =   -30,
+  MAD_UNITS_47_952_FPS	 =   -48,
+  MAD_UNITS_49_95_FPS	 =   -50,
+  MAD_UNITS_59_94_FPS	 =   -60
 };
 
-# define MAD_TIMER_FRACPARTS	14112000L
+# define mad_timer_reset(timer)	(*(timer) = mad_timer_zero)
 
-# define MAD_TIMER_HOURS	0x0002
-# define MAD_TIMER_MINUTES	0x0001
-# define MAD_TIMER_SECONDS	0x0000
+int mad_timer_compare(mad_timer_t, mad_timer_t);
 
-# define MAD_TIMER_DECISECONDS	0x0003
-# define MAD_TIMER_CENTISECONDS	0x0004
-# define MAD_TIMER_MILLISECONDS	0x0005
+# define mad_timer_sign(timer)	mad_timer_compare((timer), mad_timer_zero)
 
-void mad_timer_init(struct mad_timer *);
+void mad_timer_negate(mad_timer_t *);
+mad_timer_t mad_timer_abs(mad_timer_t);
 
-# define mad_timer_finish(timer)  /* nothing */
+void mad_timer_set(mad_timer_t *, unsigned long, unsigned long, unsigned long);
+void mad_timer_add(mad_timer_t *, mad_timer_t);
 
-void mad_timer_set(struct mad_timer *, unsigned long,
-		   unsigned long, unsigned long);
-void mad_timer_add(struct mad_timer *, struct mad_timer const *);
-int mad_timer_compare(struct mad_timer const *, struct mad_timer const *);
-
-void mad_timer_str(struct mad_timer const *, char *, char const *, int);
-unsigned long mad_timer_count(struct mad_timer const *, int);
-unsigned long mad_timer_fraction(struct mad_timer const *, unsigned long);
+signed long mad_timer_count(mad_timer_t, enum mad_units);
+unsigned long mad_timer_fraction(mad_timer_t, unsigned long);
+void mad_timer_string(mad_timer_t, char *, char const *,
+		      enum mad_units, enum mad_units, unsigned long);
 
 # endif
-

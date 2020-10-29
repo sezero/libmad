@@ -1,11 +1,12 @@
 
 libmad:
-  - MPEG 2 MC, 2.5?
-  - parse system streams
+  - Nicolas's PCM shortcut?
   - function documentation, general docs
   - finish async API
+  - parse system streams
+  - MPEG-2 MC, AAC, 2.5?
   - 64-bit synthesis optimization?
-  - enable creation of shared library
+  - logarithmic multiplication?
 
 libmad Layer I:
   - check frame length sanity
@@ -15,28 +16,42 @@ libmad Layer II:
   - check frame length sanity
 
 libmad Layer III:
-  - optimize imdct12 (short blocks)
+  - Andre's patches
   - perform requantization during Huffman decoding
+  - optimize imdct12 (short blocks)
   - ancillary bits
   - ms_stereo + intensity_stereo not right?
   - stereo->mono conversion optimization?
   - 64-bit IMDCT optimization?
 
 madplay:
+  - 24-bit output under Win32
+  - fade-out support
+  - customizable gap support
+  - fix start/stop time granularity
+  - ensure last frame is played at end-of-stream
+  - resampling with bandlimited interpolation
+  - output sampling rate/resolution selection
   - byte position reporting
   - better bitstream error recovery
-  - ensure last frame is played at end-of-stream
   - further ID3v2 support
   - move static vars from audio_* to audio control union
-  - resampling with bandlimited interpolation
-  - rewrite filter/output system
+  - handle emphasis
+  - equalizer support
+  - dynamically loaded filters
+  - automatic volume adjustment filter
+  - GUI
 
 madtime:
-  - collect directory names
   - recurse directories
+  - collect directory names
+  - non-mmap support
+
+mad123:
+  - needs work!
 
 ID3v2:
+  - support more frame types
   - Unicode support
   - make into library
-  - support more frame types
 

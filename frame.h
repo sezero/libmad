@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: frame.h,v 1.3 2000/09/17 18:52:18 rob Exp $
+ * $Id: frame.h,v 1.5 2000/10/25 21:52:32 rob Exp $
  */
 
 # ifndef MAD_FRAME_H
@@ -26,19 +26,41 @@
 # include "timer.h"
 # include "stream.h"
 
+enum mad_layer {
+  MAD_LAYER_I   = 1,			/* Layer I */
+  MAD_LAYER_II  = 2,			/* Layer II */
+  MAD_LAYER_III = 3			/* Layer III */
+};
+
+enum mad_mode {
+  MAD_MODE_SINGLE_CHANNEL = 0,		/* single channel */
+  MAD_MODE_DUAL_CHANNEL	  = 1,		/* dual channel */
+  MAD_MODE_JOINT_STEREO	  = 2,		/* joint (MS/intensity) stereo */
+  MAD_MODE_STEREO	  = 3		/* normal LR stereo */
+};
+
+enum mad_emphasis {
+  MAD_EMPHASIS_NONE	  = 0,		/* no emphasis */
+  MAD_EMPHASIS_50_15_MS	  = 1,		/* 50/15 microseconds */
+  MAD_EMPHASIS_CCITT_J_17 = 3		/* CCITT J.17 */
+};
+
 struct mad_frame {
-  int layer;				/* audio layer (1, 2, or 3) */
-  int mode;				/* channel mode (see below) */
+  enum mad_layer layer;			/* audio layer (1, 2, or 3) */
+  enum mad_mode mode;			/* channel mode (see above) */
   int mode_ext;				/* additional mode info */
-  int emphasis;				/* de-emphasis to use (see below) */
+  enum mad_emphasis emphasis;		/* de-emphasis to use (see above) */
 
   unsigned long bitrate;		/* stream bitrate (bps) */
   unsigned int sfreq;			/* sampling frequency (Hz) */
 
+  unsigned int crc_header;		/* header CRC partial checksum */
+  unsigned int crc_check;		/* target CRC final checksum */
+
   int flags;				/* flags (below) */
   int private;				/* private bits (below) */
 
-  struct mad_timer duration;		/* audio playing time of frame */
+  mad_timer_t duration;			/* audio playing time of frame */
 
   mad_fixed_t sbsample[2][36][32];	/* synthesis subband filter samples */
   mad_fixed_t (*overlap)[2][32][18];	/* Layer III block overlap data */
@@ -46,42 +68,37 @@ struct mad_frame {
 
 # define MAD_NCHANNELS(frame)		((frame)->mode ? 2 : 1)
 # define MAD_NSBSAMPLES(frame)  \
-  ((frame)->layer == 1 ? 12 :  \
-   (((frame)->layer == 3 && ((frame)->flags & MAD_FLAG_LSF_EXT)) ? 18 : 36))
+  ((frame)->layer == MAD_LAYER_I ? 12 :  \
+   (((frame)->layer == MAD_LAYER_III &&  \
+     ((frame)->flags & MAD_FLAG_LSF_EXT)) ? 18 : 36))
 
-# define MAD_MODE_SINGLE_CHANNEL	0
-# define MAD_MODE_DUAL_CHANNEL		1
-# define MAD_MODE_JOINT_STEREO		2
-# define MAD_MODE_STEREO		3
+enum {
+  MAD_FLAG_NPRIVATE_III	  = 0x0007,	/* number of Layer III private bits */
+  MAD_FLAG_INCOMPLETE	  = 0x0008,	/* header but not data is decoded */
 
-# define MAD_EMPH_NONE		0	/* no emphasis */
-# define MAD_EMPH_50_15_MS	1	/* 50/15 microseconds */
-# define MAD_EMPH_CCITT_J_17	3	/* CCITT J.17 */
+  MAD_FLAG_PROTECTION	  = 0x0010,	/* frame has CRC protection */
+  MAD_FLAG_COPYRIGHT	  = 0x0020,	/* frame is copyright */
+  MAD_FLAG_ORIGINAL	  = 0x0040,	/* frame is original (else copy) */
+  MAD_FLAG_PADDING	  = 0x0080,	/* frame has additional slot */
 
-# define MAD_FLAG_III_NPRIVATE	0x0007	/* number of Layer III private bits */
+  MAD_FLAG_I_STEREO	  = 0x0100,	/* uses intensity joint stereo */
+  MAD_FLAG_MS_STEREO	  = 0x0200,	/* uses middle/side joint stereo */
 
-# define MAD_FLAG_PROTECTION	0x0010	/* frame has CRC protection */
-# define MAD_FLAG_COPYRIGHT	0x0020	/* frame is copyright */
-# define MAD_FLAG_ORIGINAL	0x0040	/* frame is original (else copy) */
-# define MAD_FLAG_PADDING	0x0080	/* frame has additional slot */
+  MAD_FLAG_LSF_EXT	  = 0x1000,	/* lower sampling freq. extension */
+  MAD_FLAG_MC_EXT	  = 0x2000	/* multichannel audio extension */
+};
 
-# define MAD_FLAG_I_STEREO	0x0100	/* uses intensity joint stereo */
-# define MAD_FLAG_MS_STEREO	0x0200	/* uses middle/side joint stereo */
-
-# define MAD_FLAG_LSF_EXT	0x1000	/* lower sampling freq. extension */
-# define MAD_FLAG_MC_EXT	0x2000	/* multichannel audio extension */
-
-# define MAD_PRIV_HEADER	0x0100	/* header private bit */
-# define MAD_PRIV_III		0x001f	/* Layer III private bits (up to 5) */
+enum {
+  MAD_PRIVATE_HEADER	  = 0x0100,	/* header private bit */
+  MAD_PRIVATE_III	  = 0x001f	/* Layer III private bits (up to 5) */
+};
 
 void mad_frame_init(struct mad_frame *);
 void mad_frame_finish(struct mad_frame *);
 
 void mad_frame_mute(struct mad_frame *);
 
-int mad_frame_header(struct mad_frame *, struct mad_stream *,
-		     unsigned short *);
+int mad_frame_header(struct mad_frame *, struct mad_stream *);
 int mad_frame_decode(struct mad_frame *, struct mad_stream *);
 
 # endif
-

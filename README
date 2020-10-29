@@ -2,20 +2,20 @@
  mad - MPEG audio decoder
  Copyright (C) 2000 Robert Leslie
 
- $Id: README,v 1.34 2000/09/24 21:22:36 rob Exp $
+ $Id: README,v 1.37 2000/10/25 21:51:39 rob Exp $
 
 ===============================================================================
 
 INTRODUCTION
 
-  MAD is a high-quality MPEG audio decoder. It currently supports MPEG 1 as
-  well as the MPEG 2 extension to Lower Sampling Frequencies. All three
-  audio layers (Layer I, Layer II, and Layer III aka MP3) are fully
+  MAD is a high-quality MPEG audio decoder. It currently supports MPEG-1 as
+  well as the MPEG-2 extension to Lower Sampling Frequencies. All three
+  audio layers (Layer I, Layer II, and Layer III a.k.a. MP3) are fully
   implemented.
 
-  MAD does not yet support MPEG 2 multichannel audio (although it should be
-  backward compatible with such streams), nor does it support the so-called
-  MPEG 2.5 format.
+  MAD does not yet support MPEG-2 multichannel audio (although it should be
+  backward compatible with such streams) or AAC, nor does it support the
+  so-called MPEG 2.5 format.
 
   MAD has the following special features:
 
@@ -56,8 +56,8 @@ ABOUT THE CODE
     - a Sun audio interface module (for Solaris, NetBSD, et al.)
     - a Win32 audio interface module (for Windows 95/98/NT, et al.)
     - a raw PCM output module
-    - a WAVE file output module (.wav)
-    - a Sun/NeXT audio file output module (.au, .snd)
+    - a WAVE file output module (*.wav)
+    - a Sun/NeXT audio file output module (*.au, *.snd)
     - a hex output module (for debugging and compliance testing)
     - a null module (for timing the decoder)
 
@@ -81,7 +81,7 @@ ABOUT THE CODE
   The high-level API may either be used synchronously or asynchronously. If
   used asynchronously, decoding will occur in a separate process.
   Communication is possible with the decoding process by passing control
-  messages. [The asynchronous API is not yet completed.]
+  messages.
 
   The `madplay' front-end is written to use the high-level synchronous API.
 
@@ -158,8 +158,8 @@ Audio Quality
   MAD produces output samples with a precision greater than 24 bits. Because
   most output formats use fewer bits, typically 16, `madplay' implements a
   dithering algorithm when truncating samples for output. This produces high
-  quality audio that generally sounds superior to using a simple rounding
-  algorithm. However, dithering may unfavorably affect an analytic
+  quality audio that generally sounds superior to the output of a simple
+  rounding algorithm. However, dithering may unfavorably affect an analytic
   examination of the output (such as compliance testing), and therefore it
   may optionally be disabled at runtime.
 
@@ -181,7 +181,7 @@ Portability Issues
 INSTALLATION
 
   The code is distributed with a `configure' script which will generate for
-  you a `Makefile' and a `config.h' in the both the `libmad' and top-level
+  you a `Makefile' and a `config.h' in both the `libmad' and top-level
   subdirectories. See the file `INSTALL' for generic instructions.
 
   The specific options you may want to give `configure' are:
@@ -196,9 +196,7 @@ INSTALLATION
       --disable-debugging       do not compile with debugging support, and
                                 use more optimizations
 
-      --enable-devlib           install `libmad.a' developer library and
-                                `mad.h' header file in addition to the
-                                user programs
+      --enable-shared		build a shared library if possible
 
   Note that you need not specify one of --enable-speed or --enable-accuracy;
   in its default configuration, MAD is optimized for both. You should only
@@ -213,11 +211,11 @@ INSTALLATION
                                 (current options are: intel, arm, mips,
                                 sparc; also allowed are: 64bit, approx)
 
-      --enable-sso              use a subband synthesis optimization,
+      --enable-sso              use the subband synthesis optimization,
                                 with reduced accuracy
 
       --enable-aso              use architecture-specific optimizations,
-                                if available
+                                if available (currently only for ARM)
 
   By default an appropriate fixed-point assembly routine will be selected
   for the configured host type, if it can be determined. Thus if you are

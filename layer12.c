@@ -16,12 +16,14 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: layer12.c,v 1.3 2000/09/17 18:52:18 rob Exp $
+ * $Id: layer12.c,v 1.5 2000/10/25 21:52:32 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
 #  include "config.h"
 # endif
+
+# include "global.h"
 
 # ifdef HAVE_LIMITS_H
 #  include <limits.h>
@@ -100,8 +102,7 @@ mad_fixed_t I_sample(struct mad_bitptr *ptr, unsigned int nb)
  * NAME:	layer->I()
  * DESCRIPTION:	decode a single Layer I frame
  */
-int mad_layer_I(struct mad_stream *stream, struct mad_frame *frame,
-		unsigned short const crc[2])
+int mad_layer_I(struct mad_stream *stream, struct mad_frame *frame)
 {
   unsigned int nch, bound, ch, s, sb, nb;
   unsigned char allocation[2][32], scalefactor[2][32];
@@ -119,8 +120,8 @@ int mad_layer_I(struct mad_stream *stream, struct mad_frame *frame,
 
   if ((frame->flags & MAD_FLAG_PROTECTION) &&
       mad_bit_crc(stream->ptr, 4 * (bound * nch + (32 - bound)),
-		  crc[0]) != crc[1]) {
-    stream->error = MAD_ERR_BADCRC;
+		  frame->crc_header) != frame->crc_check) {
+    stream->error = MAD_ERROR_BADCRC;
     return -1;
   }
 
@@ -131,7 +132,7 @@ int mad_layer_I(struct mad_stream *stream, struct mad_frame *frame,
       nb = mad_bit_read(&stream->ptr, 4);
 
       if (nb == 15) {
-	stream->error = MAD_ERR_BADBITALLOC;
+	stream->error = MAD_ERROR_BADBITALLOC;
 	return -1;
       }
 
@@ -143,7 +144,7 @@ int mad_layer_I(struct mad_stream *stream, struct mad_frame *frame,
     nb = mad_bit_read(&stream->ptr, 4);
 
     if (nb == 15) {
-      stream->error = MAD_ERR_BADBITALLOC;
+      stream->error = MAD_ERROR_BADBITALLOC;
       return -1;
     }
 
@@ -158,7 +159,7 @@ int mad_layer_I(struct mad_stream *stream, struct mad_frame *frame,
 	scalefactor[ch][sb] = mad_bit_read(&stream->ptr, 6);
 
 	if (scalefactor[ch][sb] == 63) {
-	  stream->error = MAD_ERR_BADSCALEFACTOR;
+	  stream->error = MAD_ERROR_BADSCALEFACTOR;
 	  return -1;
 	}
       }
@@ -317,8 +318,7 @@ void II_samples(struct mad_bitptr *ptr,
  * NAME:	layer->II()
  * DESCRIPTION:	decode a single Layer II frame
  */
-int mad_layer_II(struct mad_stream *stream, struct mad_frame *frame,
-		 unsigned short const crc[2])
+int mad_layer_II(struct mad_stream *stream, struct mad_frame *frame)
 {
   struct mad_bitptr start;
   unsigned int index, sblimit, nbal, nch, bound, gr, ch, s, sb;
@@ -391,8 +391,8 @@ int mad_layer_II(struct mad_stream *stream, struct mad_frame *frame,
 
   if ((frame->flags & MAD_FLAG_PROTECTION) &&
       mad_bit_crc(start, mad_bit_length(&start, &stream->ptr),
-		  crc[0]) != crc[1]) {
-    stream->error = MAD_ERR_BADCRC;
+		  frame->crc_header) != frame->crc_check) {
+    stream->error = MAD_ERROR_BADCRC;
     return -1;
   }
 
@@ -425,7 +425,7 @@ int mad_layer_II(struct mad_stream *stream, struct mad_frame *frame,
 	if (scalefactor[ch][sb][0] == 63 ||
 	    scalefactor[ch][sb][1] == 63 ||
 	    scalefactor[ch][sb][2] == 63) {
-	  stream->error = MAD_ERR_BADSCALEFACTOR;
+	  stream->error = MAD_ERROR_BADSCALEFACTOR;
 	  return -1;
 	}
       }

@@ -16,8 +16,11 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: acconfig.h,v 1.5 2000/09/24 21:22:42 rob Exp $
+ * $Id: acconfig.h,v 1.7 2000/10/25 21:52:31 rob Exp $
  */
+
+# ifndef MAD_CONFIG_H
+# define MAD_CONFIG_H
 
 /*****************************************************************************
  * Definitions selected automatically by `configure'                         *
@@ -46,24 +49,8 @@
 #undef EXPERIMENTAL
 
 @BOTTOM@
-
 /*****************************************************************************
  * End of automatically configured definitions                               *
  *****************************************************************************/
 
-# if defined(DEBUG) && defined(NDEBUG)
-#  error "cannot define both DEBUG and NDEBUG"
 # endif
-
-# ifdef DEBUG
-#  include <stdio.h>
-# endif
-
-# if defined(OPT_SPEED) && defined(OPT_ACCURACY)
-#  error "cannot optimize for both speed and accuracy"
-# endif
-
-# if defined(OPT_SPEED) && !defined(OPT_SSO)
-#  define OPT_SSO 1
-# endif
-

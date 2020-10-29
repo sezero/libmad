@@ -1,0 +1,4 @@
+0.12.0a
+configure.in:25
+libmad/configure.in:25
+libmad/version.h:25-28

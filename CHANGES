@@ -2,9 +2,58 @@
  mad - MPEG audio decoder
  Copyright (C) 2000 Robert Leslie
 
- $Id: CHANGES,v 1.31 2000/09/24 21:22:36 rob Exp $
+ $Id: CHANGES,v 1.35 2000/10/26 00:34:02 rob Exp $
 
 ===============================================================================
+
+Version 0.12.0 (alpha)
+
+  * Changed the build environment to use automake and libtool. A libmad
+    shared library can now be built using the --enable-shared option to
+    `configure'.
+
+  * Added internationalization support via GNU gettext. New French
+    translation added courtesy of Gabriel Bouvigne.
+
+  * Changed raw output module to use host-endian byte order.
+
+  * Added --disable-mmap option to `configure' per suggestion of Erik
+    Andersen.
+
+  * Debug builds now link with -lefence, if available.
+
+  * Added another callback to MAD's high-level decoder API after the frame
+    header has been read but before the frame's audio data is decoded.
+
+  * Streamlined header processing so that mad_frame_decode() can be called
+    with or without having already called mad_frame_header().
+
+  * Fixed some other header reading miscellany, including CRC handling and
+    free bitrate detection, and frame length verification with free
+    bitrates.
+
+  * Fixed a problem with Layer III free bitrates > 320 kbps. The main_data
+    buffer size should now be large enough to handle any size frame, by
+    virtue of the maximum possible part2_3_length.
+
+  * Further developed the async API; arbitrary messages can now be passed
+    to the subsidiary decoding process.
+
+  * Streamlined libmad/timer.c and extended its interface. It now has
+    support for video frame/field lengths, including output support for
+    drop-frame encoding.
+
+  * Replaced many constant integer preprocessor defines with enums.
+
+  * Added `madplay' support for filter chains. This could eventually be
+    extended to support dynamically loaded filters.
+
+  * Added a new optional fade-in filter.
+
+  * Rewrote madplay.c to use GNU getopt, and added many new options (use
+    `madplay --help' to see them all.)
+
+  * Updated the man page for `madplay'.
 
 Version 0.11.4 (beta)
 
@@ -110,7 +159,7 @@ Version 0.11.1 (beta)
 
 Version 0.11.0 (beta)
 
-  * Implemented MPEG 2 extension to Lower Sampling Frequencies.
+  * Implemented MPEG-2 extension to Lower Sampling Frequencies.
 
   * Improved Layer III performance by avoiding IMDCT calculation when all
     input samples are zero.
@@ -183,8 +232,8 @@ Version 0.9.7 (beta)
 
   * Reduced -v output by eliminating timing tenths.
 
-  * Fixed problem configuring unsupported sample frequencies, and added
-    user feedback.
+  * Fixed problem configuring unsupported sample frequencies, and added user
+    feedback.
 
   * Enhanced final frame count reporting to include playing time.
 

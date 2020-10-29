@@ -2,7 +2,7 @@
  mad - MPEG audio decoder
  Copyright (C) 2000 Robert Leslie
 
- $Id: CREDITS,v 1.6 2000/09/24 21:22:36 rob Exp $
+ $Id: CREDITS,v 1.8 2000/10/25 21:51:39 rob Exp $
 
 ===============================================================================
 
@@ -15,6 +15,16 @@ AUTHOR
 CONTRIBUTORS
 
   Significant contributions have been incorporated with thanks to:
+
+      Erik Andersen <andersen@codepoet.org>
+        2000/09/30: configure.in
+          - Suggested --disable-mmap option for low memory systems.
+        2000/09/30: madplay.c
+          - Suggested shuffle/repeat options.
+
+      Gabriel Bouvigne <bouvigne@mp3-tech.org>
+        2000/10/15: po/fr.po
+          - French message translations
 
       Simon Burge <simonb@wasabisystems.com>
         2000/09/19: audio_sun.c

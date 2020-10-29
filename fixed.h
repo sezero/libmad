@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: fixed.h,v 1.11 2000/09/17 22:39:37 rob Exp $
+ * $Id: fixed.h,v 1.12 2000/10/25 21:52:31 rob Exp $
  */
 
 # ifndef MAD_FIXED_H
@@ -280,4 +280,3 @@ mad_fixed_t mad_f_mul(mad_fixed_t, mad_fixed_t);
 mad_fixed_t mad_f_abs(mad_fixed_t);
 
 # endif
-

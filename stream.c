@@ -16,12 +16,14 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: stream.c,v 1.1 2000/08/02 05:48:52 rob Exp $
+ * $Id: stream.c,v 1.2 2000/10/25 21:52:32 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
 #  include "config.h"
 # endif
+
+# include "global.h"
 
 # include <stdlib.h>
 

@@ -1,4 +1,4 @@
-dnl -*- shell-script -*-
+dnl -*- m4 -*-
 dnl
 dnl mad - MPEG audio decoder
 dnl Copyright (C) 2000 Robert Leslie
@@ -17,12 +17,14 @@ dnl You should have received a copy of the GNU General Public License
 dnl along with this program; if not, write to the Free Software
 dnl Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 dnl
-AC_REVISION([$Id: configure.in,v 1.6 2000/09/17 18:52:18 rob Exp $])dnl
+AC_REVISION([$Id: configure.in,v 1.9 2000/10/26 01:40:56 rob Exp $])dnl
 
 dnl Process this file with autoconf to produce a configure script.
 
 AC_INIT(decoder.h)
-AC_CONFIG_HEADER(config.h)
+AM_INIT_AUTOMAKE(libmad, 0.12.0a)
+
+AM_CONFIG_HEADER(config.h)
 
 dnl System type.
 
@@ -33,7 +35,9 @@ dnl Checks for programs.
 AC_PROG_MAKE_SET
 AC_PROG_CC
 AC_PROG_INSTALL
-AC_PROG_RANLIB
+
+AC_DISABLE_SHARED
+AM_PROG_LIBTOOL
 
 dnl Compiler options.
 
@@ -55,9 +59,9 @@ then
 	i386-*)      ARCH="" ;;
 	i?86-*)      ARCH="-m486" ;;
 	arm-empeg-*) ARCH="-march=armv4 -mtune=strongarm1100" ;;
-	arm-*)       ARCH="-march=armv4" ;;
-	mips-*)      ARCH="-mips3" ;;
-		     #-mcpu=vr4100
+	armv4*-*)    ARCH="-march=armv4 -mtune=strongarm" ;;
+	mips*-*)     ARCH="" ;;
+		     # -mips3 -mcpu=vr4100
     esac
 fi
 
@@ -69,7 +73,8 @@ case "$CFLAGS" in
     *-O*) OPTIMIZER="-O" ;;
 esac
 
-CFLAGS=""
+CFLAGS=`echo ".$CFLAGS" |  \
+    sed -e 's/^\.//' -e 's/-g//' -e 's/-O.//' -e 's/-O//'`
 
 if test -n "$OPTIMIZER" && test "$GCC" = yes
 then
@@ -95,24 +100,20 @@ AC_CHECK_SIZEOF(long long, 8)
 
 dnl Other options.
 
-FPM=""
-ASO=""
-MISCOBJS=""
-
 AC_SUBST(FPM)
 AC_SUBST(ASO)
-AC_SUBST(MISCOBJS)
+AC_SUBST(IMDCT_L)
 
 dnl handle --enable and --disable options
 
-opt=""
+AC_MSG_CHECKING(whether to optimize for speed or for accuracy)
 
 AC_ARG_ENABLE(speed,
     [  --enable-speed          optimize for speed over accuracy], [
     case "$enableval" in
 	yes)
+	    optimize="speed"
 	    AC_DEFINE(OPT_SPEED)
-	    opt="speed"
 	    ;;
     esac
 ])
@@ -121,22 +122,25 @@ AC_ARG_ENABLE(accuracy,
     [  --enable-accuracy       optimize for accuracy over speed], [
     case "$enableval" in
 	yes)
-	    if test "$opt" = "speed"
+	    if test "$optimize" = "speed"
 	    then
-		AC_MSG_ERROR(cannot optimize for both speed and accuracy)
+		optimize="both"
+	    else
+		optimize="accuracy"
 	    fi
-
 	    AC_DEFINE(OPT_ACCURACY)
-	    opt="accuracy"
 	    ;;
     esac
 ])
 
-if test "$opt" = "speed"
+AC_MSG_RESULT(${optimize-default})
+
+if test "$optimize" = "both"
 then
-    AC_MSG_WARN(optimizing for speed over accuracy)
+    AC_MSG_ERROR(cannot optimize for both speed and accuracy)
 fi
 
+AC_MSG_CHECKING(for architecture-specific fixed-point math routines)
 AC_ARG_ENABLE(fpm,
     [  --enable-fpm=<arch>     use <arch>-specific fixed-point math routines
                           (one of: intel, arm, mips, sparc, 64bit, approx)], [
@@ -146,8 +150,8 @@ AC_ARG_ENABLE(fpm,
 	yes)
 	    case "$host" in
 		i?86-*)   FPM="INTEL" ;;
-		arm-*)    FPM="ARM"   ;;
-		mips-*)   FPM="MIPS"  ;;
+		arm*-*)   FPM="ARM"   ;;
+		mips*-*)  FPM="MIPS"  ;;
 		sparc*-*) FPM="SPARC" ;;
 	    esac
 	    ;;
@@ -166,21 +170,26 @@ AC_ARG_ENABLE(fpm,
     if test "$GCC" = yes
     then
 	case "$host" in
-	    i?86-*)   FPM="INTEL" ;;
-	    arm-*)    FPM="ARM"   ;;
-	    mips-*)   FPM="MIPS"  ;;
-	    sparc*-*) FPM="SPARC" ;;
+	    i?86-*)   FPM="INTEL"  ;;
+	    arm*-*)   FPM="ARM"    ;;
+	    mips*-*)  FPM="MIPS"   ;;
+	    sparc*-*) FPM="SPARC"  ;;
 	    # FIXME: need to test 64-bit long long...
-	    *)
-	    AC_MSG_WARN([using fixed-point math approximations (see README)])
-		FPM="APPROX"
-		;;
+	    *)        FPM="APPROX" ;;
 	esac
     else
-	AC_MSG_WARN([using fixed-point math approximations (see README)])
 	FPM="APPROX"
     fi
 ])
+AC_MSG_RESULT(${FPM-disabled})
+
+if test "$FPM" = "APPROX"
+then
+    AC_MSG_WARN([fixed-point math approximations will yield limited accuracy])
+elif test -z "$FPM"
+then
+    AC_MSG_WARN([slow performance will result without --enable-fpm])
+fi
 
 if test -n "$FPM"
 then
@@ -209,35 +218,39 @@ AC_ARG_ENABLE(aso,
     case "$enableval" in
 	yes)
 	    case "$host" in
-		arm-*)
+		arm*-*)
 		    ASO="-DASO_IMDCT"
-		    MISCOBJS="imdct_l_arm.o"
+		    IMDCT_L="imdct_l_arm.lo"
 		    ;;
 	    esac
 	    ;;
     esac
 ], [
     case "$host" in
-	arm-*)
+	arm*-*)
 	    ASO="-DASO_IMDCT"
-	    MISCOBJS="imdct_l_arm.o"
+	    IMDCT_L="imdct_l_arm.lo"
 	    ;;
     esac
 ])
 
+AC_MSG_CHECKING(whether to enable profiling)
 AC_ARG_ENABLE(profiling,
     [  --enable-profiling      generate profiling code], [
     case "$enableval" in
 	yes) PROFILER="-pg" ;;
     esac
 ])
+AC_MSG_RESULT(${enable_profiling-no})
 
+AC_MSG_CHECKING(whether to enable debugging)
 AC_ARG_ENABLE(debugging,
     [  --enable-debugging      enable diagnostic debugging support
   --disable-debugging     do not enable debugging and use more optimization], [
     case "$enableval" in
 	yes)
 	    AC_DEFINE(DEBUG)
+	    OPTIMIZER=""
 	    ;;
 	no)
 	    if test -n "$PROFILER"
@@ -254,14 +267,20 @@ AC_ARG_ENABLE(debugging,
 	    ;;
     esac
 ])
+AC_MSG_RESULT(${enable_debugging-default})
 
+AC_MSG_CHECKING(whether to enable experimental code)
 AC_ARG_ENABLE(experimental,
     [  --enable-experimental   enable experimental code], [
     case "$enableval" in
 	yes) AC_DEFINE(EXPERIMENTAL) ;;
     esac
 ])
+AC_MSG_RESULT(${enable_experimental-no})
 
 dnl Create output files.
+
+LTLIBOBJS=`echo "$LIBOBJS" | sed -e 's/\.o/.lo/g'`
+AC_SUBST(LTLIBOBJS)
 
 AC_OUTPUT(Makefile)

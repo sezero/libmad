@@ -16,15 +16,18 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: layer3.c,v 1.10 2000/09/24 17:49:38 rob Exp $
+ * $Id: layer3.c,v 1.12 2000/10/25 21:52:32 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
 #  include "config.h"
 # endif
 
+# include "global.h"
+
 # include <stdlib.h>
 # include <string.h>
+# include <assert.h>
 
 # ifdef HAVE_LIMITS_H
 #  include <limits.h>
@@ -352,7 +355,7 @@ int III_sideinfo(struct mad_bitptr *ptr, unsigned int nch,
       *md_bitlen += channel->part2_3_length;
 
       if (channel->big_values > 288 && result == 0)
-	result = MAD_ERR_BADBIGVALUES;
+	result = MAD_ERROR_BADBIGVALUES;
 
       channel->flags = 0;
 
@@ -361,7 +364,7 @@ int III_sideinfo(struct mad_bitptr *ptr, unsigned int nch,
 
 	channel->block_type = mad_bit_read(ptr, 2);
 	if (channel->block_type == 0 && result == 0)
-	  result = MAD_ERR_BADBLOCKTYPE;
+	  result = MAD_ERROR_BADBLOCKTYPE;
 
 	channel->region0_count = 7;
 	channel->region1_count = 36;
@@ -374,7 +377,7 @@ int III_sideinfo(struct mad_bitptr *ptr, unsigned int nch,
 	for (i = 0; i < 2; ++i)
 	  channel->table_select[i] = mad_bit_read(ptr, 5);
 
-# ifdef DEBUG
+# if defined(DEBUG)
 	channel->table_select[2] = 4;  /* not used */
 # endif
 
@@ -737,7 +740,7 @@ int III_huffdecode(struct mad_bitptr *ptr, signed short is[576],
 
   bits_left = (signed) channel->part2_3_length - (signed) part2_length;
   if (bits_left < 0)
-    return MAD_ERR_BADPART3LEN;
+    return MAD_ERROR_BADPART3LEN;
 
   peek = *ptr;
   mad_bit_skip(ptr, bits_left);
@@ -778,7 +781,7 @@ int III_huffdecode(struct mad_bitptr *ptr, signed short is[576],
     startbits = entry->startbits;
 
     if (table == 0)
-      return MAD_ERR_BADHUFFTABLE;
+      return MAD_ERROR_BADHUFFTABLE;
 
     big_values = channel->big_values;
 
@@ -804,7 +807,7 @@ int III_huffdecode(struct mad_bitptr *ptr, signed short is[576],
 	  startbits = entry->startbits;
 
 	  if (table == 0)
-	    return MAD_ERR_BADHUFFTABLE;
+	    return MAD_ERROR_BADHUFFTABLE;
 	}
 	else {
 	  pcount = *fwidth++ / 2;
@@ -1200,7 +1203,7 @@ int III_stereo(mad_fixed_t xr[2][576], struct granule *granule,
     frame->flags |= MAD_FLAG_MS_STEREO;
 
     if (granule->ch[0].block_type != granule->ch[1].block_type)
-      return MAD_ERR_BADSTEREO;
+      return MAD_ERROR_BADSTEREO;
 
     i = bound;
     while (i--) {
@@ -1798,8 +1801,7 @@ int III_decode(struct mad_bitptr *ptr, struct mad_frame *frame,
  * NAME:	layer->III()
  * DESCRIPTION:	decode a single Layer III frame
  */
-int mad_layer_III(struct mad_stream *stream, struct mad_frame *frame,
-		  unsigned short const crc[2])
+int mad_layer_III(struct mad_stream *stream, struct mad_frame *frame)
 {
   unsigned int nch, private_bitlen;
   unsigned int main_data_bitlen, main_data_length, sideinfo_length;
@@ -1811,9 +1813,9 @@ int mad_layer_III(struct mad_stream *stream, struct mad_frame *frame,
   /* allocate Layer III dynamic structures */
 
   if (stream->main_data == 0) {
-    stream->main_data = malloc(1935);
+    stream->main_data = malloc(MAD_BUFFER_MDLEN);
     if (stream->main_data == 0) {
-      stream->error = MAD_ERR_NOMEM;
+      stream->error = MAD_ERROR_NOMEM;
       return -1;
     }
   }
@@ -1821,7 +1823,7 @@ int mad_layer_III(struct mad_stream *stream, struct mad_frame *frame,
   if (frame->overlap == 0) {
     frame->overlap = calloc(2 * 32 * 18, sizeof(mad_fixed_t));
     if (frame->overlap == 0) {
-      stream->error = MAD_ERR_NOMEM;
+      stream->error = MAD_ERROR_NOMEM;
       return -1;
     }
   }
@@ -1834,7 +1836,7 @@ int mad_layer_III(struct mad_stream *stream, struct mad_frame *frame,
 
   if (stream->next_frame - mad_bit_nextbyte(&stream->ptr) <
       (signed int) sideinfo_length) {
-    stream->error = MAD_ERR_BADFRAMELEN;
+    stream->error = MAD_ERROR_BADFRAMELEN;
     stream->md_len = 0;
     return -1;
   }
@@ -1842,8 +1844,9 @@ int mad_layer_III(struct mad_stream *stream, struct mad_frame *frame,
   /* check CRC word */
 
   if ((frame->flags & MAD_FLAG_PROTECTION) &&
-      mad_bit_crc(stream->ptr, sideinfo_length * CHAR_BIT, crc[0]) != crc[1]) {
-    stream->error = MAD_ERR_BADCRC;
+      mad_bit_crc(stream->ptr, sideinfo_length * CHAR_BIT,
+		  frame->crc_header) != frame->crc_check) {
+    stream->error = MAD_ERROR_BADCRC;
     result = -1;
   }
 
@@ -1873,7 +1876,7 @@ int mad_layer_III(struct mad_stream *stream, struct mad_frame *frame,
   else {
     if (si.main_data_begin > stream->md_len) {
       if (result == 0) {
-	stream->error = MAD_ERR_BADDATAPTR;
+	stream->error = MAD_ERROR_BADDATAPTR;
 	result = -1;
       }
 
@@ -1886,13 +1889,16 @@ int mad_layer_III(struct mad_stream *stream, struct mad_frame *frame,
       if (main_data_length > si.main_data_begin) {
 	if (main_data_length - si.main_data_begin > frame_space) {
 	  if (result == 0) {
-	    stream->error = MAD_ERR_BADDATALEN;
+	    stream->error = MAD_ERROR_BADDATALEN;
 	    result = -1;
 	  }
 
 	  frame_used = 0;
 	}
 	else {
+	  assert(stream->md_len + main_data_length -
+		 si.main_data_begin <= MAD_BUFFER_MDLEN);
+
 	  memcpy(&(*stream->main_data)[stream->md_len],
 		 mad_bit_nextbyte(&stream->ptr),
 		 main_data_length - si.main_data_begin);
@@ -1907,10 +1913,6 @@ int mad_layer_III(struct mad_stream *stream, struct mad_frame *frame,
   }
 
   frame_free = frame_space - frame_used;
-
-  /* improve free bitrate discovery */
-  if (frame->bitrate == 0 && frame_used)
-    mad_bit_skip(&stream->ptr, frame_used * CHAR_BIT);
 
 # if 0 && defined(DEBUG)
   fprintf(stderr, "main_data_begin:%u, main_data_length:%u, "
