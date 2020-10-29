@@ -2,7 +2,7 @@
  mad - MPEG audio decoder
  Copyright (C) 2000-2001 Robert Leslie
 
- $Id: README,v 1.42 2001/04/10 19:26:20 rob Exp $
+ $Id: README,v 1.46 2001/10/18 08:34:41 rob Exp $
 
 ===============================================================================
 
@@ -34,8 +34,10 @@ INTRODUCTION
   representation.
 
   Because MAD is a new implementation of the ISO/IEC standards, it is
-  unencumbered by other copyrights. MAD is NOT a derivation of the ISO
-  reference source or any other code.
+  unencumbered by the errors and copyrights of other implementations. MAD is
+  NOT a derivation of the ISO reference source or any other code.
+  Considerable effort has been expended to ensure a correct implementation,
+  even in cases where the standards are ambiguous or misleading.
 
   Because MAD is distributed under the terms of the GPL, its redistribution
   is not generally restricted, so long as the terms of the GPL are followed.
@@ -61,9 +63,9 @@ ABOUT THE CODE
     - a null module (for timing the decoder)
 
   The code is optimized and performs very well, although specific
-  improvements can and will still be made. The output from the decoder
-  library consists of 32-bit signed linear fixed-point values which can be
-  easily scaled for any size PCM output, up to 24 bits per sample.
+  improvements can still be made. The output from the decoder library
+  consists of 32-bit signed linear fixed-point values which can be easily
+  scaled for any size PCM output, up to 24 bits per sample.
 
   The API for libmad is likely to change, so it is not yet documented.
   However, the header file `libmad/mad.h' may be informative, as may also be
@@ -89,7 +91,11 @@ ABOUT THE CODE
   implement a useful decoder. It expects a regular file to be redirected to
   standard input, and it sends decoded 16-bit signed little-endian PCM
   samples to standard output. It will abort at the first discovery of a
-  decoding error.
+  decoding error. Note that the scale() routine in this code is only
+  provided as an example; it rounds MAD's high-resolution samples down to 16
+  bits, but does not perform any dithering or noise shaping. It is therefore
+  not recommended to use this routine as-is in your own code if sound
+  quality is important.
 
 Integer Performance
 
@@ -143,26 +149,42 @@ Audio Quality
 
 Portability Issues
 
-  GCC is probably required to compile the code, but your mileage may vary.
-  Besides the assembly code notation, a GNU extension was used in
-  `libmad/huffman.c' to specify union initialization of a member other than
-  the first.
+  GCC is preferred to compile the code, but other compilers may also work.
+  The assembly code in `libmad/fixed.h' depends on the inline assembly
+  features of your compiler. If you're not using GCC or MSVC++, you can
+  either write your own assembly macros or use the default (low quality
+  output) version.
 
-  The code should not be sensitive to word sizes or byte ordering, however it
-  does assume A % B has the same sign as A.
+  The union initialization of `libmad/huffman.c' may not be portable to all
+  platforms when GCC is not used.
+
+  The code should not be sensitive to word sizes or byte ordering, however
+  it does assume A % B has the same sign as A.
 
 ===============================================================================
 
-INSTALLATION
+BUILDING AND INSTALLING
 
-  If you are trying to build MAD under Windows, you will almost certainly
-  want to use Cygwin:
+Windows Platforms
+
+  The MAD library can be built under Windows using either MSVC++ or Cygwin.
+  A MSVC++ project file can be found under `msvc++/libmad'. In addition, a
+  demo project (based on madplay and complete with ID3 support) can be found
+  under `msvc++/demo'.
+
+  To build MAD or the MAD plug-in for Winamp using Cygwin, you will first
+  need to install the Cygwin tools:
 
       http://www.cygwin.com/
 
+  You may then proceed with the following POSIX instructions within the
+  Cygwin shell.
+
+POSIX Platforms (including Cygwin)
+
   The code is distributed with a `configure' script which will generate for
-  you a `Makefile' and a `config.h' in both the `libmad' and top-level
-  subdirectories. See the file `INSTALL' for generic instructions.
+  you a `Makefile' and a `config.h' in each of the various subdirectories
+  which require them. See the file `INSTALL' for generic instructions.
 
   The specific options you may want to give `configure' are:
 
@@ -204,9 +226,7 @@ INSTALLATION
   approximation version will be used. In this case, use of an alternate
   --enable-fpm is recommended.
 
-==============================================================================
-
-EXPERIMENTING AND DEVELOPING
+Experimenting and Developing
 
   Further options for `configure' that may be useful to developers and
   experimenters are:

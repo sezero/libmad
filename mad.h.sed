@@ -1,5 +1,5 @@
 #
-# mad - MPEG audio decoder
+# libmad - MPEG audio decoder library
 # Copyright (C) 2000-2001 Robert Leslie
 #
 # This program is free software; you can redistribute it and/or modify
@@ -19,12 +19,12 @@
 # If you would like to negotiate alternate licensing terms, you may do
 # so by contacting the author: Robert Leslie <rob@mars.org>
 #
-# $Id: mad.h.sed,v 1.3 2001/02/01 22:18:52 rob Exp $
+# $Id: mad.h.sed,v 1.4 2001/10/17 19:13:09 rob Exp $
 #
 
 /^\/\*$/{
 N
-s/ \* mad - /&/
+s/ \* libmad - /&/
 t copy
 b next
 : copy

@@ -1,5 +1,5 @@
 /*
- * mad - MPEG audio decoder
+ * libmad - MPEG audio decoder library
  * Copyright (C) 2000-2001 Robert Leslie
  *
  * This program is free software; you can redistribute it and/or modify
@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: decoder.h,v 1.9 2001/04/05 04:57:11 rob Exp $
+ * $Id: decoder.h,v 1.11 2001/10/17 19:14:32 rob Exp $
  */
 
 # ifndef LIBMAD_DECODER_H
@@ -59,7 +59,8 @@ struct mad_decoder {
 
   enum mad_flow (*input_func)(void *, struct mad_stream *);
   enum mad_flow (*header_func)(void *, struct mad_header const *);
-  enum mad_flow (*filter_func)(void *, struct mad_frame *);
+  enum mad_flow (*filter_func)(void *,
+			       struct mad_stream const *, struct mad_frame *);
   enum mad_flow (*output_func)(void *,
 			       struct mad_header const *, struct mad_pcm *);
   enum mad_flow (*error_func)(void *, struct mad_stream *, struct mad_frame *);
@@ -69,7 +70,9 @@ struct mad_decoder {
 void mad_decoder_init(struct mad_decoder *, void *,
 		      enum mad_flow (*)(void *, struct mad_stream *),
 		      enum mad_flow (*)(void *, struct mad_header const *),
-		      enum mad_flow (*)(void *, struct mad_frame *),
+		      enum mad_flow (*)(void *,
+					struct mad_stream const *,
+					struct mad_frame *),
 		      enum mad_flow (*)(void *,
 					struct mad_header const *,
 					struct mad_pcm *),

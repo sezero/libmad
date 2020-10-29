@@ -1,5 +1,5 @@
 ##
-## mad - MPEG audio decoder
+## libmad - MPEG audio decoder library
 ## Copyright (C) 2000-2001 Robert Leslie
 ##
 ## This program is free software; you can redistribute it and/or modify
@@ -19,7 +19,7 @@
 ## If you would like to negotiate alternate licensing terms, you may do
 ## so by contacting the author: Robert Leslie <rob@mars.org>
 ##
-## $Id: Makefile.am,v 1.7 2001/02/22 07:53:38 rob Exp $
+## $Id: Makefile.am,v 1.10 2001/10/17 19:18:59 rob Exp $
 ##
 
 ## Process this file with automake to produce Makefile.in
@@ -27,7 +27,7 @@
 lib_LTLIBRARIES =	libmad.la
 include_HEADERS =	mad.h
 
-EXTRA_DIST =		mad.h.sed
+EXTRA_DIST =		COPYRIGHT mad.h.sed
 
 exported_headers =  \
 	version.h fixed.h bit.h timer.h stream.h frame.h synth.h decoder.h
@@ -97,10 +97,13 @@ CLEANFILES =		mad.h
 libmad_la_LDFLAGS =		-release $(VERSION)
 ##				-version-info 0:0:0
 
-mad.h: Makefile.am config.status config.h  \
-		$(srcdir)/../COPYRIGHT $(srcdir)/mad.h.sed $(exported_headers)
+mad.h: config.status config.h Makefile.am  \
+		$(srcdir)/COPYRIGHT $(srcdir)/mad.h.sed $(exported_headers)
 	(sed -e '1s|.*|/*|' -e '1b' -e '$$s|.*| */|' -e '$$b'  \
-		-e 's/^.*/ *&/' $(srcdir)/../COPYRIGHT; echo;  \
+		-e 's/^.*/ *&/' $(srcdir)/COPYRIGHT; echo;  \
+	echo "# ifdef __cplusplus";  \
+	echo 'extern "C" {';  \
+	echo "# endif"; echo;  \
 	if [ ".$(FPM)" != "." ]; then  \
 		echo ".$(FPM)" | sed -e 's|^\.-D|# define |'; echo;  \
 	fi;  \
@@ -113,7 +116,10 @@ mad.h: Makefile.am config.status config.h  \
 	for header in $(exported_headers); do  \
 		echo;  \
 		sed -n -f $(srcdir)/mad.h.sed $(srcdir)/$$header; echo;  \
-	done) | cat -s >$@
+	done;  \
+	echo "# ifdef __cplusplus";  \
+	echo '}';  \
+	echo "# endif") | cat -s >$@
 
 libtool: $(LIBTOOL_DEPS)
 	$(SHELL) ./config.status --recheck

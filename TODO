@@ -24,8 +24,11 @@ libmad Layer III:
   - Andre's patches
   - stereo->mono conversion optimization?
 
+libid3:
+  - finish file API
+  - fix API headers
+
 madplay:
-  - keyboard playback controls
   - auto attenuation?
   - ALSA output module
   - 24-bit output under Win32
@@ -36,7 +39,6 @@ madplay:
   - output sampling rate/resolution selection
   - byte position reporting
   - better bitstream error recovery
-  - further ID3v2 support
   - move static vars from audio_* to audio control union
   - handle emphasis
   - equalizer support
@@ -52,12 +54,9 @@ madtime:
 mad123:
   - needs work!
 
-ID3v2:
-  - support more frame types
-  - Unicode support
-  - make into library (use existing one?)
-
 Winamp plug-in:
+  - disable building when --enable-debugging
+  - optional error messages
   - dithering options
   - CBR length calculation optimization
   - better streaming support
@@ -67,6 +66,7 @@ Winamp plug-in:
   - DSP before dither?
   - better VBR seek
   - equalizer
+  - estimate length/bitrate in File Info before scan
 
 General:
   - Windows ACM codec?

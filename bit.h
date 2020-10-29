@@ -1,5 +1,5 @@
 /*
- * mad - MPEG audio decoder
+ * libmad - MPEG audio decoder library
  * Copyright (C) 2000-2001 Robert Leslie
  *
  * This program is free software; you can redistribute it and/or modify
@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: bit.h,v 1.7 2001/04/05 04:57:11 rob Exp $
+ * $Id: bit.h,v 1.8 2001/10/17 19:14:47 rob Exp $
  */
 
 # ifndef LIBMAD_BIT_H

@@ -1,5 +1,5 @@
 /*
- * mad - MPEG audio decoder
+ * libmad - MPEG audio decoder library
  * Copyright (C) 2000-2001 Robert Leslie
  *
  * This program is free software; you can redistribute it and/or modify
@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: synth.h,v 1.8 2001/04/05 04:57:11 rob Exp $
+ * $Id: synth.h,v 1.10 2001/10/17 19:15:49 rob Exp $
  */
 
 # ifndef LIBMAD_SYNTH_H
@@ -25,18 +25,20 @@
 # include "fixed.h"
 # include "frame.h"
 
+struct mad_pcm {
+  unsigned int samplerate;		/* sampling frequency (Hz) */
+  unsigned short channels;		/* number of channels */
+  unsigned short length;		/* number of samples per channel */
+  mad_fixed_t samples[2][1152];		/* PCM output samples */
+};
+
 struct mad_synth {
   mad_fixed_t filter[2][2][2][16][8];	/* polyphase filterbank outputs */
   					/* [ch][eo][peo][s][v] */
 
   unsigned int phase;			/* current processing phase */
 
-  struct mad_pcm {
-    unsigned int samplerate;		/* sampling frequency (Hz) */
-    unsigned short channels;		/* number of channels */
-    unsigned short length;		/* number of samples per channel */
-    mad_fixed_t samples[2][1152];	/* PCM output samples */
-  } pcm;
+  struct mad_pcm pcm;			/* PCM output */
 };
 
 void mad_synth_init(struct mad_synth *);

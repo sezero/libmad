@@ -2,7 +2,7 @@
  mad - MPEG audio decoder
  Copyright (C) 2000-2001 Robert Leslie
 
- $Id: CREDITS,v 1.16 2001/04/11 19:40:37 rob Exp $
+ $Id: CREDITS,v 1.18 2001/10/18 08:52:22 rob Exp $
 
 ===============================================================================
 
@@ -41,6 +41,10 @@ CONTRIBUTORS
           - Suggested patch for a.out compatibility.
         2001/02/09: audio_sun.c
           - Reported <string.h> dependency under NetBSD.
+
+      Matthew Green <mrg@eterna.com.au>
+        2000/11/26: player.c
+          - Provided initial implementation of TTY controls.
 
       Graham Guttocks <graham_guttocks@yahoo.co.nz>
         2000/11/08: audio_oss.c
@@ -90,6 +94,11 @@ CONTRIBUTORS
         2000/09/17: libmad/synth.c
           - Changed D[] run-time shifts to compile-time.
           - Modified synthesis for better multiply/accumulate code output.
+        2001/08/11: libmad/fixed.h, libmad/synth.c
+          - Suggested 64-bit FPM negation and negative term factorization
+            during synthesis.
+        2001/08/11: libmad/fixed.h
+          - Suggested unrounded behavior for FPM_DEFAULT when OPT_SPEED.
 
       John Stewart <js@woh.rr.com>
         2001/03/15: winamp/in_mad.c

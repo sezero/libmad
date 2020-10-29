@@ -1,5 +1,5 @@
 /*
- * mad - MPEG audio decoder
+ * libmad - MPEG audio decoder library
  * Copyright (C) 2000-2001 Robert Leslie
  *
  * This program is free software; you can redistribute it and/or modify
@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: frame.c,v 1.18 2001/04/10 19:26:41 rob Exp $
+ * $Id: frame.c,v 1.21 2001/10/17 19:13:41 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
@@ -373,7 +373,7 @@ int mad_header_decode(struct mad_header *header, struct mad_stream *stream)
 
   /* calculate free bit rate */
   if (header->bitrate == 0) {
-    if ((!stream->sync || !stream->freerate) &&
+    if ((stream->freerate == 0 || !stream->sync) &&
 	free_bitrate(stream, header) == -1)
       goto fail;
 

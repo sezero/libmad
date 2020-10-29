@@ -2,9 +2,33 @@
  mad - MPEG audio decoder
  Copyright (C) 2000-2001 Robert Leslie
 
- $Id: CHANGES,v 1.52 2001/04/11 19:40:37 rob Exp $
+ $Id: CHANGES,v 1.58 2001/10/17 22:07:13 rob Exp $
 
 ===============================================================================
+
+Version 0.14.0 (beta)
+
+  * Added a new ID3 tag manipulation library (libid3). The required zlib
+    support is provided either by the host system or by the included static
+    library implementation (libz).
+
+  * Fixed a possible segmentation fault due to mmap() abuse.
+
+  * Added a 64-bit FPM negation operation to improve performance of subband
+    synthesis on some platforms.
+
+  * Improved MSVC++ portability and added MSVC++ project files.
+
+  * Added rounding to Layer III requantization for slightly better accuracy.
+
+  * Modified the PCM dithering routine for better dithered output.
+
+  * Added TTY controls and new --tty-control and --no-tty-control options to
+    `madplay'. TTY control keys: `P' pause, `S' stop, `Q' quit, `F' forward,
+    `B' backward.
+
+  * New time/time-remaining modes with --verbose --tty-control (select by
+    pressing `T'.)
 
 Version 0.13.0 (beta)
 
