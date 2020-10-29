@@ -19,7 +19,7 @@
 ## If you would like to negotiate alternate licensing terms, you may do
 ## so by contacting the author: Robert Leslie <rob@mars.org>
 ##
-## $Id: Makefile.am,v 1.4 2001/01/21 00:18:15 rob Exp $
+## $Id: Makefile.am,v 1.6 2001/02/09 07:30:30 rob Exp $
 ##
 
 ## Process this file with automake to produce Makefile.in
@@ -47,8 +47,9 @@ EXTRA_libmad_la_SOURCES =	imdct_l_arm.S
 libmad_la_DEPENDENCIES =	@IMDCT_L@
 libmad_la_LIBADD =		@IMDCT_L@
 
-CFLAGS =	-Wall @CFLAGS@ $(ARCH) $(DEBUGGER) $(OPTIMIZER) $(PROFILER)
-LDFLAGS =	@LDFLAGS@ $(PROFILER)
+#CFLAGS =	-Wall @CFLAGS@ $(ARCH) $(DEBUGGER) $(OPTIMIZER) $(PROFILER)
+#LDFLAGS =	@LDFLAGS@ $(PROFILER)
+
 INCLUDES =	$(FPM) $(ASO)
 
 BUILT_SOURCES =		mad.h
@@ -103,6 +104,8 @@ mad.h: Makefile.am config.status config.h  \
 	if [ ".$(FPM)" != "." ]; then  \
 		echo ".$(FPM)" | sed -e 's|^\.-D|# define |'; echo;  \
 	fi;  \
+	sed -ne 's/^# *define  *\(HAVE_.*_ASM\).*/# define \1/p'  \
+		config.h; echo;  \
 	sed -ne 's/^# *define  *OPT_\(SPEED\|ACCURACY\).*/# define OPT_\1/p'  \
 		config.h; echo;  \
 	sed -ne 's/^# *define  *\(SIZEOF_.*\)/# define \1/p'  \
@@ -111,6 +114,9 @@ mad.h: Makefile.am config.status config.h  \
 		echo;  \
 		sed -n -f $(srcdir)/mad.h.sed $(srcdir)/$$header; echo;  \
 	done) | cat -s >$@
+
+libtool: $(LIBTOOL_DEPS)
+	$(SHELL) ./config.status --recheck
 
 .c.s:
 	$(COMPILE) -S $<

@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: acconfig.h,v 1.9 2001/01/21 00:18:15 rob Exp $
+ * $Id: acconfig.h,v 1.10 2001/02/09 02:12:24 rob Exp $
  */
 
 # ifndef MAD_CONFIG_H
@@ -35,6 +35,16 @@
 
 /* Define to enable a fast subband synthesis approximation optimization. */
 #undef OPT_SSO
+
+/* Define to influence a strict interpretation of the ISO/IEC standards,
+   even if this is in opposition with best accepted practices. */
+#undef OPT_STRICT
+
+/* Define if your MIPS CPU supports a 2-operand MADD instruction. */
+#undef HAVE_MADD_ASM
+
+/* Define if your MIPS CPU supports a 2-operand MADD16 instruction. */
+#undef HAVE_MADD16_ASM
 
 /* Define to enable diagnostic debugging support. */
 #undef DEBUG

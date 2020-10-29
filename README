@@ -2,7 +2,7 @@
  mad - MPEG audio decoder
  Copyright (C) 2000-2001 Robert Leslie
 
- $Id: README,v 1.39 2001/01/21 00:18:09 rob Exp $
+ $Id: README,v 1.40 2001/02/09 02:12:17 rob Exp $
 
 ===============================================================================
 
@@ -97,14 +97,13 @@ Integer Performance
   version of the fixed-point multiply and related routines be selected.
   Several such assembly routines have been written for various CPUs.
 
-  If an assembly version is not available, either of two plain C versions
-  can be used, with a tradeoff. Either a fast approximation can be used,
-  with audible signal degradation, or a slow, but accurate, computation can
-  be made.
+  If an assembly version is not available, a fast approximation version will
+  be used. This will result in reduced accuracy of the decoder.
 
   Alternatively, if 64-bit integers are supported as a datatype by the
-  compiler, another C version can be used which is both fast and accurate.
-  However, using an assembly version is generally faster still.
+  compiler, another version can be used which is much more accurate.
+  However, using an assembly version is generally much faster and just as
+  accurate.
 
   More information can be gathered from the `libmad/fixed.h' header file.
 
@@ -144,9 +143,10 @@ Audio Quality
 
 Portability Issues
 
-  GCC is probably required to compile the code, but YMMV. Besides the
-  assembly code notation, a GNU extension was used in `libmad/huffman.c' to
-  specify union initialization of a member other than the first.
+  GCC is probably required to compile the code, but your mileage may vary.
+  Besides the assembly code notation, a GNU extension was used in
+  `libmad/huffman.c' to specify union initialization of a member other than
+  the first.
 
   The code should not be sensitive to word sizes or byte ordering, however it
   is known to be dependent on sign-extending arithmetic right shifts in
@@ -182,7 +182,7 @@ INSTALLATION
       --enable-fpm=<arch>       use the <arch>-specific version of the
                                 fixed-point math assembly routines
                                 (current options are: intel, arm, mips,
-                                sparc; also allowed are: 64bit, approx)
+                                sparc, ppc; also allowed are: 64bit, approx)
 
       --enable-sso              use the subband synthesis optimization,
                                 with reduced accuracy

@@ -1,15 +1,15 @@
 
 libmad:
+  - more API layers (buffering, PCM samples, etc.)
   - x86 performance optimization compiler flags
   - Nicolas's PCM shortcut?
   - function documentation, general docs
   - finish async API
   - parse system streams
   - MPEG-2 MC, AAC?
-  - 64-bit synthesis optimization?
   - logarithmic multiplication?
   - multiple frame decoding for better locality of reference?
-  - frame serial numbers
+  - frame serial numbers, Layer III frame continuity checks
 
 libmad Layer I:
   - check frame length sanity
@@ -19,6 +19,8 @@ libmad Layer II:
   - check frame length sanity
 
 libmad Layer III:
+  - optimize zero_part from Huffman decoding throughout
+  - MPEG 2.5 8000 Hz sf bands? mixed blocks?
   - Andre's patches
   - perform requantization during Huffman decoding
   - optimize imdct12 (short blocks)
@@ -44,6 +46,7 @@ madplay:
   - dynamically loaded filters
   - automatic volume adjustment filter
   - GUI
+  - Cygwin: -lintl missing? _impure_ptr?
 
 madtime:
   - recurse directories
@@ -56,7 +59,7 @@ mad123:
 ID3v2:
   - support more frame types
   - Unicode support
-  - make into library
+  - make into library (use existing one?)
 
 Winamp plug-in:
   - read Xing headers

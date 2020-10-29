@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: version.c,v 1.6 2001/01/21 00:18:15 rob Exp $
+ * $Id: version.c,v 1.7 2001/02/09 02:12:25 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
@@ -34,8 +34,6 @@ char const mad_author[]    = MAD_AUTHOR " <" MAD_EMAIL ">";
 char const mad_build[] =
 # if defined(FPM_64BIT)
   "FPM_64BIT "
-# elif defined(FPM_APPROX)
-  "FPM_APPROX "
 # elif defined(FPM_INTEL)
   "FPM_INTEL "
 # elif defined(FPM_ARM)
@@ -44,21 +42,38 @@ char const mad_build[] =
   "FPM_MIPS "
 # elif defined(FPM_SPARC)
   "FPM_SPARC "
+# elif defined(FPM_PPC)
+  "FPM_PPC "
+# elif defined(FPM_DEFAULT)
+  "FPM_DEFAULT "
 # endif
+
+# if defined(ASO_IMDCT)
+  "ASO_IMDCT "
+# endif
+
 # if defined(OPT_SPEED)
   "OPT_SPEED "
 # elif defined(OPT_ACCURACY)
   "OPT_ACCURACY "
 # endif
+
 # if defined(OPT_SSO)
   "OPT_SSO "
 # endif
-# if defined(ASO_IMDCT)
-  "ASO_IMDCT "
+
+# if defined(OPT_DCTO)  /* never defined here */
+  "OPT_DCTO "
 # endif
+
+# if defined(OPT_STRICT)
+  "OPT_STRICT "
+# endif
+
 # if defined(EXPERIMENTAL)
   "EXPERIMENTAL "
 # endif
+
 # if defined(DEBUG)
   "DEBUG "
 # elif defined(NDEBUG)

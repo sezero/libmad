@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: frame.c,v 1.12 2001/01/21 00:18:15 rob Exp $
+ * $Id: frame.c,v 1.13 2001/02/01 23:15:57 rob Exp $
  */
 
 # ifdef HAVE_CONFIG_H
@@ -140,9 +140,9 @@ int decode_header(struct mad_header *header, struct mad_stream *stream)
   }
 
   /* layer */
-  header->layer = (4 - mad_bit_read(&stream->ptr, 2)) & 3;
+  header->layer = 4 - mad_bit_read(&stream->ptr, 2);
 
-  if (header->layer == 0) {
+  if (header->layer == 4) {
     stream->error = MAD_ERROR_BADLAYER;
     return -1;
   }
@@ -155,6 +155,7 @@ int decode_header(struct mad_header *header, struct mad_stream *stream)
 
   /* bitrate_index */
   index = mad_bit_read(&stream->ptr, 4);
+
   if (index == 15) {
     stream->error = MAD_ERROR_BADBITRATE;
     return -1;
@@ -167,6 +168,7 @@ int decode_header(struct mad_header *header, struct mad_stream *stream)
 
   /* sampling_frequency */
   index = mad_bit_read(&stream->ptr, 2);
+
   if (index == 3) {
     stream->error = MAD_ERROR_BADSAMPLEFREQ;
     return -1;
@@ -281,7 +283,7 @@ int free_bitrate(struct mad_stream *stream, struct mad_header *header)
 
   stream->freerate = rate * 1000;
 
-# if defined(DEBUG)
+# if 0 && defined(DEBUG)
   fprintf(stderr, "free bitrate == %lu\n", stream->freerate);
 # endif
 

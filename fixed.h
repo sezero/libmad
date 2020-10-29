@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: fixed.h,v 1.13 2001/01/21 00:18:15 rob Exp $
+ * $Id: fixed.h,v 1.18 2001/02/09 02:12:24 rob Exp $
  */
 
 # ifndef MAD_FIXED_H
@@ -94,33 +94,7 @@ typedef unsigned long mad_fixed64lo_t;
 # define mad_f_add(x, y)	((x) + (y))
 # define mad_f_sub(x, y)	((x) - (y))
 
-# if defined(OPT_ACCURACY)
-#  define mad_f_scale64(hi, lo)  \
-    ((((mad_fixed_t)  \
-       (((mad_fixed64hi_t) (hi) << (32 - (MAD_F_SCALEBITS - 1))) |  \
-	((mad_fixed64lo_t) (lo) >> (MAD_F_SCALEBITS - 1)))) + 1) >> 1)
-# else
-#  define mad_f_scale64(hi, lo)  \
-    ((mad_fixed_t)  \
-     (((mad_fixed64hi_t) (hi) << (32 - MAD_F_SCALEBITS)) |  \
-      ((mad_fixed64lo_t) (lo) >> MAD_F_SCALEBITS)))
-# endif
-
-# if defined(FPM_APPROX)
-
-/*
- * This version is the most portable but it loses significant accuracy.
- * Furthermore, accuracy is biased against the second argument, so care
- * should be taken when ordering operands.
- *
- * The scale factors are constant as this is not used with SSO.
- *
- * Pre-rounding is required to stay within the limits of compliance.
- */
-#  define mad_f_mul(x, y)	((((x) + (1L << 11)) >> 12) *  \
-				 (((y) + (1L << 15)) >> 16))
-
-# elif defined(FPM_64BIT)
+# if defined(FPM_64BIT)
 
 /*
  * This version should be the most accurate if 64-bit (long long) types are
@@ -138,38 +112,32 @@ typedef unsigned long mad_fixed64lo_t;
 
 #  define MAD_F_SCALEBITS  MAD_F_FRACBITS
 
+/* --- Intel --------------------------------------------------------------- */
+
 # elif defined(FPM_INTEL)
 
 /*
  * This Intel version is fast and accurate; the disposition of the least
  * significant bit depends on OPT_ACCURACY via mad_f_scale64().
  */
-#  define mad_f_mul(x, y)  \
-    ({ mad_fixed64hi_t __hi;  \
-       mad_fixed64lo_t __lo;  \
-       asm ("imull %3"  \
-	    : "=a" (__lo), "=d" (__hi)  \
-	    : "%a" (x), "rm" (y)  \
-	    : "cc");  \
-       mad_f_scale64(__hi, __lo);  \
-    })
+#   define MAD_F_MLX(hi, lo, x, y)  \
+    asm ("imull %3"  \
+	 : "=a" (lo), "=d" (hi)  \
+	 : "%a" (x), "rm" (y)  \
+	 : "cc")
 
 #  if defined(OPT_ACCURACY)
 /*
  * This gives best accuracy but is not very fast.
  */
-#   define MAD_F_HAVEMLA
-#   define mad_f_mla(hi, lo, x, y)  \
+#   define MAD_F_MLA(hi, lo, x, y)  \
     ({ mad_fixed64hi_t __hi;  \
        mad_fixed64lo_t __lo;  \
-       asm ("imull %3"  \
-	    : "=a" (__lo), "=d" (__hi)  \
-	    : "%a" (x), "rm" (y)  \
-	    : "cc");  \
-       asm ("addl %3, %0\n\t"  \
-	    "adcl %5, %1\n\t"  \
-	    : "=r,rm" (*(lo)), "=r,rm" (*(hi))  \
-	    : "%0,0" (*(lo)), "rm,r" (__lo), "%1,1" (*(hi)), "rm,r" (__hi)  \
+       MAD_F_MLX(__hi, __lo, (x), (y));  \
+       asm ("addl %2, %0\n\t"  \
+	    "adcl %3, %1\n\t"  \
+	    : "+rm" (lo), "+rm" (hi)  \
+	    : "r" (__lo), "r" (__hi)  \
 	    : "cc");  \
     })
 #  endif  /* OPT_ACCURACY */
@@ -178,7 +146,6 @@ typedef unsigned long mad_fixed64lo_t;
 /*
  * Surprisingly, this is faster than SHRD followed by ADC.
  */
-#   undef  mad_f_scale64
 #   define mad_f_scale64(hi, lo)  \
     ({ mad_fixed64hi_t __hi_;  \
        mad_fixed64lo_t __lo_;  \
@@ -196,7 +163,6 @@ typedef unsigned long mad_fixed64lo_t;
        __result;  \
     })
 #  else
-#   undef mad_f_scale64
 #   define mad_f_scale64(hi, lo)  \
     ({ mad_fixed_t __result;  \
        asm ("shrdl %3, %2, %1"  \
@@ -209,12 +175,15 @@ typedef unsigned long mad_fixed64lo_t;
 
 #  define MAD_F_SCALEBITS  MAD_F_FRACBITS
 
+/* --- ARM ----------------------------------------------------------------- */
+
 # elif defined(FPM_ARM)
 
 /* 
  * This ARM V4 version is as accurate as FPM_64BIT but much faster. The
  * least significant bit is properly rounded at no CPU cycle cost!
  */
+# if 1  /* why doesn't the default implementation work? */
 #  define mad_f_mul(x, y)  \
     ({ mad_fixed64hi_t __hi;  \
        mad_fixed64lo_t __lo;  \
@@ -228,14 +197,18 @@ typedef unsigned long mad_fixed64lo_t;
 	    : "cc");  \
        __result;  \
     })
+# endif
 
-#  define MAD_F_HAVEMLA
-#  define mad_f_mla(hi, lo, x, y)  \
-    asm ("smlal	%0, %1, %2, %3"  \
-	 : "+r" (*(lo)), "+r" (*(hi))  \
+#  define MAD_F_MLX(hi, lo, x, y)  \
+    asm ("smull	%0, %1, %2, %3"  \
+	 : "=&r" (lo), "=&r" (hi)  \
 	 : "%r" (x), "r" (y))
 
-#  undef  mad_f_scale64
+#  define MAD_F_MLA(hi, lo, x, y)  \
+    asm ("smlal	%0, %1, %2, %3"  \
+	 : "+r" (lo), "+r" (hi)  \
+	 : "%r" (x), "r" (y))
+
 #  define mad_f_scale64(hi, lo)  \
     ({ mad_fixed_t __result;  \
        asm ("movs	%0, %1, lsr %3\n\t"  \
@@ -249,30 +222,41 @@ typedef unsigned long mad_fixed64lo_t;
 
 #  define MAD_F_SCALEBITS  MAD_F_FRACBITS
 
+/* --- MIPS ---------------------------------------------------------------- */
+
 # elif defined(FPM_MIPS)
 
 /*
  * This MIPS version is fast and accurate; the disposition of the least
  * significant bit depends on OPT_ACCURACY via mad_f_scale64().
  */
-#  define mad_f_mul(x, y)  \
-    ({ mad_fixed64hi_t __hi;  \
-       mad_fixed64lo_t __lo;  \
-       asm ("mult %2, %3"  \
-	    : "=l" (__lo), "=h" (__hi)  \
-	    : "%r" (x), "r" (y));  \
-       mad_f_scale64(__hi, __lo);  \
-    })
+#  define MAD_F_MLX(hi, lo, x, y)  \
+    asm ("mult	%2,%3"  \
+	 : "=l" (lo), "=h" (hi)  \
+	 : "%r" (x), "r" (y))
 
-# if 0  /* assembler doesn't recognize this instruction? */
-#  define MAD_F_HAVEMLA
-#  define mad_f_mla(hi, lo, x, y)  \
-    asm ("macc r0, %2, %3"  \
-	 : "+l" (*(lo)), "+h" (*(hi))  \
-	 : "%r" (x), "r" (y));
+# if defined(HAVE_MADD_ASM)
+#  define MAD_F_MLA(hi, lo, x, y)  \
+    asm ("madd	%2,%3"  \
+	 : "+l" (lo), "+h" (hi)  \
+	 : "%r" (x), "r" (y))
+# elif defined(HAVE_MADD16_ASM)
+/*
+ * This loses significant accuracy due to the 16-bit integer limit in the
+ * multiply/accumulate instruction.
+ */
+#  define MAD_F_ML0(hi, lo, x, y)  \
+    asm ("mult	%2,%3"  \
+	 : "=l" (lo), "=h" (hi)  \
+	 : "%r" ((x) >> 12), "r" ((y) >> 16))
+#  define MAD_F_MLA(hi, lo, x, y)  \
+    asm ("madd16	%2,%3"  \
+	 : "+l" (lo), "+h" (hi)  \
+	 : "%r" ((x) >> 12), "r" ((y) >> 16))
+#  define MAD_F_MLZ(hi, lo)  ((mad_fixed_t) (lo))
 # endif
 
-#  define MAD_F_SCALEBITS  MAD_F_FRACBITS
+/* --- SPARC --------------------------------------------------------------- */
 
 # elif defined(FPM_SPARC)
 
@@ -280,23 +264,141 @@ typedef unsigned long mad_fixed64lo_t;
  * This SPARC V8 version is fast and accurate; the disposition of the least
  * significant bit depends on OPT_ACCURACY via mad_f_scale64().
  */
-#  define mad_f_mul(x, y)  \
+#  define MAD_F_MLX(hi, lo, x, y)  \
+    asm ("smul %2, %3, %0\n\t"  \
+	 "rd %%y, %1"  \
+	 : "=r" (lo), "=r" (hi)  \
+	 : "%r" (x), "rI" (y))
+
+/* --- PowerPC ------------------------------------------------------------- */
+
+# elif defined(FPM_PPC)
+
+/*
+ * This PowerPC version is tuned for the 4xx embedded processors. It is
+ * effectively a tuned version of FPM_64BIT. It is a little faster and just
+ * as accurate. The disposition of the least significant bit depends on
+ * OPT_ACCURACY via mad_f_scale64().
+ */
+#  define MAD_F_MLX(hi, lo, x, y)  \
+    asm ("mulhw %1, %2, %3\n\t"  \
+	 "mullw %0, %2, %3"  \
+	 : "=&r" (lo), "=&r" (hi)  \
+	 : "%r" (x), "r" (y))
+
+#  define MAD_F_MLA(hi, lo, x, y)  \
     ({ mad_fixed64hi_t __hi;  \
        mad_fixed64lo_t __lo;  \
-       asm ("smul %2, %3, %0\n\t"  \
-	    "rd %%y, %1"  \
-	    : "=r" (__lo), "=r" (__hi)  \
-	    : "%r" (x), "rI" (y));  \
-       mad_f_scale64(__hi, __lo);  \
+       MAD_F_MLX(__hi, __lo, (x), (y));  \
+       asm ("addc %0, %1, %2"  \
+	    : "=r" (lo)  \
+	    : "%r" (__lo), "0" (lo));  \
+       asm ("adde %0, %1, %2"  \
+	    : "=r" (hi)  \
+	    : "%r" (__hi), "0" (hi));  \
     })
+
+#  if defined(OPT_ACCURACY)
+/*
+ * This is accurate and ~2 - 2.5 times slower than the unrounded version.
+ * We let the compiler deal with putting the constant in a register since
+ * the value of MAD_F_SCALEBITS is redefined in some parts of the code and
+ * tracking the magnitude of (1 << (MAD_F_SCALEBITS - 1)) is too
+ * complicated.
+ *
+ * The __volatile__ improve the generated code by another 5% (fewer spills
+ * to memory); eventually they should be removed.
+ */
+#   define mad_f_scale64(hi, lo)  \
+    ({ mad_fixed_t __result;  \
+       mad_fixed64hi_t __hi_;  \
+       mad_fixed64lo_t __lo_;  \
+       asm __volatile__ ("addc %0, %2, %4\n\t"  \
+			 "addze %1, %3"  \
+	    : "=r" (__lo_), "=r" (__hi_)  \
+	    : "r" (lo), "r" (hi), "r" (1 << (MAD_F_SCALEBITS - 1)));  \
+       asm __volatile__ ("rlwinm %0, %2,32-%3,0,%3-1\n\t"  \
+			 "rlwimi %0, %1,32-%3,%3,31"  \
+	    : "=&r" (__result)  \
+	    : "r" (__lo_), "r" (__hi_), "I" (MAD_F_SCALEBITS));  \
+	    __result;  \
+    })
+#  else
+#   define mad_f_scale64(hi, lo)  \
+    ({ mad_fixed_t __result;  \
+       asm ("rlwinm %0, %2,32-%3,0,%3-1\n\t"  \
+	    "rlwimi %0, %1,32-%3,%3,31"  \
+	    : "=r" (__result)  \
+	    : "r" (lo), "r" (hi), "I" (MAD_F_SCALEBITS));  \
+	    __result;  \
+    })
+#  endif  /* OPT_ACCURACY */
 
 #  define MAD_F_SCALEBITS  MAD_F_FRACBITS
 
+/* --- Default ------------------------------------------------------------- */
+
+# elif defined(FPM_DEFAULT)
+
+/*
+ * This version is the most portable but it loses significant accuracy.
+ * Furthermore, accuracy is biased against the second argument, so care
+ * should be taken when ordering operands.
+ *
+ * The scale factors are constant as this is not used with SSO.
+ *
+ * Pre-rounding is required to stay within the limits of compliance.
+ */
+#  define mad_f_mul(x, y)	((((x) + (1L << 11)) >> 12) *  \
+				 (((y) + (1L << 15)) >> 16))
+
+/* ------------------------------------------------------------------------- */
+
 # else
-
-mad_fixed_t mad_f_mul(mad_fixed_t, mad_fixed_t);
-
+#  error "no FPM selected"
 # endif
+
+/* default implementations */
+
+# if !defined(mad_f_mul)
+#  define mad_f_mul(x, y)  \
+    ({ mad_fixed64hi_t __hi;  \
+       mad_fixed64lo_t __lo;  \
+       MAD_F_MLX(__hi, __lo, (x), (y));  \
+       mad_f_scale64(__hi, __lo);  \
+    })
+# endif
+
+# if !defined(MAD_F_MLA)
+#  define MAD_F_ML0(hi, lo, x, y)	((lo)  = mad_f_mul((x), (y)))
+#  define MAD_F_MLA(hi, lo, x, y)	((lo) += mad_f_mul((x), (y)))
+#  define MAD_F_MLZ(hi, lo)		((void) (hi), (mad_fixed_t) (lo))
+# endif
+
+# if !defined(MAD_F_ML0)
+#  define MAD_F_ML0(hi, lo, x, y)	MAD_F_MLX((hi), (lo), (x), (y))
+# endif
+
+# if !defined(MAD_F_MLZ)
+#  define MAD_F_MLZ(hi, lo)		mad_f_scale64((hi), (lo))
+# endif
+
+# if !defined(mad_f_scale64)
+#  if defined(OPT_ACCURACY)
+#   define mad_f_scale64(hi, lo)  \
+    ((((mad_fixed_t)  \
+       (((hi) << (32 - (MAD_F_SCALEBITS - 1))) |  \
+	((lo) >> (MAD_F_SCALEBITS - 1)))) + 1) >> 1)
+#  else
+#   define mad_f_scale64(hi, lo)  \
+    ((mad_fixed_t)  \
+     (((hi) << (32 - MAD_F_SCALEBITS)) |  \
+      ((lo) >> MAD_F_SCALEBITS)))
+#  endif
+#  define MAD_F_SCALEBITS  MAD_F_FRACBITS
+# endif
+
+/* miscellaneous C routines */
 
 mad_fixed_t mad_f_abs(mad_fixed_t);
 

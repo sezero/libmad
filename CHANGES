@@ -2,9 +2,30 @@
  mad - MPEG audio decoder
  Copyright (C) 2000-2001 Robert Leslie
 
- $Id: CHANGES,v 1.41 2001/01/21 00:18:09 rob Exp $
+ $Id: CHANGES,v 1.42 2001/02/09 02:12:17 rob Exp $
 
 ===============================================================================
+
+Version 0.12.4 (beta)
+
+  * New PowerPC fixed-point assembly courtesy of David Blythe.
+
+  * Reorganized fixed-point assembly routines for easier maintenance and
+    better performance.
+
+  * Improved performance of subband synthesis through better indexing and
+    fewer local variables.
+
+  * Added alias reduction for the lower two subbands of mixed short blocks,
+    per a report of ambiguity with ISO/IEC 11172-3 and for uniformity with
+    most other implementations. Also improved alias reduction performance
+    using multiply/accumulate.
+
+  * Added --enable-strict-iso option to `configure' to override best
+    accepted practices such as the alias reduction for mixed short blocks.
+
+  * Improved performance of Layer III IMDCT by using longer
+    multiply/accumulate runs where possible.
 
 Version 0.12.3 (beta)
 

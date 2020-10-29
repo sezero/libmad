@@ -2,7 +2,7 @@
  mad - MPEG audio decoder
  Copyright (C) 2000-2001 Robert Leslie
 
- $Id: CREDITS,v 1.11 2001/01/21 00:18:09 rob Exp $
+ $Id: CREDITS,v 1.12 2001/02/09 02:12:17 rob Exp $
 
 ===============================================================================
 
@@ -21,6 +21,10 @@ CONTRIBUTORS
           - Suggested --disable-mmap option for low memory systems.
         2000/09/30: madplay.c
           - Suggested shuffle/repeat options.
+
+      David Blythe <blythe@routefree.com>
+        2001/01/30: libmad/fixed.h
+          - Contributed PowerPC fixed-point assembly
 
       Gabriel Bouvigne <bouvigne@mp3-tech.org>
         2000/10/15: po/fr.po
@@ -59,6 +63,10 @@ CONTRIBUTORS
       Christoffer Nicolaisen <chrn@start.no>
         2000/10/26: po/no.po
           - Norwegian message translations
+
+      H.O. <theta@m1.interq.or.jp>
+        2001/01/28: libmad/layer3.c
+          - Reported discrepancy in alias reduction for mixed short blocks.
 
       Sean 'Shaleh' Perry <shaleh@via.net>
         2000/04/04: libmad/fixed.h
