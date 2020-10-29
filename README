@@ -1,0 +1,156 @@
+
+ mad - MPEG audio decoder
+ Copyright (C) 2000 Robert Leslie
+
+ $Id: README,v 1.9 2000/03/05 07:43:53 rob Exp $
+
+===============================================================================
+
+INTRODUCTION
+
+  MAD is an MPEG audio decoder. It currently only supports the MPEG 1
+  standard, but fully implements all three audio layers (Layer I, Layer II,
+  and Layer III, the latter often colloquially known as MP3.)
+
+  MAD has the following special features:
+
+    - 100% fixed-point (integer) computation
+    - completely new implementation based on the ISO/IEC 11172-3 standard
+    - distributed under the terms of the GNU General Public License (GPL)
+
+  Because MAD uses integer computation rather than floating point, it is
+  well suited for architectures without a floating point unit. All
+  operations are performed with a 32-bit fixed-point integer representation.
+
+  Because MAD is a new implementation of the ISO/IEC standard, it is
+  unencumbered by copyrights that could otherwise restrict its distribution.
+  MAD is NOT a derivation of the ISO reference source or any other code.
+
+  Because MAD is distributed under the terms of the GPL, its redistribution
+  is not generally restricted, so long as the terms of the GPL are followed.
+  This means MAD can be incorporated into other software as long as that
+  software is also distributed under the GPL. (Should this be undesirable,
+  alternate arrangements may be possible by contacting the author.)
+
+===============================================================================
+
+ABOUT THE CODE
+
+  The code currently consists of an MPEG audio decoding library (libmad) and
+  a simple front-end called `madplay' that supports several audio output
+  modules:
+
+    - an Open Sound System interface module
+    - a Sun audio interface module
+    - a WAV file output module
+    - a null module (for timing the decoder)
+
+  (The Sun audio interface module has not yet been fully tested.)
+
+  The API for libmad is likely to change soon, so it is not yet documented.
+  However, the header file `libmad.h' may be informative.
+
+  The code is partially optimized, but specific improvements can still be
+  made. Particularly, the IMDCT transformation routine of Layer III is not
+  considered final and is currently rather slow.
+
+Intensity Stereo Kluge
+
+  While the Layer III decoder was being written, a discrepancy was
+  discovered between the intensity stereo processing that occurs in other
+  decoders (and, possibly, encoders) and the ISO/IEC standard. Most notably,
+  a test bitstream encoded with both M/S and intensity stereo was audibly
+  different when played with three different decoders, including this one.
+  Regrettably, even while following the standard, MAD produced the least
+  aesthetically desirable output of the three.
+
+  To compensate for this, a kluge was introduced which processes intensity
+  stereo bitstreams in a way which appears to mimic the output of one of the
+  other decoders. The output is still not ideal, but it may produce a better
+  sound in the right channel for many bitstreams.
+
+  It is possible that the fault lies with some Layer III encoders, and so
+  this kluge may be unnecessary for properly encoded bitstreams. However,
+  apparently even the ISO reference source performs intensity stereo
+  processing in a way not described by the standard, and so it is suspected
+  that very few bitstreams would be properly decoded by following the
+  standard exactly. Therefore the intensity stereo kluge has been enabled by
+  default; it must be explicitly disabled to get pure standard behavior.
+
+Integer Performance
+
+  To get the best possible performance, it is recommended that an assembly
+  version of the fixed-point multiply and related routines be selected.
+  Several such assembly routines have been written for various CPUs.
+
+  If an assembly version is not available, either of two plain C versions
+  can be used, with a tradeoff. Either a fast approximation can be used,
+  with audible signal degradation, or a slow, but accurate, computation can
+  be made.
+
+  Alternatively, if 64-bit integers are supported as a datatype by the
+  compiler, another C version can be used which is both fast and accurate.
+  However, using an assembly version is generally faster still.
+
+  More information can be gathered from the `fixed.h' header file.
+
+Compilation Issues
+
+  GCC is probably required to compile the code, but YMMV. Besides the
+  assembly code notation, a GNU extension was used in `huffman.c' to specify
+  union initialization of a member other than the first.
+
+  The code is known to be dependent on 32-bit long integers in at least two
+  places in Layer I and Layer II decoding.
+
+===============================================================================
+
+INSTALLATION
+
+  The code is distributed with a `configure' script which will generate for
+  you a `Makefile' and a `config.h'. See the file `INSTALL' for generic
+  instructions.
+
+  The specific options you may want to give configure are:
+
+      --enable-fpm=<arch>      use the <arch>-specific version of the
+                               fixed-point math assembly routines
+                               (current options are: intel, arm, mips;
+                               also allowed are: 64bit, approx)
+
+      --disable-is-kluge       don't use the intensity stereo kluge
+                               described above
+
+      --disable-debugging      do not compile with debugging support, and
+                               use more optimizations
+
+      --enable-devlibs         install `libmad.a' developer library and
+                               `libmad.h' header file in addition to the
+                               user program
+
+  By default an appropriate fixed-point assembly routine will be selected
+  for the configured host type, if it can be determined. Thus if you are
+  cross-compiling for another architecture, you should be sure either to
+  give `configure' a host type or to use an explicit --enable-fpm option.
+
+  If an appropriate assembly routine cannot be determined, either the fast
+  approximation version or the slow default version will be used. In these
+  cases use of an alternate --enable-fpm is highly recommended.
+
+===============================================================================
+
+COPYRIGHT AND AUTHOR
+
+  Please read the `COPYRIGHT' file for copyright and warranty information.
+  Also, the file `COPYING' contains the full text of the GNU GPL.
+
+  Send inquiries, comments, bug reports, suggestions, patches, etc. to:
+
+      Robert Leslie <rob@mars.org>
+
+  See also the MAD home page on the Web:
+
+      http://www.mars.org/home/rob/proj/mpeg/
+
+===============================================================================
+

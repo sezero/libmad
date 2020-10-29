@@ -1,0 +1,24 @@
+
+General:
+  - fix generic DCT matrix multiply (now broken after V[] resize/reorder)
+  - fix 32-bit assumption on Layer I, II bit read
+  - check legal Layer II bitrate/mode combinations
+  - improve free format fixed bitrate discovery
+  - reduce sizeof(bitalloc_table)
+  - speed up mad_bit_read()
+  - refresh mmap() if file size has changed
+  - MPEG 2, (2.5?), 4 support
+  - function documentation, general docs
+  - dual channel output selection?
+  - better bitstream error recovery
+  - ensure last frame is played at end-of-stream
+  - skip ID3 tags; ID3v2 support
+
+Layer III:
+  - perform requantization during Huffman decoding
+  - ancillary bits
+  - ms_stereo + intensity_stereo not right?
+  - stereo->mono conversion optimization
+  - IMDCT optimization
+  - verify last Huffman table
+

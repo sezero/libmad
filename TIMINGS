@@ -1,0 +1,15 @@
+
+4m22s Layer II test stream
+
+StrongARM 1100 220MHz:
+	mpg123		?
+	xaudio		1m2s
+	mad macc	53s
+	mad mull/add	48s
+
+Celeron 500A:
+	mpg123		6s
+	xaudio		6s
+	mad macc	15s
+	mad mull/add	11s
+

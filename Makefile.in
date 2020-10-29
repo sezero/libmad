@@ -1,0 +1,186 @@
+#
+# mad - MPEG audio decoder
+# Copyright (C) 2000 Robert Leslie
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+#
+# $Id: Makefile.in,v 1.10 2000/03/05 07:39:41 rob Exp $
+#
+
+## OPTIONS ####################################################################
+
+# Fixed Point Math multiply options:
+#
+# FPM_APPROX	use 32-bit approximation
+# FPM_64BIT	use 64-bit (long long) accuracy
+# FPM_INTEL	use Intel assembly
+# FPM_ARM	use ARM V4 assembly
+# FPM_MIPS	use MIPS assembly
+# (default)	use slow explicit computation
+
+# now set in config.h by configure
+FPM =		@FPM@
+
+# Discrete Cosine Transformation options:
+#
+# DCT_FAST	use fast DCT approximation
+# (default)	use slow matrix multiply: currently broken
+
+DCT =		-DDCT_FAST
+
+## ENVIRONMENT ################################################################
+
+@SET_MAKE@
+
+src =		@srcdir@
+VPATH =		@srcdir@
+
+prefix =	@prefix@
+exec_prefix =	@exec_prefix@
+
+BINDEST =	@bindir@
+MANDEST =	@mandir@
+LIBDEST =	@libdir@
+INCDEST =	@includedir@
+
+MANEXT =	1
+
+INSTALL =	@INSTALL@
+BININSTALL =	@INSTALL_PROGRAM@ -m 755
+LIBINSTALL =	@INSTALL_DATA@
+
+CC =		@CC@
+INCLUDES =	@CPPFLAGS@
+DEFINES =	@DEFS@ $(FPM) $(DCT)
+LIBS =		@LIBS@
+
+AR =		ar
+RANLIB =	@RANLIB@
+
+ARCH =		@ARCH@
+DEBUGGER =	@DEBUGGER@
+OPTIMIZER =	@OPTIMIZER@
+PROFILER =	@PROFILER@
+
+COPTS =		@CFLAGS@ -Wall $(ARCH) $(DEBUGGER) $(OPTIMIZER) $(PROFILER)
+LDOPTS =	@LDFLAGS@ $(PROFILER)
+
+## FLAGS ######################################################################
+
+CFLAGS =	$(COPTS) $(INCLUDES) $(DEFINES)
+LDFLAGS =	$(LDOPTS)
+
+## OBJECTS ####################################################################
+
+TARGET =	$(LIBMAD)
+
+MADINCLUDES =	version.h fixed.h bit.h timer.h stream.h frame.h synth.h mad.h
+MADOBJS =	version.o fixed.o bit.o timer.o stream.o frame.o synth.o  \
+		mad.o layer12.o layer3.o huffman.o
+LIBMAD =	libmad.a
+INCMAD =	libmad.h
+
+## RULES ######################################################################
+
+all :: @MAKE_TARGETS@
+
+all_lib :: $(LIBMAD) $(INCMAD)
+
+check :: all
+	@echo "No self-tests available."
+
+default :: $(TARGET)
+
+install :: @INSTALL_TARGETS@
+
+install_default :: all
+	$(BININSTALL) $(TARGET) "$(BINDEST)/."
+
+install_lib :: all_lib
+	$(LIBINSTALL) $(LIBMAD) "$(LIBDEST)/."
+	$(LIBINSTALL) $(INCMAD) "$(INCDEST)/."
+
+$(TARGET): $(LIBMAD) $(OBJS)
+	$(CC) $(LDFLAGS) -o $@ $(OBJS) $(LIBMAD) $(LIBS)
+
+$(LIBMAD): $(MADOBJS)
+	$(AR) rc $@ $(MADOBJS)
+	$(RANLIB) $@
+
+$(INCMAD): $(MADINCLUDES)
+	sed -e '/\$$''Id: /s/\$$//g' -e '/^# include/d'  \
+		$(MADINCLUDES) >libmad.h
+
+.c.s:
+	$(CC) $(ARCH) $(OPTIMIZER) $(DEFINES) -S $<
+
+*.o: Makefile
+
+again :: clean all
+
+clean ::
+	rm -f $(TARGET) *.o *.a gmon.* core
+
+distclean :: clean
+	rm -f config.status config.cache config.log config.h
+	rm -f Makefile
+
+maintainer-clean :: distclean
+	rm -f config.h.in configure
+
+dist ::
+	$(MAKE) config.h.in configure
+	$(MAKE) distclean
+
+depend ::
+	( sed -n '1,/^## DEPEND/p' Makefile.in;  \
+	  echo;  \
+	  $(CC) -MM $(DEFINES) *.c;  \
+	) > Makefile.in.new
+	mv -f Makefile.in.new Makefile.in
+
+## AUTOCONF RULES #############################################################
+
+Makefile: config.status
+	./config.status && touch .stamp/config.h
+
+.stamp/config.h: config.status
+	./config.status && touch .stamp/config.h
+
+config.status: .stamp/configure .stamp/config.h.in Makefile.in
+	./config.status --recheck
+
+.stamp/configure: configure.in
+	autoconf && touch .stamp/configure
+
+.stamp/config.h.in: configure.in acconfig.h
+	autoheader && touch .stamp/config.h.in
+
+## DEPENDENCIES ###############################################################
+
+bit.o: bit.c config.h bit.h
+fixed.o: fixed.c config.h fixed.h
+frame.o: frame.c config.h frame.h timer.h fixed.h
+huffman.o: huffman.c config.h huffman.h
+layer12.o: layer12.c config.h fixed.h bit.h mad.h stream.h frame.h \
+ timer.h layer12.h sf_table.dat qc_table.dat
+layer3.o: layer3.c config.h fixed.h bit.h mad.h stream.h frame.h \
+ timer.h huffman.h layer3.h rq_table.dat imdct_l.dat imdct_s.dat
+mad.o: mad.c config.h bit.h timer.h stream.h frame.h fixed.h layer12.h \
+ layer3.h mad.h
+stream.o: stream.c config.h stream.h bit.h
+synth.o: synth.c config.h fixed.h frame.h timer.h synth.h D.dat
+timer.o: timer.c config.h timer.h
+version.o: version.c config.h version.h
