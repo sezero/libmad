@@ -113,39 +113,22 @@ mad.h: config.status config.h Makefile.am  \
 	echo "#ifdef __cplusplus";  \
 	echo 'extern "C" {';  \
 	echo "#endif"; echo;  \
-	echo "#ifdef __i386__"; \
-	echo "# define FPM_INTEL"; \
-	echo "# define SIZEOF_LONG 4"; \
-	echo "#endif"; \
-	echo "#ifdef __x86_64__";\
-	echo "# define FPM_64BIT"; \
-	echo "# ifdef _WIN64";\
-	echo "# define SIZEOF_LONG 4"; \
-	echo "# else"; \
-	echo "# define SIZEOF_LONG 8"; \
-	echo "# endif"; \
-	echo "#endif"; \
-	echo "#if (defined(__ppc__) || defined(__POWERPC__) || defined(__powerpc__)) && !(defined(__ppc64__) || defined(__powerpc64__))"; \
-	echo "# define FPM_PPC"; \
-	echo "# define SIZEOF_LONG 4"; \
-	echo "#endif"; \
-	echo "#if defined(__ppc64__) || defined(__powerpc64__)"; \
-	echo "# define FPM_PPC"; \
-	echo "# define SIZEOF_LONG 8"; \
-	echo "#endif"; echo; \
+	if [ ".$(FPM)" != "." ]; then  \
+		echo ".$(FPM)" | sed -e 's|^\.-D|# define |'; echo;  \
+	fi;  \
 	sed -ne 's/^# *define  *\(HAVE_.*_ASM\).*/# define \1/p'  \
 		config.h; echo;  \
 	sed -ne 's/^# *define  *OPT_\(SPEED\|ACCURACY\).*/# define OPT_\1/p'  \
 		config.h; echo;  \
-	echo "#define SIZEOF_INT 4"; \
-	echo "#define SIZEOF_LONG_LONG 8"; echo; \
+	sed -ne 's/^# *define  *\(SIZEOF_.*\)/# define \1/p'  \
+		config.h; echo;  \
 	for header in $(exported_headers); do  \
 		echo;  \
 		sed -n -f $(srcdir)/mad.h.sed $(srcdir)/$$header;  \
 	done; echo;  \
-	echo "# ifdef __cplusplus";  \
+	echo "#ifdef __cplusplus";  \
 	echo '}';  \
-	echo "# endif") >$@
+	echo "#endif") >$@
 
 libtool: $(LIBTOOL_DEPS)
 	$(SHELL) ./config.status --recheck
