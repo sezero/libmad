@@ -151,7 +151,10 @@ int decode_header(struct mad_header *header, struct mad_stream *stream)
   /* layer */
   header->layer = 4 - mad_bit_read(&stream->ptr, 2);
 
-  if (header->layer == 4) {
+  switch (header->layer) {
+  case MAD_LAYER_I: case MAD_LAYER_II: case MAD_LAYER_III:
+    break;
+  default:
     stream->error = MAD_ERROR_BADLAYER;
     return -1;
   }
