@@ -16,8 +16,6 @@
 ## along with this program; if not, write to the Free Software
 ## Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ##
-## $Id: Makefile.am,v 1.23 2004/02/17 02:02:03 rob Exp $
-##
 
 ## Process this file with automake to produce Makefile.in
 
@@ -119,8 +117,6 @@ mad.h: config.status config.h Makefile.am  \
 	sed -ne 's/^# *define  *\(HAVE_.*_ASM\).*/# define \1/p'  \
 		config.h; echo;  \
 	sed -ne 's/^# *define  *OPT_\(SPEED\|ACCURACY\).*/# define OPT_\1/p'  \
-		config.h; echo;  \
-	sed -ne 's/^# *define  *\(SIZEOF_.*\)/# define \1/p'  \
 		config.h; echo;  \
 	for header in $(exported_headers); do  \
 		echo;  \

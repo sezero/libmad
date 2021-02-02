@@ -22,7 +22,13 @@
 # ifndef LIBMAD_FIXED_H
 # define LIBMAD_FIXED_H
 
-# if SIZEOF_INT >= 4
+# ifdef HAVE_LIMITS_H
+#  include <limits.h>
+# elif !defined(INT_MAX)
+#  define INT_MAX 2147483647
+# endif
+
+# if INT_MAX >= 2147483647
 typedef   signed int mad_fixed_t;
 
 typedef   signed int mad_fixed64hi_t;
@@ -33,6 +39,8 @@ typedef   signed long mad_fixed_t;
 typedef   signed long mad_fixed64hi_t;
 typedef unsigned long mad_fixed64lo_t;
 # endif
+/* compile-time assert: */
+typedef int _mad_check_fixed_t[2*(sizeof(mad_fixed_t)>=4) - 1];
 
 # if defined(_MSC_VER)
 #  define mad_fixed64_t  signed __int64
