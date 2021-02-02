@@ -21,14 +21,7 @@ $(LIBNAME): $(OBJ)
 .c.obj:
 	$(COMPILE) -fo=$^@ $<
 
-!ifndef __UNIX__
-distclean: clean .symbolic
-	@if exist *.lib del *.lib
-clean: .symbolic
-	@if exist *.obj del *.obj
-!else
 distclean: clean .symbolic
 	rm -f *.lib
 clean: .symbolic
 	rm -f *.obj
-!endif
