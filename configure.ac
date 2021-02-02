@@ -46,6 +46,14 @@ LT_INIT([win32-dll])
 
 if test "$GCC" = yes
 then
+    AC_MSG_CHECKING([for gcc < 3.3])
+    AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
+#if (__GNUC__ > 3) || (__GNUC__ == 3 && __GNUC_MINOR__ > 2)
+#error gcc >= 3.3
+#endif
+      ]])], [have_old_gcc=yes],[have_old_gcc=no])
+    AC_MSG_RESULT($have_old_gcc)
+
     case "$host" in
 	*-*-mingw*)
 	    case "$build" in
@@ -109,7 +117,12 @@ do
 	    shift
 	    ;;
 	-O2)
-	    optimize="-O"
+	    if test x$have_old_gcc = xyes
+	    then
+		optimize="-O"
+	    else
+		optimize="-O2"
+	    fi
 	    shift
 	    ;;
 	-fomit-frame-pointer)
@@ -126,7 +139,7 @@ do
     esac
 done
 
-if test "$GCC" = yes
+if test x$have_old_gcc = xyes
 then
     if test -z "$arch"
     then
@@ -144,7 +157,7 @@ then
     case "$optimize" in
 	-O|"-O "*)
 	    optimize="-O"
-	    : #x optimize="$optimize -fforce-mem"
+	    optimize="$optimize -fforce-mem"
 	    optimize="$optimize -fforce-addr"
 	    : #x optimize="$optimize -finline-functions"
 	    : #- optimize="$optimize -fstrength-reduce"
