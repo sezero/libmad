@@ -209,6 +209,14 @@ then
 fi
 
 case "$host" in
+    *-*-darwin*)
+	CFLAGS="$CFLAGS -fno-common"
+	case "$host_cpu" in
+	    powerpc|powerpc64)
+		CFLAGS="$CFLAGS -force_cpusubtype_ALL"
+		;;
+	esac
+	;;
     mips*-agenda-*)
 	AC_DEFINE(HAVE_MADD16_ASM, 1,
 	    [Define if your MIPS CPU supports a 2-operand MADD16 instruction.])
