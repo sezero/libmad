@@ -71,7 +71,7 @@
 /* #undef HAVE_WAITPID */
 
 /* Define to disable debugging assertions. */
-/* #undef NDEBUG */
+#define NDEBUG 1
 
 /* Define to optimize for accuracy over speed. */
 /* #undef OPT_ACCURACY */
@@ -104,27 +104,28 @@
 /* Define to the version of this package. */
 #define PACKAGE_VERSION "0.15.1b"
 
-/* The size of a `int', as computed by sizeof. */
-#define SIZEOF_INT 4
-
-/* The size of a `long', as computed by sizeof. */
-#define SIZEOF_LONG 4
-
-/* The size of a `long long', as computed by sizeof. */
-#define SIZEOF_LONG_LONG 8
-
 /* Define to 1 if you have the ANSI C header files. */
 #define STDC_HEADERS 1
 
 /* Version number of package */
 #define VERSION "0.15.1b"
 
+/* Define to 1 if your processor stores words with the most significant byte
+   first (like Motorola and SPARC, unlike Intel and VAX). */
+/* #undef WORDS_BIGENDIAN */
+
 /* Define to empty if `const' does not conform to ANSI C. */
 /* #undef const */
 
-/* Define as `__inline' if that's what the C compiler calls it, or to nothing
-   if it is not supported. */
+/* Define to `__inline__' or `__inline' if that's what the C compiler
+   calls it, or to nothing if 'inline' is not supported under any name.  */
+#ifndef __cplusplus
 #define inline __inline
+#endif
 
 /* Define to `int' if <sys/types.h> does not define. */
 /* #undef pid_t */
+
+/* Define to `unsigned int' if <sys/types.h> does not define. */
+/* #undef size_t */
+
