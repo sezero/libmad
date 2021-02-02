@@ -431,6 +431,25 @@ AC_ARG_ENABLE(experimental, AS_HELP_STRING([--enable-experimental],
 ])
 AC_MSG_RESULT(${enable_experimental-no})
 
+dnl Exported symbols control :
+SHLIB_VERSION_ARG=""
+
+case "$host_os" in
+    darwin*)
+	SHLIB_VERSION_ARG="-Wl,-exported_symbols_list,\$(top_srcdir)/libmad.exports"
+	;;
+    mingw*|cygwin*)
+	SHLIB_VERSION_ARG="-export-symbols \$(top_srcdir)/libmad.def"
+	;;
+    *)
+	if test "x$lt_cv_prog_gnu_ld" = "xyes"
+	then
+	   SHLIB_VERSION_ARG="-Wl,--version-script=\$(top_srcdir)/Version_script"
+	fi
+	;;
+esac
+AC_SUBST(SHLIB_VERSION_ARG)
+
 dnl Create output files.
 
 test -n "$arch"     && CFLAGS="$CFLAGS $arch"

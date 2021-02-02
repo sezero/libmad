@@ -34,7 +34,7 @@ minimad_SOURCES =	minimad.c
 minimad_INCLUDES =	
 minimad_LDADD =		libmad.la
 
-EXTRA_DIST =		mad.h.sed  \
+EXTRA_DIST =		mad.h.sed Version_script libmad.def libmad.exports \
 			CHANGES COPYRIGHT CREDITS README TODO VERSION
 
 exported_headers =	version.h fixed.h bit.h timer.h stream.h frame.h  \
@@ -102,7 +102,7 @@ version_age =		2
 
 version_info =		$(version_current):$(version_revision):$(version_age)
 
-libmad_la_LDFLAGS =	-version-info $(version_info)
+libmad_la_LDFLAGS =	-no-undefined -version-info $(version_info) $(SHLIB_VERSION_ARG)
 
 mad.h: config.status config.h Makefile.am  \
 		$(srcdir)/COPYRIGHT $(srcdir)/mad.h.sed $(exported_headers)
