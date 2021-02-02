@@ -22,7 +22,7 @@ AC_REVISION([$Id: configure.ac,v 1.9 2004/01/23 09:41:32 rob Exp $])dnl
 dnl Process this file with autoconf to produce a configure script.
 
 AC_INIT([MPEG Audio Decoder], [0.15.1b], [support@underbit.com], [libmad])
-AC_PREREQ(2.53)
+AC_PREREQ(2.59)
 AC_CONFIG_AUX_DIR([autotools])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_SRCDIR([decoder.h])
@@ -41,9 +41,9 @@ AM_PROG_AS
 AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
-#LT_INIT([win32-dll])
-AC_LIBTOOL_WIN32_DLL
-AC_PROG_LIBTOOL
+dnl AC_LIBTOOL_WIN32_DLL
+dnl AC_PROG_LIBTOOL
+LT_INIT([win32-dll])
 
 if test "$GCC" = yes
 then
@@ -231,7 +231,7 @@ AC_CACHE_SAVE
 
 AC_MSG_CHECKING(whether to optimize for speed or for accuracy)
 
-AC_ARG_ENABLE(speed, AC_HELP_STRING([--enable-speed],
+AC_ARG_ENABLE(speed, AS_HELP_STRING([--enable-speed],
 		     [optimize for speed over accuracy]),
 [
     case "$enableval" in
@@ -243,7 +243,7 @@ AC_ARG_ENABLE(speed, AC_HELP_STRING([--enable-speed],
     esac
 ])
 
-AC_ARG_ENABLE(accuracy, AC_HELP_STRING([--enable-accuracy],
+AC_ARG_ENABLE(accuracy, AS_HELP_STRING([--enable-accuracy],
 			[optimize for accuracy over speed]),
 [
     case "$enableval" in
@@ -268,7 +268,7 @@ then
 fi
 
 AC_MSG_CHECKING(for architecture-specific fixed-point math routines)
-AC_ARG_ENABLE(fpm, AC_HELP_STRING([--enable-fpm=ARCH],
+AC_ARG_ENABLE(fpm, AS_HELP_STRING([--enable-fpm=ARCH],
 		   [use ARCH-specific fixed-point math routines
 		    (one of: intel, arm, mips, sparc, ppc, 64bit, default)]),
 [
@@ -311,7 +311,7 @@ fi
 
 FPM="-DFPM_$FPM"
 
-AC_ARG_ENABLE(sso, AC_HELP_STRING([--enable-sso],
+AC_ARG_ENABLE(sso, AS_HELP_STRING([--enable-sso],
 		   [use subband synthesis optimization]),
 [
     case "$enableval" in
@@ -322,7 +322,7 @@ AC_ARG_ENABLE(sso, AC_HELP_STRING([--enable-sso],
     esac
 ])
 
-AC_ARG_ENABLE(aso, AC_HELP_STRING([--disable-aso],
+AC_ARG_ENABLE(aso, AS_HELP_STRING([--disable-aso],
 		   [disable architecture-specific optimizations]),
     [], [enable_aso=yes])
 
@@ -348,7 +348,7 @@ then
 fi
 
 AC_MSG_CHECKING(for ISO/IEC interpretation)
-AC_ARG_ENABLE(strict-iso, AC_HELP_STRING([--enable-strict-iso],
+AC_ARG_ENABLE(strict-iso, AS_HELP_STRING([--enable-strict-iso],
 			  [use strict ISO/IEC interpretations]),
 [
     case "$enableval" in
@@ -363,7 +363,7 @@ AC_ARG_ENABLE(strict-iso, AC_HELP_STRING([--enable-strict-iso],
 AC_MSG_RESULT(${interpretation-best accepted practices})
 
 AC_MSG_CHECKING(whether to enable profiling)
-AC_ARG_ENABLE(profiling, AC_HELP_STRING([--enable-profiling],
+AC_ARG_ENABLE(profiling, AS_HELP_STRING([--enable-profiling],
 			 [generate profiling code]),
 [
     case "$enableval" in
@@ -373,9 +373,9 @@ AC_ARG_ENABLE(profiling, AC_HELP_STRING([--enable-profiling],
 AC_MSG_RESULT(${enable_profiling-no})
 
 AC_MSG_CHECKING(whether to enable debugging)
-AC_ARG_ENABLE(debugging, AC_HELP_STRING([--enable-debugging],
+AC_ARG_ENABLE(debugging, AS_HELP_STRING([--enable-debugging],
 			 [enable diagnostic debugging support])
-AC_HELP_STRING([--disable-debugging],
+AS_HELP_STRING([--disable-debugging],
 	       [do not enable debugging and use more optimization]),
 [
     case "$enableval" in
@@ -403,7 +403,7 @@ AC_HELP_STRING([--disable-debugging],
 AC_MSG_RESULT(${enable_debugging-default})
 
 AC_MSG_CHECKING(whether to enable experimental code)
-AC_ARG_ENABLE(experimental, AC_HELP_STRING([--enable-experimental],
+AC_ARG_ENABLE(experimental, AS_HELP_STRING([--enable-experimental],
 			    [enable experimental code]),
 [
     case "$enableval" in

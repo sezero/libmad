@@ -69,6 +69,10 @@
 /* Define to 1 if you have the `waitpid' function. */
 #undef HAVE_WAITPID
 
+/* Define to the sub-directory in which libtool stores uninstalled libraries.
+   */
+#undef LT_OBJDIR
+
 /* Define to disable debugging assertions. */
 #undef NDEBUG
 
@@ -133,3 +137,6 @@
 
 /* Define to `int' if <sys/types.h> does not define. */
 #undef pid_t
+
+/* Define to `unsigned' if <sys/types.h> does not define. */
+#undef size_t
