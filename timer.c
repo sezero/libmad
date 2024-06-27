@@ -46,13 +46,13 @@ int mad_timer_compare(mad_timer_t timer1, mad_timer_t timer2)
   diff = timer1.seconds - timer2.seconds;
   if (diff < 0)
     return -1;
-  else if (diff > 0)
+  if (diff > 0)
     return +1;
 
   diff = timer1.fraction - timer2.fraction;
   if (diff < 0)
     return -1;
-  else if (diff > 0)
+  if (diff > 0)
     return +1;
 
   return 0;
