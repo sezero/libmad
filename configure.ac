@@ -309,7 +309,8 @@ if test -z "$FPM" && test "$GCC" = yes
 then
     case "$host" in
 	i?86-*)     FPM="INTEL"  ;;
-	x86_64*)    FPM="64BIT"  ;;
+	amd64*|x86_64*)  FPM="64BIT"  ;;
+	arm64*|aarch64*) FPM="64BIT"  ;;
 	arm*-*)     FPM="ARM"    ;;
 	mips*-*)    FPM="MIPS"   ;;
 	sparc*-*)   FPM="SPARC"  ;;
