@@ -1,0 +1,58 @@
+From 91258bc8e21fbcb08ee48e81cf1760451654ae0c Mon Sep 17 00:00:00 2001
+From: Rosen Penev <rosenp@gmail.com>
+Date: Thu, 27 Jun 2024 13:55:51 -0700
+Subject: [PATCH] clang-tidy: don't assign in if
+
+Found with bugprone-assignment-in-if-condition
+
+Signed-off-by: Rosen Penev <rosenp@gmail.com>
+---
+ layer12.c |   14 +++++++++-----
+ 1 files changed, 9 insertions(+), 5 deletions(-)
+
+diff --git a/layer12.c b/layer12.c
+index b6f4a2f..aaa9310 100644
+--- a/layer12.c
++++ b/layer12.c
+@@ -225,7 +225,8 @@ int mad_layer_I(struct mad_stream *stream, struct mad_frame *frame)
+     }
+ 
+     for (sb = bound; sb < 32; ++sb) {
+-      if ((nb = allocation[0][sb])) {
++      nb = allocation[0][sb];
++      if (nb) {
+ 	mad_fixed_t sample;
+ 
+ 	if (mad_bit_length(&stream->ptr, &frameend_ptr) < nb) {
+@@ -328,7 +329,8 @@ void II_samples(struct mad_bitptr *ptr,
+ 
+   mad_bit_init(&frameend_ptr, stream->next_frame);
+ 
+-  if ((nb = quantclass->group)) {
++  nb = quantclass->group;
++  if (nb) {
+     unsigned int c, nlevels;
+ 
+     if (mad_bit_length(ptr, &frameend_ptr) < quantclass->bits) {
+@@ -574,8 +576,9 @@ int mad_layer_II(struct mad_stream *stream, struct mad_frame *frame)
+   for (gr = 0; gr < 12; ++gr) {
+     for (sb = 0; sb < bound; ++sb) {
+       for (ch = 0; ch < nch; ++ch) {
+-	if ((index = allocation[ch][sb])) {
+-	  index = offset_table[bitalloc_table[offsets[sb]].offset][index - 1];
++        index = allocation[ch][sb];
++        if (index) {
++          index = offset_table[bitalloc_table[offsets[sb]].offset][index - 1];
+ 
+ 	  II_samples(&stream->ptr, &qc_table[index], samples, stream);
+ 	  if (stream->error != 0)
+@@ -594,7 +597,8 @@ int mad_layer_II(struct mad_stream *stream, struct mad_frame *frame)
+     }
+ 
+     for (sb = bound; sb < sblimit; ++sb) {
+-      if ((index = allocation[0][sb])) {
++      index = allocation[0][sb];
++      if (index) {
+ 	index = offset_table[bitalloc_table[offsets[sb]].offset][index - 1];
+ 
+ 	II_samples(&stream->ptr, &qc_table[index], samples, stream);

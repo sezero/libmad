@@ -1,0 +1,33 @@
+From 246353ec4b3c4a29f66dc12f9277998baa29e373 Mon Sep 17 00:00:00 2001
+From: Ozkan Sezer <sezeroz@gmail.com>
+Date: Sun, 1 Dec 2024 04:24:32 +0300
+Subject: [PATCH] layer3.c (fastsdct): fix -Wstringop-overflow warning from gcc-13/14
+
+layer3.c: In function 'sdctII':
+layer3.c:1743:3: warning: 'fastsdct' accessing 72 bytes in a region of size 68 [-Wstringop-overflow=]
+ 1743 |   fastsdct(tmp, &X[1]);
+      |   ^~~~~~~~~~~~~~~~~~~~
+layer3.c:1743:3: note: referencing argument 2 of type 'mad_fixed_t[18]' {aka 'int[18]'}
+layer3.c:1643:6: note: in a call to function 'fastsdct'
+ 1643 | void fastsdct(mad_fixed_t const x[9], mad_fixed_t y[18])
+      |      ^~~~~~~~
+
+The warning is bogus, because fastsdct() references its y parameter
+only up to 16.  Changing the signature to y[17] avoids the warning.
+---
+ layer3.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/layer3.c b/layer3.c
+index 59a81ed..b115bcb 100644
+--- a/layer3.c
++++ b/layer3.c
+@@ -1640,7 +1640,7 @@ void III_imdct_l(mad_fixed_t const [18], mad_fixed_t [36], unsigned int);
+ # else
+ #  if 1
+ static
+-void fastsdct(mad_fixed_t const x[9], mad_fixed_t y[18])
++void fastsdct(mad_fixed_t const x[9], mad_fixed_t y[17])  /* was y[18] */
+ {
+   mad_fixed_t a0,  a1,  a2,  a3,  a4,  a5,  a6,  a7,  a8,  a9,  a10, a11, a12;
+   mad_fixed_t a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25;
